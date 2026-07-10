@@ -1,17 +1,29 @@
 import 'package:flutter/foundation.dart';
 
-/// What the main content area currently shows. Selecting a collection
-/// or page clears the other and leaves edit mode. Page-View doesn't
-/// exist yet (later phases) - the shell only tracks the selection for
-/// that case.
+/// What the sidebar and main content area currently show. Selecting a
+/// space clears the content selection (a different area, different
+/// content). Selecting a collection or page clears the other and
+/// leaves edit mode. Page-View doesn't exist yet (later phases) - the
+/// shell only tracks the selection for that case.
 class AppNavigationController extends ChangeNotifier {
+  String? _selectedSpaceId;
   String? _selectedCollectionId;
   String? _selectedPageId;
   bool _isEditingCollection = false;
 
+  String? get selectedSpaceId => _selectedSpaceId;
   String? get selectedCollectionId => _selectedCollectionId;
   String? get selectedPageId => _selectedPageId;
   bool get isEditingCollection => _isEditingCollection;
+
+  void selectSpace(String id) {
+    if (id == _selectedSpaceId) return;
+    _selectedSpaceId = id;
+    _selectedCollectionId = null;
+    _selectedPageId = null;
+    _isEditingCollection = false;
+    notifyListeners();
+  }
 
   void selectCollection(String id) {
     _selectedCollectionId = id;

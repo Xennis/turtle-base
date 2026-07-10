@@ -48,6 +48,9 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
+    // One more pump for the sidebar's default-space auto-select
+    // (postFrameCallback -> notifyListeners -> rebuild) to settle.
+    await tester.pump();
 
     await tester.tap(find.text('Tasks'));
     await tester.pump();
@@ -119,5 +122,62 @@ void main() {
     )..where((p) => p.id.equals(entryId))).getSingle();
     expect(entry.title, 'Buy oat milk');
     expect(decodePageProperties(entry.properties)[priorityFieldId], 'High');
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('Add row creates a blank entry, edited inline afterwards', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      collectionId = await CollectionsRepository(
+        database,
+      ).create(spaceId: spaceId, name: 'Tasks');
+    });
+
+    late TrinaGridStateManager stateManager;
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: MaterialApp(
+          home: CollectionView(
+            collectionId: collectionId,
+            onEdit: () {},
+            onLoaded: (event) => stateManager = event.stateManager,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(await database.select(database.pages).get(), isEmpty);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Add row'));
+    // _addRow does real FFI I/O (a stream's .first, then an insert),
+    // triggered from a button handler rather than test code directly -
+    // needs runAsync to actually complete within the pump budget.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final entries = await database.select(database.pages).get();
+    expect(entries, hasLength(1));
+    expect(entries.single.title, '');
+
+    // Fill it in directly - no separate creation page.
+    stateManager.changeCellValue(
+      stateManager.rows.single.cells['title']!,
+      'Buy milk',
+    );
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final entry = await database.select(database.pages).getSingle();
+    expect(entry.title, 'Buy milk');
   }, timeout: const Timeout(Duration(seconds: 30)));
 }

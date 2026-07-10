@@ -15,36 +15,44 @@ void main() {
     expect(find.text('Select a collection or page'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('creates and renames a space via the sidebar', (
+  testWidgets('creates a space via the dropdown and renames the selection', (
     WidgetTester tester,
   ) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
-    await tester.tap(find.byTooltip('New space'));
+    // "New space" lives inside the space dropdown's menu now, not a
+    // separate button - open it, then pick that entry.
+    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New space'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'Fitness');
     await tester.tap(find.text('Save'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
+    // Creating a space selects it, so it's now the dropdown's shown
+    // value - "Default" is still around, just not the current one.
     expect(find.text('Fitness'), findsOneWidget);
 
-    // Two spaces exist now, so target the rename button of "Default"
-    // specifically rather than any edit icon.
-    final renameDefaultButton = find.descendant(
-      of: find.widgetWithText(ExpansionTile, 'Default'),
-      matching: find.byIcon(Icons.edit_outlined),
-    );
-    await tester.tap(renameDefaultButton);
+    // Only one edit icon exists at a time now - for whichever space is
+    // currently selected (Fitness, just created).
+    await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'Home');
     await tester.tap(find.text('Save'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Default'), findsNothing);
+    expect(find.text('Fitness'), findsNothing);
     expect(find.text('Home'), findsOneWidget);
+
+    // "Default" is still there, just not selected - visible in the
+    // dropdown's menu.
+    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.pumpAndSettle();
+    expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
   testWidgets('creates a collection with no user-defined fields yet', (
@@ -98,7 +106,7 @@ void main() {
     expect(find.text('Fields'), findsOneWidget);
     // ...while the sidebar, a sibling in the same Row, is still there.
     expect(find.text('Default'), findsOneWidget);
-    expect(find.byTooltip('New space'), findsOneWidget);
+    expect(find.byType(DropdownButton<String>), findsOneWidget);
 
     // Going back returns to the grid, still with the sidebar visible.
     await tester.tap(find.byIcon(Icons.arrow_back));

@@ -45,10 +45,20 @@ class CollectionView extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit collection'),
-                      onPressed: onEdit,
+                    child: Row(
+                      children: [
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add row'),
+                          onPressed: () => _addRow(scope),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('Edit collection'),
+                          onPressed: onEdit,
+                        ),
+                      ],
                     ),
                   ),
                   Expanded(
@@ -69,6 +79,17 @@ class CollectionView extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  /// A blank entry, filled in directly in the grid afterwards - no
+  /// separate creation page, matching the inline-editing style already
+  /// used for cells and fields.
+  Future<void> _addRow(AppScope scope) async {
+    final collection = await scope.collections.watchById(collectionId).first;
+    await scope.pages.create(
+      spaceId: collection.spaceId,
+      collectionId: collectionId,
     );
   }
 

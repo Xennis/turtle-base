@@ -5,10 +5,15 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/widgets/name_prompt_dialog.dart';
 
+/// A dropdown selects the current space instead of listing every space
+/// with its content at once - spaces are meant to be separate areas,
+/// only one is shown at a time.
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key, required this.navigation});
 
   final AppNavigationController navigation;
+
+  static const newSpaceSentinel = '__new_space__';
 
   @override
   Widget build(BuildContext context) {
@@ -17,23 +22,29 @@ class Sidebar extends StatelessWidget {
       stream: scope.spaces.watchAll(),
       builder: (context, snapshot) {
         final spaces = snapshot.data ?? const <Space>[];
-        return ListView(
+        // Select the first space once spaces are loaded, if none is
+        // selected yet (or the previously selected one is gone).
+        if (spaces.isNotEmpty &&
+            !spaces.any((s) => s.id == navigation.selectedSpaceId)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            navigation.selectSpace(spaces.first.id);
+          });
+        }
+
+        return Column(
           children: [
-            ListTile(
-              title: const Text('Spaces'),
-              trailing: IconButton(
-                icon: const Icon(Icons.add),
-                tooltip: 'New space',
-                onPressed: () async {
-                  final name = await promptForName(context, title: 'New space');
-                  if (name != null) {
-                    await scope.spaces.create(name: name);
-                  }
+            _SpaceSelector(spaces: spaces, navigation: navigation),
+            const Divider(height: 1),
+            Expanded(
+              child: ListenableBuilder(
+                listenable: navigation,
+                builder: (context, _) {
+                  final spaceId = navigation.selectedSpaceId;
+                  if (spaceId == null) return const SizedBox.shrink();
+                  return _SpaceContent(spaceId: spaceId, navigation: navigation);
                 },
               ),
             ),
-            for (final space in spaces)
-              _SpaceSection(space: space, navigation: navigation),
           ],
         );
       },
@@ -41,23 +52,96 @@ class Sidebar extends StatelessWidget {
   }
 }
 
-class _SpaceSection extends StatelessWidget {
-  const _SpaceSection({required this.space, required this.navigation});
+class _SpaceSelector extends StatelessWidget {
+  const _SpaceSelector({required this.spaces, required this.navigation});
 
-  final Space space;
+  final List<Space> spaces;
   final AppNavigationController navigation;
 
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
-    return ExpansionTile(
-      initiallyExpanded: true,
-      leading: const Icon(Icons.folder_outlined),
-      title: Text(space.name),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
+    return ListenableBuilder(
+      listenable: navigation,
+      builder: (context, _) {
+        final selectedId = navigation.selectedSpaceId;
+        final matches = spaces.where((s) => s.id == selectedId);
+        final selectedSpace = matches.isEmpty ? null : matches.first;
+
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  underline: const SizedBox.shrink(),
+                  value: selectedSpace?.id,
+                  items: [
+                    for (final space in spaces)
+                      DropdownMenuItem(value: space.id, child: Text(space.name)),
+                    const DropdownMenuItem(
+                      value: Sidebar.newSpaceSentinel,
+                      child: Row(
+                        children: [
+                          Icon(Icons.add, size: 18),
+                          SizedBox(width: 8),
+                          Text('New space'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) async {
+                    if (value == null) return;
+                    if (value == Sidebar.newSpaceSentinel) {
+                      final name = await promptForName(context, title: 'New space');
+                      if (name != null) {
+                        final id = await scope.spaces.create(name: name);
+                        navigation.selectSpace(id);
+                      }
+                      return;
+                    }
+                    navigation.selectSpace(value);
+                  },
+                ),
+              ),
+              if (selectedSpace != null)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Rename space',
+                  onPressed: () async {
+                    final name = await promptForName(
+                      context,
+                      title: 'Rename space',
+                      initialValue: selectedSpace.name,
+                    );
+                    if (name != null) {
+                      await scope.spaces.rename(selectedSpace.id, name);
+                    }
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SpaceContent extends StatelessWidget {
+  const _SpaceContent({required this.spaceId, required this.navigation});
+
+  final String spaceId;
+  final AppNavigationController navigation;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = AppScope.of(context);
+    return ListView(
+      children: [
+        ListTile(
+          title: const Text('Collections'),
+          trailing: IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'New collection',
             onPressed: () async {
@@ -66,61 +150,40 @@ class _SpaceSection extends StatelessWidget {
               // No starter field: every entry already has a title
               // (see PagesRepository) - that's the grid's first column,
               // not a user-defined field.
-              await scope.collections.create(spaceId: space.id, name: name);
+              await scope.collections.create(spaceId: spaceId, name: name);
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Rename',
-            onPressed: () async {
-              final name = await promptForName(
-                context,
-                title: 'Rename space',
-                initialValue: space.name,
-              );
-              if (name != null) {
-                await scope.spaces.rename(space.id, name);
-              }
-            },
-          ),
-        ],
-      ),
-      children: [
+        ),
         StreamBuilder<List<Collection>>(
-          stream: scope.collections.watchAllInSpace(space.id),
+          stream: scope.collections.watchAllInSpace(spaceId),
           builder: (context, snapshot) {
             final collections = snapshot.data ?? const <Collection>[];
             return Column(
               children: [
                 for (final collection in collections)
-                  ListenableBuilder(
-                    listenable: navigation,
-                    builder: (context, _) => ListTile(
-                      leading: const Icon(Icons.table_chart_outlined),
-                      title: Text(collection.name),
-                      selected: navigation.selectedCollectionId == collection.id,
-                      onTap: () => navigation.selectCollection(collection.id),
-                    ),
+                  ListTile(
+                    leading: const Icon(Icons.table_chart_outlined),
+                    title: Text(collection.name),
+                    selected: navigation.selectedCollectionId == collection.id,
+                    onTap: () => navigation.selectCollection(collection.id),
                   ),
               ],
             );
           },
         ),
+        const Divider(),
         StreamBuilder<List<Page>>(
-          stream: scope.pages.watchTopLevelInSpace(space.id),
+          stream: scope.pages.watchTopLevelInSpace(spaceId),
           builder: (context, snapshot) {
             final pages = snapshot.data ?? const <Page>[];
             return Column(
               children: [
                 for (final page in pages)
-                  ListenableBuilder(
-                    listenable: navigation,
-                    builder: (context, _) => ListTile(
-                      leading: const Icon(Icons.description_outlined),
-                      title: Text(page.title.isEmpty ? 'Untitled' : page.title),
-                      selected: navigation.selectedPageId == page.id,
-                      onTap: () => navigation.selectPage(page.id),
-                    ),
+                  ListTile(
+                    leading: const Icon(Icons.description_outlined),
+                    title: Text(page.title.isEmpty ? 'Untitled' : page.title),
+                    selected: navigation.selectedPageId == page.id,
+                    onTap: () => navigation.selectPage(page.id),
                   ),
               ],
             );

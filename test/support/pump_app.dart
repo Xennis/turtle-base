@@ -31,5 +31,8 @@ Future<AppDatabase> pumpApp(WidgetTester tester) async {
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
+  // One more pump for the sidebar's default-space auto-select
+  // (postFrameCallback -> notifyListeners -> rebuild) to settle.
+  await tester.pump();
   return database;
 }
