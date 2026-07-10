@@ -9,9 +9,8 @@ import 'package:turtle_base/features/tables/data/fields_repository.dart';
 /// Makes the database and repositories available to the widget tree,
 /// built with the plain InheritedWidget instead of a DI package.
 class AppScope extends InheritedWidget {
-  AppScope({super.key, required AppDatabase database, required super.child})
-    : database = database,
-      spaces = SpacesRepository(database),
+  AppScope({super.key, required this.database, required super.child})
+    : spaces = SpacesRepository(database),
       collections = CollectionsRepository(database),
       fields = FieldsRepository(database),
       pages = PagesRepository(database),

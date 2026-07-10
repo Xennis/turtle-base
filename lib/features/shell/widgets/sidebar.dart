@@ -172,6 +172,17 @@ class _SpaceContent extends StatelessWidget {
           },
         ),
         const Divider(),
+        ListTile(
+          title: const Text('Pages'),
+          trailing: IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New page',
+            onPressed: () async {
+              final id = await scope.pages.create(spaceId: spaceId);
+              navigation.selectPage(id);
+            },
+          ),
+        ),
         StreamBuilder<List<Page>>(
           stream: scope.pages.watchTopLevelInSpace(spaceId),
           builder: (context, snapshot) {

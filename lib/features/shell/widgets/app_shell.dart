@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turtle_base/features/pages/widgets/page_detail_view.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/widgets/sidebar.dart';
 import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
@@ -63,11 +64,9 @@ class _MainContent extends StatelessWidget {
         onEdit: navigation.startEditingCollection,
       );
     }
-    // Page-View doesn't exist yet (later phase).
-    final label = switch (navigation.selectedPageId) {
-      final id? => 'Page selected: $id',
-      null => 'Select a collection or page',
-    };
-    return Center(child: Text(label));
+    if (navigation.selectedPageId case final id?) {
+      return PageDetailView(pageId: id);
+    }
+    return const Center(child: Text('Select a collection or page'));
   }
 }

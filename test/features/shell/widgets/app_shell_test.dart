@@ -116,4 +116,28 @@ void main() {
     expect(find.byType(TrinaGrid), findsOneWidget);
     expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('creates a page via the sidebar and opens it', (
+    WidgetTester tester,
+  ) async {
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
+
+    await tester.tap(find.byTooltip('New page'));
+    // Creating a page does real FFI I/O (an insert), triggered from a
+    // button handler rather than test code directly - same pattern as
+    // Add row, needs runAsync to actually complete.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
+
+    // The new page is selected and open (shown as "Untitled" both in
+    // the sidebar and as the Page-View's heading), while the sidebar
+    // itself is still visible.
+    expect(find.text('Untitled'), findsWidgets);
+    expect(find.text('Default'), findsOneWidget);
+
+    final pages = await database.select(database.pages).get();
+    expect(pages, hasLength(1));
+    expect(pages.single.collectionId, isNull);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

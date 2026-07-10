@@ -1,6 +1,8 @@
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -18,6 +20,22 @@ AppDatabase newTestDatabase() {
   );
 }
 
+/// AppFlowyEditor needs its localizations delegate registered, same as
+/// the real app's MaterialApp (see main.dart) - shared by any test
+/// that pumps a widget tree that may reach it.
+Widget wrapWithAppLocalizations(Widget home) {
+  return MaterialApp(
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      AppFlowyEditorLocalizations.delegate,
+    ],
+    supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+    home: home,
+  );
+}
+
 /// Sets up and pumps the full app against a fresh in-memory database.
 ///
 /// NativeDatabase does real FFI I/O for migration/seeding, which needs
@@ -27,7 +45,10 @@ Future<AppDatabase> pumpApp(WidgetTester tester) async {
   final database = newTestDatabase();
   await tester.runAsync(() => database.currentUserId());
   await tester.pumpWidget(
-    AppScope(database: database, child: const MaterialApp(home: AppShell())),
+    AppScope(
+      database: database,
+      child: wrapWithAppLocalizations(const AppShell()),
+    ),
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
