@@ -27,7 +27,7 @@ void main() {
         AppScope(
           database: database,
           child: MaterialApp(
-            home: CollectionEditPage(collectionId: collectionId, onDone: () {}),
+            home: CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
           ),
         ),
       );
@@ -76,8 +76,8 @@ void main() {
       storedFields = await database.select(database.fields).get();
       expect(storedFields.single.type, 'number');
 
-      // Delete it.
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      // Delete it (not the collection's own delete button in the AppBar).
+      await tester.tap(find.byTooltip('Delete field'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -106,7 +106,7 @@ void main() {
       AppScope(
         database: database,
         child: MaterialApp(
-          home: CollectionEditPage(collectionId: collectionId, onDone: () {}),
+          home: CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
         ),
       ),
     );

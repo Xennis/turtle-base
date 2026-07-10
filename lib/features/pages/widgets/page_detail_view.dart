@@ -7,6 +7,7 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/pages/widgets/block_document.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
 import 'package:turtle_base/features/pages/widgets/page_properties_header.dart';
+import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 
 /// Shows a page's title and its blocks, editable. Works for both
 /// freestanding pages and collection entries - they're the same
@@ -116,6 +117,15 @@ class _PageDetailViewState extends State<PageDetailView> {
     scope.pages.rename(widget.pageId, value.trim());
   }
 
+  Future<void> _deleteEntry(BuildContext context, String collectionId) async {
+    final scope = AppScope.of(context);
+    final confirmed = await confirmDelete(context, title: 'Delete this entry?');
+    if (!confirmed) return;
+    await scope.pages.softDelete(widget.pageId);
+    if (!mounted) return;
+    widget.onOpenCollection?.call(collectionId);
+  }
+
   void _scheduleSync(AppScope scope, EditorState editorState) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
@@ -142,10 +152,19 @@ class _PageDetailViewState extends State<PageDetailView> {
         if (collectionId != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              tooltip: 'Back to collection',
-              onPressed: () => widget.onOpenCollection?.call(collectionId),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Back to collection',
+                  onPressed: () => widget.onOpenCollection?.call(collectionId),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete entry',
+                  onPressed: () => _deleteEntry(context, collectionId),
+                ),
+              ],
             ),
           ),
         Padding(

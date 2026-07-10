@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
@@ -12,10 +13,15 @@ class CollectionEditPage extends StatefulWidget {
     super.key,
     required this.collectionId,
     required this.onDone,
+    required this.onDeleted,
   });
 
   final String collectionId;
   final VoidCallback onDone;
+
+  /// Called after the collection itself is deleted - unlike [onDone],
+  /// there's no grid left to go back to.
+  final VoidCallback onDeleted;
 
   @override
   State<CollectionEditPage> createState() => _CollectionEditPageState();
@@ -107,6 +113,24 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
           onPressed: widget.onDone,
         ),
         title: const Text('Edit collection'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            // Distinct from the sidebar row's "Delete collection" -
+            // both can be visible at once (sidebar stays visible while
+            // editing a collection, see AppShell/_MainContent).
+            tooltip: 'Delete this collection',
+            onPressed: () async {
+              final confirmed = await confirmDelete(
+                context,
+                title: 'Delete this collection?',
+              );
+              if (!confirmed) return;
+              await scope.collections.softDelete(widget.collectionId);
+              widget.onDeleted();
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<Collection>(
         stream: scope.collections.watchById(widget.collectionId),

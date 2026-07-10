@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
+import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 import 'package:turtle_base/features/shell/widgets/name_prompt_dialog.dart';
 
 /// A dropdown selects the current space instead of listing every space
@@ -105,7 +106,7 @@ class _SpaceSelector extends StatelessWidget {
                   },
                 ),
               ),
-              if (selectedSpace != null)
+              if (selectedSpace != null) ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   tooltip: 'Rename space',
@@ -120,6 +121,30 @@ class _SpaceSelector extends StatelessWidget {
                     }
                   },
                 ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: spaces.length > 1
+                      ? 'Delete space'
+                      : "Can't delete the last space",
+                  // Architecture guarantees at least one space always
+                  // exists - disable rather than let softDelete violate it.
+                  onPressed: spaces.length > 1
+                      ? () async {
+                          final confirmed = await confirmDelete(
+                            context,
+                            title: "Delete space '${selectedSpace.name}'?",
+                            message:
+                                "Its collections and pages will stop being "
+                                "shown until it's restored - there's no "
+                                'Trash UI for that yet.',
+                          );
+                          if (confirmed) {
+                            await scope.spaces.softDelete(selectedSpace.id);
+                          }
+                        }
+                      : null,
+                ),
+              ],
             ],
           ),
         );
@@ -166,6 +191,21 @@ class _SpaceContent extends StatelessWidget {
                     title: Text(collection.name),
                     selected: navigation.selectedCollectionId == collection.id,
                     onTap: () => navigation.selectCollection(collection.id),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Delete collection',
+                      onPressed: () async {
+                        final confirmed = await confirmDelete(
+                          context,
+                          title: "Delete '${collection.name}'?",
+                        );
+                        if (!confirmed) return;
+                        if (navigation.selectedCollectionId == collection.id) {
+                          navigation.clearSelection();
+                        }
+                        await scope.collections.softDelete(collection.id);
+                      },
+                    ),
                   ),
               ],
             );
@@ -195,6 +235,22 @@ class _SpaceContent extends StatelessWidget {
                     title: Text(page.title.isEmpty ? 'Untitled' : page.title),
                     selected: navigation.selectedPageId == page.id,
                     onTap: () => navigation.selectPage(page.id),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Delete page',
+                      onPressed: () async {
+                        final confirmed = await confirmDelete(
+                          context,
+                          title:
+                              "Delete '${page.title.isEmpty ? 'Untitled' : page.title}'?",
+                        );
+                        if (!confirmed) return;
+                        if (navigation.selectedPageId == page.id) {
+                          navigation.clearSelection();
+                        }
+                        await scope.pages.softDelete(page.id);
+                      },
+                    ),
                   ),
               ],
             );

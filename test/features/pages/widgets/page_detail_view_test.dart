@@ -183,4 +183,56 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back));
     expect(openedCollectionId, collectionId);
   }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('deleting an entry soft-deletes it and returns to the collection', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String pageId;
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      collectionId = await CollectionsRepository(
+        database,
+      ).create(spaceId: spaceId, name: 'Tasks');
+      pageId = await PagesRepository(database).create(
+        spaceId: spaceId,
+        collectionId: collectionId,
+        title: 'Buy milk',
+      );
+    });
+
+    String? openedCollectionId;
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          Scaffold(
+            body: PageDetailView(
+              pageId: pageId,
+              onOpenCollection: (id) => openedCollectionId = id,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.byTooltip('Delete entry'));
+    await tester.pump();
+    await tester.tap(find.text('Delete'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(openedCollectionId, collectionId);
+    final entry = await (database.select(
+      database.pages,
+    )..where((p) => p.id.equals(pageId))).getSingle();
+    expect(entry.deletedAt, isNotNull);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

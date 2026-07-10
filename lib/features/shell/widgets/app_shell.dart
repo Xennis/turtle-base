@@ -29,7 +29,10 @@ class _AppShellState extends State<AppShell> {
       body: Row(
         children: [
           SizedBox(
-            width: 260,
+            // Widened from 260 to fit the space selector's rename +
+            // delete icon buttons alongside the dropdown without
+            // overflowing.
+            width: 300,
             child: Sidebar(navigation: _navigation),
           ),
           const VerticalDivider(width: 1),
@@ -57,6 +60,7 @@ class _MainContent extends StatelessWidget {
         return CollectionEditPage(
           collectionId: id,
           onDone: navigation.stopEditingCollection,
+          onDeleted: navigation.clearSelection,
         );
       }
       return CollectionView(

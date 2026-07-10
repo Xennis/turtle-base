@@ -52,4 +52,16 @@ class AppNavigationController extends ChangeNotifier {
     _isEditingCollection = false;
     notifyListeners();
   }
+
+  /// Clears the content-area selection, leaving the space selection
+  /// untouched - used when the currently open collection/page has just
+  /// been deleted, since nothing in the sidebar disappearing on its own
+  /// clears this (Collections-/PagesRepository.watchById aren't
+  /// filtered by deletedAt, unlike the sidebar's list streams).
+  void clearSelection() {
+    _selectedCollectionId = null;
+    _selectedPageId = null;
+    _isEditingCollection = false;
+    notifyListeners();
+  }
 }
