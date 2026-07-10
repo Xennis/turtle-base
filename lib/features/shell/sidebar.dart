@@ -4,7 +4,6 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/name_prompt_dialog.dart';
-import 'package:turtle_base/features/tables/field_type.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key, required this.navigation});
@@ -64,17 +63,10 @@ class _SpaceSection extends StatelessWidget {
             onPressed: () async {
               final name = await promptForName(context, title: 'New collection');
               if (name == null) return;
-              final collectionId = await scope.collections.create(
-                spaceId: space.id,
-                name: name,
-              );
-              // A collection always starts with one column, so the
-              // grid isn't empty right after creation.
-              await scope.fields.create(
-                collectionId: collectionId,
-                name: 'Name',
-                type: FieldType.text,
-              );
+              // No starter field: every entry already has a title
+              // (see PagesRepository) - that's the grid's first column,
+              // not a user-defined field.
+              await scope.collections.create(spaceId: space.id, name: name);
             },
           ),
           IconButton(

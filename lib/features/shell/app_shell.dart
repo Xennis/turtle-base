@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turtle_base/features/shell/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/sidebar.dart';
+import 'package:turtle_base/features/tables/collection_view.dart';
 
 /// Fixed side-by-side layout for now. Switching to a drawer on narrow
 /// screens (see UI_UX.md) is a follow-up, not part of this first step.
@@ -33,7 +34,7 @@ class _AppShellState extends State<AppShell> {
           Expanded(
             child: ListenableBuilder(
               listenable: _navigation,
-              builder: (context, _) => _ContentPlaceholder(navigation: _navigation),
+              builder: (context, _) => _MainContent(navigation: _navigation),
             ),
           ),
         ],
@@ -42,21 +43,21 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-class _ContentPlaceholder extends StatelessWidget {
-  const _ContentPlaceholder({required this.navigation});
+class _MainContent extends StatelessWidget {
+  const _MainContent({required this.navigation});
 
   final AppNavigationController navigation;
 
   @override
   Widget build(BuildContext context) {
-    final String label;
     if (navigation.selectedCollectionId case final id?) {
-      label = 'Collection selected: $id';
-    } else if (navigation.selectedPageId case final id?) {
-      label = 'Page selected: $id';
-    } else {
-      label = 'Select a collection or page';
+      return CollectionView(collectionId: id);
     }
+    // Page-View doesn't exist yet (later phase).
+    final label = switch (navigation.selectedPageId) {
+      final id? => 'Page selected: $id',
+      null => 'Select a collection or page',
+    };
     return Center(child: Text(label));
   }
 }

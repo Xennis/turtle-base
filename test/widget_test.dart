@@ -2,9 +2,15 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/features/pages/pages_repository.dart';
 import 'package:turtle_base/features/shell/app_shell.dart';
+import 'package:turtle_base/features/spaces/spaces_repository.dart';
+import 'package:turtle_base/features/tables/collections_repository.dart';
+import 'package:turtle_base/features/tables/field_type.dart';
+import 'package:turtle_base/features/tables/fields_repository.dart';
 
 /// Sets up and pumps the app against a fresh in-memory database.
 ///
@@ -72,7 +78,7 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('creates a collection with a starter column', (
+  testWidgets('creates a collection with no user-defined fields yet', (
     WidgetTester tester,
   ) async {
     final database = await pumpApp(tester);
@@ -89,10 +95,59 @@ void main() {
 
     await tester.tap(find.text('Tasks'));
     await tester.pump();
-    expect(find.textContaining('Collection selected:'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 50));
 
+    // No starter field: an entry's title (not a field) is the grid's
+    // built-in first column, see CollectionView.
+    expect(find.byType(TrinaGrid), findsOneWidget);
     final fields = await database.select(database.fields).get();
-    expect(fields.map((f) => f.name), ['Name']);
-    expect(fields.single.type, 'text');
+    expect(fields, isEmpty);
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('collection view renders field columns and entry values', (
+    WidgetTester tester,
+  ) async {
+    // Set up all data before pumping the widget at all, rather than
+    // writing while StreamBuilders are already subscribed - the latter
+    // hangs the test (drift's change notification doesn't seem to
+    // cross back from runAsync's real zone into the fake test zone
+    // cleanly once a widget tree is already listening).
+    final database = AppDatabase.withExecutor(
+      DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true),
+    );
+    addTearDown(database.close);
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final collections = CollectionsRepository(database);
+      final fields = FieldsRepository(database);
+      final pages = PagesRepository(database);
+
+      final collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+      final priorityField = await fields.create(
+        collectionId: collectionId,
+        name: 'Priority',
+        type: FieldType.text,
+      );
+      final entryId = await pages.create(
+        spaceId: spaceId,
+        collectionId: collectionId,
+        title: 'Buy milk',
+      );
+      await pages.setPropertyValue(entryId, priorityField, 'High');
+    });
+
+    await tester.pumpWidget(
+      AppScope(database: database, child: const MaterialApp(home: AppShell())),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.text('Tasks'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Priority'), findsOneWidget); // column header
+    expect(find.text('Buy milk'), findsOneWidget); // title cell
+    expect(find.text('High'), findsOneWidget); // property cell
   }, timeout: const Timeout(Duration(seconds: 30)));
 }
