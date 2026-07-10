@@ -46,7 +46,7 @@ void main() {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
-    await tester.tap(find.widgetWithIcon(IconButton, Icons.add));
+    await tester.tap(find.byTooltip('New space'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'Fitness');
     await tester.tap(find.text('Save'));
@@ -70,5 +70,29 @@ void main() {
 
     expect(find.text('Default'), findsNothing);
     expect(find.text('Home'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('creates a collection with a starter column', (
+    WidgetTester tester,
+  ) async {
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
+
+    await tester.tap(find.byTooltip('New collection'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Tasks');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Tasks'), findsOneWidget);
+
+    await tester.tap(find.text('Tasks'));
+    await tester.pump();
+    expect(find.textContaining('Collection selected:'), findsOneWidget);
+
+    final fields = await database.select(database.fields).get();
+    expect(fields.map((f) => f.name), ['Name']);
+    expect(fields.single.type, 'text');
   }, timeout: const Timeout(Duration(seconds: 30)));
 }

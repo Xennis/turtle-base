@@ -4,6 +4,7 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/name_prompt_dialog.dart';
+import 'package:turtle_base/features/tables/field_type.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key, required this.navigation});
@@ -54,19 +55,43 @@ class _SpaceSection extends StatelessWidget {
       initiallyExpanded: true,
       leading: const Icon(Icons.folder_outlined),
       title: Text(space.name),
-      trailing: IconButton(
-        icon: const Icon(Icons.edit_outlined),
-        tooltip: 'Rename',
-        onPressed: () async {
-          final name = await promptForName(
-            context,
-            title: 'Rename space',
-            initialValue: space.name,
-          );
-          if (name != null) {
-            await scope.spaces.rename(space.id, name);
-          }
-        },
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New collection',
+            onPressed: () async {
+              final name = await promptForName(context, title: 'New collection');
+              if (name == null) return;
+              final collectionId = await scope.collections.create(
+                spaceId: space.id,
+                name: name,
+              );
+              // A collection always starts with one column, so the
+              // grid isn't empty right after creation.
+              await scope.fields.create(
+                collectionId: collectionId,
+                name: 'Name',
+                type: FieldType.text,
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Rename',
+            onPressed: () async {
+              final name = await promptForName(
+                context,
+                title: 'Rename space',
+                initialValue: space.name,
+              );
+              if (name != null) {
+                await scope.spaces.rename(space.id, name);
+              }
+            },
+          ),
+        ],
       ),
       children: [
         StreamBuilder<List<Collection>>(
