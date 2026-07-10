@@ -4,13 +4,18 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
-/// Its own page (pushed via Navigator) rather than a sheet/dialog - a
-/// sheet turned out cramped in practice, and this also has room for
-/// the collection's own name, not just its fields.
+/// Shown in the same content area as CollectionView (see
+/// AppShell/_MainContent) rather than pushed via Navigator, so the
+/// sidebar stays visible. [onDone] goes back to the grid.
 class CollectionEditPage extends StatefulWidget {
-  const CollectionEditPage({super.key, required this.collectionId});
+  const CollectionEditPage({
+    super.key,
+    required this.collectionId,
+    required this.onDone,
+  });
 
   final String collectionId;
+  final VoidCallback onDone;
 
   @override
   State<CollectionEditPage> createState() => _CollectionEditPageState();
@@ -18,26 +23,51 @@ class CollectionEditPage extends StatefulWidget {
 
 class _CollectionEditPageState extends State<CollectionEditPage> {
   TextEditingController? _nameController;
+  FocusNode? _nameFocusNode;
   final _newFieldNameController = TextEditingController();
   FieldType _newFieldType = FieldType.text;
   final _fieldNameControllers = <String, TextEditingController>{};
+  final _fieldFocusNodes = <String, FocusNode>{};
 
   @override
   void dispose() {
     _nameController?.dispose();
+    _nameFocusNode?.dispose();
     _newFieldNameController.dispose();
     for (final controller in _fieldNameControllers.values) {
       controller.dispose();
     }
+    for (final focusNode in _fieldFocusNodes.values) {
+      focusNode.dispose();
+    }
     super.dispose();
   }
 
+  void _saveName(String value, Future<void> Function(String) save) {
+    final trimmed = value.trim();
+    if (trimmed.isNotEmpty) save(trimmed);
+  }
+
   TextEditingController _fieldNameControllerFor(Field field) {
-    final existing = _fieldNameControllers[field.id];
+    return _fieldNameControllers[field.id] ??= TextEditingController(
+      text: field.name,
+    );
+  }
+
+  FocusNode _fieldFocusNodeFor(Field field, FieldsRepository fields) {
+    final existing = _fieldFocusNodes[field.id];
     if (existing != null) return existing;
-    final controller = TextEditingController(text: field.name);
-    _fieldNameControllers[field.id] = controller;
-    return controller;
+    final focusNode = FocusNode();
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus) {
+        _saveName(
+          _fieldNameControllerFor(field).text,
+          (name) => fields.rename(field.id, name),
+        );
+      }
+    });
+    _fieldFocusNodes[field.id] = focusNode;
+    return focusNode;
   }
 
   Future<void> _addField(FieldsRepository fields) async {
@@ -56,7 +86,13 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit collection')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: widget.onDone,
+        ),
+        title: const Text('Edit collection'),
+      ),
       body: StreamBuilder<Collection>(
         stream: scope.collections.watchById(widget.collectionId),
         builder: (context, collectionSnapshot) {
@@ -65,63 +101,106 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
             return const Center(child: CircularProgressIndicator());
           }
           _nameController ??= TextEditingController(text: collection.name);
+          _nameFocusNode ??= FocusNode()
+            ..addListener(() {
+              if (!_nameFocusNode!.hasFocus) {
+                _saveName(
+                  _nameController!.text,
+                  (name) => scope.collections.rename(widget.collectionId, name),
+                );
+              }
+            });
 
-          return Padding(
+          return ListView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Name', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: _nameController,
-                  onSubmitted: (value) {
-                    final trimmed = value.trim();
-                    if (trimmed.isNotEmpty) {
-                      scope.collections.rename(widget.collectionId, trimmed);
-                    }
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text('Fields', style: Theme.of(context).textTheme.labelLarge),
-                const Divider(),
-                Expanded(
-                  child: StreamBuilder<List<Field>>(
-                    stream: scope.fields.watchAllInCollection(widget.collectionId),
-                    builder: (context, fieldsSnapshot) {
-                      final fields = fieldsSnapshot.data ?? const <Field>[];
-                      // Drop controllers of fields that no longer exist
-                      // (deleted, or from a previous collection).
-                      _fieldNameControllers.removeWhere((id, controller) {
-                        final stillExists = fields.any((f) => f.id == id);
-                        if (!stillExists) controller.dispose();
-                        return !stillExists;
-                      });
-                      if (fields.isEmpty) {
-                        return const Center(child: Text('No fields yet'));
-                      }
-                      return ListView(
-                        children: [
-                          for (final field in fields)
-                            _FieldRow(
-                              field: field,
-                              nameController: _fieldNameControllerFor(field),
-                              fields: scope.fields,
-                            ),
-                        ],
-                      );
-                    },
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Collection',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Name', style: Theme.of(context).textTheme.labelLarge),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: _nameController,
+                        focusNode: _nameFocusNode,
+                        onSubmitted: (value) => _saveName(
+                          value,
+                          (name) => scope.collections.rename(widget.collectionId, name),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Divider(),
-                _AddFieldRow(
-                  nameController: _newFieldNameController,
-                  type: _newFieldType,
-                  onTypeChanged: (type) => setState(() => _newFieldType = type),
-                  onAdd: () => _addField(scope.fields),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Fields',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      StreamBuilder<List<Field>>(
+                        stream: scope.fields.watchAllInCollection(
+                          widget.collectionId,
+                        ),
+                        builder: (context, fieldsSnapshot) {
+                          final fields = fieldsSnapshot.data ?? const <Field>[];
+                          // Drop controllers/focus nodes of fields that
+                          // no longer exist (deleted, or from a
+                          // previous collection).
+                          _fieldNameControllers.removeWhere((id, controller) {
+                            final stillExists = fields.any((f) => f.id == id);
+                            if (!stillExists) controller.dispose();
+                            return !stillExists;
+                          });
+                          _fieldFocusNodes.removeWhere((id, focusNode) {
+                            final stillExists = fields.any((f) => f.id == id);
+                            if (!stillExists) focusNode.dispose();
+                            return !stillExists;
+                          });
+                          return Column(
+                            children: [
+                              if (fields.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Text('No fields yet'),
+                                ),
+                              for (final field in fields)
+                                _FieldRow(
+                                  field: field,
+                                  nameController: _fieldNameControllerFor(field),
+                                  focusNode: _fieldFocusNodeFor(field, scope.fields),
+                                  fields: scope.fields,
+                                ),
+                              const Divider(),
+                              _AddFieldRow(
+                                nameController: _newFieldNameController,
+                                type: _newFieldType,
+                                onTypeChanged: (type) =>
+                                    setState(() => _newFieldType = type),
+                                onAdd: () => _addField(scope.fields),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
@@ -133,11 +212,13 @@ class _FieldRow extends StatelessWidget {
   const _FieldRow({
     required this.field,
     required this.nameController,
+    required this.focusNode,
     required this.fields,
   });
 
   final Field field;
   final TextEditingController nameController;
+  final FocusNode focusNode;
   final FieldsRepository fields;
 
   @override
@@ -149,6 +230,7 @@ class _FieldRow extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: nameController,
+              focusNode: focusNode,
               onSubmitted: (value) {
                 final trimmed = value.trim();
                 if (trimmed.isNotEmpty) fields.rename(field.id, trimmed);

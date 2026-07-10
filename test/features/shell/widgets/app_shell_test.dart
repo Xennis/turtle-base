@@ -72,4 +72,40 @@ void main() {
     final fields = await database.select(database.fields).get();
     expect(fields, isEmpty);
   }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('sidebar stays visible while editing a collection', (
+    WidgetTester tester,
+  ) async {
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
+
+    await tester.tap(find.byTooltip('New collection'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Tasks');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.text('Tasks'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Edit collection'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // The edit page is showing (its own "Fields" section)...
+    expect(find.text('Fields'), findsOneWidget);
+    // ...while the sidebar, a sibling in the same Row, is still there.
+    expect(find.text('Default'), findsOneWidget);
+    expect(find.byTooltip('New space'), findsOneWidget);
+
+    // Going back returns to the grid, still with the sidebar visible.
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byType(TrinaGrid), findsOneWidget);
+    expect(find.text('Default'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

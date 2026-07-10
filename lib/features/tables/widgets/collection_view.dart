@@ -5,15 +5,24 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
-import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 
 /// Grid view of a collection's entries, with inline cell editing for
 /// text/number/date/url. Edits are persisted immediately on commit
 /// (TrinaGrid's onChanged fires on Enter/Tab/blur, not per keystroke).
 class CollectionView extends StatelessWidget {
-  const CollectionView({super.key, required this.collectionId, this.onLoaded});
+  const CollectionView({
+    super.key,
+    required this.collectionId,
+    required this.onEdit,
+    this.onLoaded,
+  });
 
   final String collectionId;
+
+  /// Switches the content area to CollectionEditPage - a callback
+  /// rather than a Navigator.push, so the sidebar stays visible (see
+  /// AppShell/_MainContent).
+  final VoidCallback onEdit;
 
   /// Exposed for tests to reach the TrinaGridStateManager.
   final void Function(TrinaGridOnLoadedEvent event)? onLoaded;
@@ -39,12 +48,7 @@ class CollectionView extends StatelessWidget {
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Edit collection'),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              CollectionEditPage(collectionId: collectionId),
-                        ),
-                      ),
+                      onPressed: onEdit,
                     ),
                   ),
                   Expanded(

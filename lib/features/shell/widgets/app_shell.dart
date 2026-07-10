@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/widgets/sidebar.dart';
+import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 import 'package:turtle_base/features/tables/widgets/collection_view.dart';
 
 /// Fixed side-by-side layout for now. Switching to a drawer on narrow
@@ -51,7 +52,16 @@ class _MainContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (navigation.selectedCollectionId case final id?) {
-      return CollectionView(collectionId: id);
+      if (navigation.isEditingCollection) {
+        return CollectionEditPage(
+          collectionId: id,
+          onDone: navigation.stopEditingCollection,
+        );
+      }
+      return CollectionView(
+        collectionId: id,
+        onEdit: navigation.startEditingCollection,
+      );
     }
     // Page-View doesn't exist yet (later phase).
     final label = switch (navigation.selectedPageId) {

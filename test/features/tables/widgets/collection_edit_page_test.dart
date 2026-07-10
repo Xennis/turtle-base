@@ -26,7 +26,9 @@ void main() {
       await tester.pumpWidget(
         AppScope(
           database: database,
-          child: MaterialApp(home: CollectionEditPage(collectionId: collectionId)),
+          child: MaterialApp(
+            home: CollectionEditPage(collectionId: collectionId, onDone: () {}),
+          ),
         ),
       );
       await tester.pump();

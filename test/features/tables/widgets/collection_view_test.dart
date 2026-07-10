@@ -94,6 +94,7 @@ void main() {
         child: MaterialApp(
           home: CollectionView(
             collectionId: collectionId,
+            onEdit: () {},
             onLoaded: (event) => stateManager = event.stateManager,
           ),
         ),
