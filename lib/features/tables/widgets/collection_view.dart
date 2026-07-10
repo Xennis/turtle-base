@@ -4,9 +4,8 @@ import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
-import 'package:turtle_base/features/tables/widgets/field_editor_dialog.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
-import 'package:turtle_base/features/tables/data/fields_repository.dart';
+import 'package:turtle_base/features/tables/widgets/manage_fields_panel.dart';
 
 /// Grid view of a collection's entries, with inline cell editing for
 /// text/number/date/url. Edits are persisted immediately on commit
@@ -38,11 +37,10 @@ class CollectionView extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: OutlinedButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add field'),
-                      onPressed: () => showFieldEditorDialog(
+                      icon: const Icon(Icons.view_column_outlined),
+                      label: const Text('Manage fields'),
+                      onPressed: () => ManageFieldsPanel.show(
                         context,
-                        fields: scope.fields,
                         collectionId: collectionId,
                       ),
                     ),
@@ -53,7 +51,7 @@ class CollectionView extends StatelessWidget {
                     // data forces a fresh grid instead of stale rows.
                     child: TrinaGrid(
                       key: ValueKey(_gridVersion(fields, entries)),
-                      columns: _columnsFor(context, scope.fields, fields),
+                      columns: _columnsFor(fields),
                       rows: _rowsFor(fields, entries),
                       onChanged: (event) => _onCellChanged(scope, event),
                       onLoaded: onLoaded,
@@ -84,13 +82,9 @@ class CollectionView extends StatelessWidget {
     }
   }
 
-  List<TrinaColumn> _columnsFor(
-    BuildContext context,
-    FieldsRepository fieldsRepository,
-    List<Field> fields,
-  ) {
+  List<TrinaColumn> _columnsFor(List<Field> fields) {
     return [
-      // Not editable via the Field-Editor - it's the built-in title,
+      // Not editable via "Manage fields" - it's the built-in title,
       // not a user-defined field.
       TrinaColumn(title: 'Name', field: 'title', type: TrinaColumnType.text()),
       for (final field in fields)
@@ -98,17 +92,6 @@ class CollectionView extends StatelessWidget {
           title: field.name,
           field: field.id,
           type: _columnTypeFor(field),
-          titleRenderer: (rendererContext) => _FieldColumnTitle(
-            rendererContext: rendererContext,
-            onEdit: () => showFieldEditorDialog(
-              context,
-              fields: fieldsRepository,
-              collectionId: collectionId,
-              fieldId: field.id,
-              initialName: field.name,
-              initialType: FieldType.values.byName(field.type),
-            ),
-          ),
         ),
     ];
   }
@@ -150,39 +133,5 @@ class CollectionView extends StatelessWidget {
         .map((e) => '${e.id}:${e.updatedAt.millisecondsSinceEpoch}')
         .join(',');
     return '$fieldPart|$entryPart';
-  }
-}
-
-/// Column header with an edit icon opening the Field-Editor dialog.
-class _FieldColumnTitle extends StatelessWidget {
-  const _FieldColumnTitle({required this.rendererContext, required this.onEdit});
-
-  final TrinaColumnTitleRendererContext rendererContext;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: rendererContext.column.width,
-      height: rendererContext.height,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              rendererContext.column.title,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 16),
-            tooltip: 'Edit field',
-            onPressed: onEdit,
-            constraints: const BoxConstraints(minHeight: 28, minWidth: 28),
-            padding: EdgeInsets.zero,
-          ),
-        ],
-      ),
-    );
   }
 }
