@@ -5,7 +5,7 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
-import 'package:turtle_base/features/tables/widgets/manage_fields_panel.dart';
+import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 
 /// Grid view of a collection's entries, with inline cell editing for
 /// text/number/date/url. Edits are persisted immediately on commit
@@ -37,11 +37,13 @@ class CollectionView extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: OutlinedButton.icon(
-                      icon: const Icon(Icons.view_column_outlined),
-                      label: const Text('Manage fields'),
-                      onPressed: () => ManageFieldsPanel.show(
-                        context,
-                        collectionId: collectionId,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit collection'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              CollectionEditPage(collectionId: collectionId),
+                        ),
                       ),
                     ),
                   ),

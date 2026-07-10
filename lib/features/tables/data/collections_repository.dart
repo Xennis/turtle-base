@@ -19,6 +19,12 @@ class CollectionsRepository {
         .watch();
   }
 
+  Stream<Collection> watchById(String id) {
+    return (_db.select(
+      _db.collections,
+    )..where((c) => c.id.equals(id))).watchSingle();
+  }
+
   Future<String> create({
     required String spaceId,
     required String name,

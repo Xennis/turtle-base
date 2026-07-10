@@ -1,53 +1,42 @@
-// Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
-import 'package:flutter/material.dart' hide Page;
+import 'package:flutter/material.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
-/// Large, non-modal-feeling panel listing every field of a collection,
-/// each editable inline. Replaces a per-field dialog, which got
-/// cramped quickly (and would only get worse with e.g. multi-select
-/// option lists later).
-class ManageFieldsPanel extends StatefulWidget {
-  const ManageFieldsPanel({super.key, required this.collectionId});
+/// Its own page (pushed via Navigator) rather than a sheet/dialog - a
+/// sheet turned out cramped in practice, and this also has room for
+/// the collection's own name, not just its fields.
+class CollectionEditPage extends StatefulWidget {
+  const CollectionEditPage({super.key, required this.collectionId});
 
   final String collectionId;
 
-  static Future<void> show(BuildContext context, {required String collectionId}) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.85,
-        child: ManageFieldsPanel(collectionId: collectionId),
-      ),
-    );
-  }
-
   @override
-  State<ManageFieldsPanel> createState() => _ManageFieldsPanelState();
+  State<CollectionEditPage> createState() => _CollectionEditPageState();
 }
 
-class _ManageFieldsPanelState extends State<ManageFieldsPanel> {
+class _CollectionEditPageState extends State<CollectionEditPage> {
+  TextEditingController? _nameController;
   final _newFieldNameController = TextEditingController();
   FieldType _newFieldType = FieldType.text;
-  final _nameControllers = <String, TextEditingController>{};
+  final _fieldNameControllers = <String, TextEditingController>{};
 
   @override
   void dispose() {
+    _nameController?.dispose();
     _newFieldNameController.dispose();
-    for (final controller in _nameControllers.values) {
+    for (final controller in _fieldNameControllers.values) {
       controller.dispose();
     }
     super.dispose();
   }
 
-  TextEditingController _nameControllerFor(Field field) {
-    final existing = _nameControllers[field.id];
+  TextEditingController _fieldNameControllerFor(Field field) {
+    final existing = _fieldNameControllers[field.id];
     if (existing != null) return existing;
     final controller = TextEditingController(text: field.name);
-    _nameControllers[field.id] = controller;
+    _fieldNameControllers[field.id] = controller;
     return controller;
   }
 
@@ -66,64 +55,75 @@ class _ManageFieldsPanelState extends State<ManageFieldsPanel> {
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edit collection')),
+      body: StreamBuilder<Collection>(
+        stream: scope.collections.watchById(widget.collectionId),
+        builder: (context, collectionSnapshot) {
+          final collection = collectionSnapshot.data;
+          if (collection == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          _nameController ??= TextEditingController(text: collection.name);
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Name', style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _nameController,
+                  onSubmitted: (value) {
+                    final trimmed = value.trim();
+                    if (trimmed.isNotEmpty) {
+                      scope.collections.rename(widget.collectionId, trimmed);
+                    }
+                  },
+                ),
+                const SizedBox(height: 24),
+                Text('Fields', style: Theme.of(context).textTheme.labelLarge),
+                const Divider(),
                 Expanded(
-                  child: Text(
-                    'Manage fields',
-                    style: Theme.of(context).textTheme.titleLarge,
+                  child: StreamBuilder<List<Field>>(
+                    stream: scope.fields.watchAllInCollection(widget.collectionId),
+                    builder: (context, fieldsSnapshot) {
+                      final fields = fieldsSnapshot.data ?? const <Field>[];
+                      // Drop controllers of fields that no longer exist
+                      // (deleted, or from a previous collection).
+                      _fieldNameControllers.removeWhere((id, controller) {
+                        final stillExists = fields.any((f) => f.id == id);
+                        if (!stillExists) controller.dispose();
+                        return !stillExists;
+                      });
+                      if (fields.isEmpty) {
+                        return const Center(child: Text('No fields yet'));
+                      }
+                      return ListView(
+                        children: [
+                          for (final field in fields)
+                            _FieldRow(
+                              field: field,
+                              nameController: _fieldNameControllerFor(field),
+                              fields: scope.fields,
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
+                const Divider(),
+                _AddFieldRow(
+                  nameController: _newFieldNameController,
+                  type: _newFieldType,
+                  onTypeChanged: (type) => setState(() => _newFieldType = type),
+                  onAdd: () => _addField(scope.fields),
                 ),
               ],
             ),
-            const Divider(),
-            Expanded(
-              child: StreamBuilder<List<Field>>(
-                stream: scope.fields.watchAllInCollection(widget.collectionId),
-                builder: (context, snapshot) {
-                  final fields = snapshot.data ?? const <Field>[];
-                  // Drop controllers of fields that no longer exist
-                  // (deleted, or from a previous collection).
-                  _nameControllers.removeWhere((id, controller) {
-                    final stillExists = fields.any((f) => f.id == id);
-                    if (!stillExists) controller.dispose();
-                    return !stillExists;
-                  });
-                  if (fields.isEmpty) {
-                    return const Center(child: Text('No fields yet'));
-                  }
-                  return ListView(
-                    children: [
-                      for (final field in fields)
-                        _FieldRow(
-                          field: field,
-                          nameController: _nameControllerFor(field),
-                          fields: scope.fields,
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const Divider(),
-            _AddFieldRow(
-              nameController: _newFieldNameController,
-              type: _newFieldType,
-              onTypeChanged: (type) => setState(() => _newFieldType = type),
-              onAdd: () => _addField(scope.fields),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
