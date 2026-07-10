@@ -1,9 +1,15 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:turtle_base/core/database/tables/blocks_table.dart';
+import 'package:turtle_base/core/database/tables/collections_table.dart';
+import 'package:turtle_base/core/database/tables/fields_table.dart';
+import 'package:turtle_base/core/database/tables/pages_table.dart';
+import 'package:turtle_base/core/database/tables/spaces_table.dart';
+import 'package:turtle_base/core/database/tables/users_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [])
+@DriftDatabase(tables: [Users, Spaces, Collections, Fields, Pages, Blocks])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
