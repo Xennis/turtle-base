@@ -19,7 +19,9 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.12.0
+  # Held below 3.12.0 to match the Flutter version pinned in mise.toml
+  # (see the comment there for why).
+  sdk: ^3.11.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -36,12 +38,15 @@ dependencies:
   drift_flutter: ^0.3.0
   uuid: ^4.5.3
   trina_grid: ^2.2.2
+  appflowy_editor: ^6.2.0
+  flutter_localizations:
+    sdk: flutter
 dev_dependencies:
   flutter_test:
     sdk: flutter
   # Alphabetical order
   build_runner: ^2.15.1
-  drift_dev: ^2.34.2+1
+  drift_dev: ^2.34.0
   flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
