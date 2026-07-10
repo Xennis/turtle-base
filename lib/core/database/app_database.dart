@@ -54,4 +54,12 @@ class AppDatabase extends _$AppDatabase {
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'turtle_base');
   }
+
+  /// Single-user app: there is always exactly one user row (seeded on
+  /// first start). Repositories use this to fill createdBy/updatedBy
+  /// without every caller having to know or pass a user id.
+  Future<String> currentUserId() async {
+    final user = await select(users).getSingle();
+    return user.id;
+  }
 }
