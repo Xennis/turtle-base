@@ -8,6 +8,7 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/pages_repository.dart';
 import 'package:turtle_base/features/shell/app_shell.dart';
 import 'package:turtle_base/features/spaces/spaces_repository.dart';
+import 'package:turtle_base/features/tables/collection_view.dart';
 import 'package:turtle_base/features/tables/collections_repository.dart';
 import 'package:turtle_base/features/tables/field_type.dart';
 import 'package:turtle_base/features/tables/fields_repository.dart';
@@ -149,5 +150,69 @@ void main() {
     expect(find.text('Priority'), findsOneWidget); // column header
     expect(find.text('Buy milk'), findsOneWidget); // title cell
     expect(find.text('High'), findsOneWidget); // property cell
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('editing a cell persists the change', (
+    WidgetTester tester,
+  ) async {
+    final database = AppDatabase.withExecutor(
+      DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true),
+    );
+    addTearDown(database.close);
+
+    late String collectionId;
+    late String priorityFieldId;
+    late String entryId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final collections = CollectionsRepository(database);
+      final fields = FieldsRepository(database);
+      final pages = PagesRepository(database);
+
+      collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+      priorityFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Priority',
+        type: FieldType.text,
+      );
+      entryId = await pages.create(
+        spaceId: spaceId,
+        collectionId: collectionId,
+        title: 'Buy milk',
+      );
+      await pages.setPropertyValue(entryId, priorityFieldId, 'Low');
+    });
+
+    late TrinaGridStateManager stateManager;
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: MaterialApp(
+          home: CollectionView(
+            collectionId: collectionId,
+            onLoaded: (event) => stateManager = event.stateManager,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Edit the "title" (built-in) and the "Priority" field cell
+    // programmatically via the state manager, rather than simulating
+    // the exact tap/keyboard gesture sequence TrinaGrid expects.
+    final row = stateManager.rows.single;
+    stateManager.changeCellValue(row.cells['title']!, 'Buy oat milk');
+    stateManager.changeCellValue(row.cells[priorityFieldId]!, 'High');
+
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final entry = await (database.select(
+      database.pages,
+    )..where((p) => p.id.equals(entryId))).getSingle();
+    expect(entry.title, 'Buy oat milk');
+    expect(decodePageProperties(entry.properties)[priorityFieldId], 'High');
   }, timeout: const Timeout(Duration(seconds: 30)));
 }

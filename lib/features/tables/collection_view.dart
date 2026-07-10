@@ -6,12 +6,16 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/pages_repository.dart';
 import 'package:turtle_base/features/tables/field_type.dart';
 
-/// Grid view of a collection's entries. Read-only for now - editing
-/// cells is a later step.
+/// Grid view of a collection's entries, with inline cell editing for
+/// text/number/date/url. Edits are persisted immediately on commit
+/// (TrinaGrid's onChanged fires on Enter/Tab/blur, not per keystroke).
 class CollectionView extends StatelessWidget {
-  const CollectionView({super.key, required this.collectionId});
+  const CollectionView({super.key, required this.collectionId, this.onLoaded});
 
   final String collectionId;
+
+  /// Exposed for tests to reach the TrinaGridStateManager.
+  final void Function(TrinaGridOnLoadedEvent event)? onLoaded;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +37,8 @@ class CollectionView extends StatelessWidget {
                 key: ValueKey(_gridVersion(fields, entries)),
                 columns: _columnsFor(fields),
                 rows: _rowsFor(fields, entries),
+                onChanged: (event) => _onCellChanged(scope, event),
+                onLoaded: onLoaded,
               ),
             );
           },
@@ -41,20 +47,30 @@ class CollectionView extends StatelessWidget {
     );
   }
 
+  Future<void> _onCellChanged(
+    AppScope scope,
+    TrinaGridOnChangedEvent event,
+  ) async {
+    final entryId = event.row.data as String;
+    if (event.column.field == 'title') {
+      await scope.pages.rename(entryId, event.value.toString());
+    } else {
+      await scope.pages.setPropertyValue(
+        entryId,
+        event.column.field,
+        event.value.toString(),
+      );
+    }
+  }
+
   List<TrinaColumn> _columnsFor(List<Field> fields) {
     return [
-      TrinaColumn(
-        title: 'Name',
-        field: 'title',
-        type: TrinaColumnType.text(),
-        readOnly: true,
-      ),
+      TrinaColumn(title: 'Name', field: 'title', type: TrinaColumnType.text()),
       for (final field in fields)
         TrinaColumn(
           title: field.name,
           field: field.id,
           type: _columnTypeFor(field),
-          readOnly: true,
         ),
     ];
   }
@@ -63,6 +79,7 @@ class CollectionView extends StatelessWidget {
     return [
       for (final entry in entries)
         TrinaRow(
+          data: entry.id,
           cells: {
             'title': TrinaCell(value: entry.title),
             for (final field in fields)
