@@ -1,2 +1,2 @@
 [tools]
-flutter = "3.44"
+flutter = { version = "3.44", postinstall = "dart run build_runner build" }
