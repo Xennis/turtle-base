@@ -126,9 +126,15 @@ void main() {
     await tester.tap(find.byTooltip('New page'));
     // Creating a page does real FFI I/O (an insert), triggered from a
     // button handler rather than test code directly - same pattern as
-    // Add row, needs runAsync to actually complete.
+    // Add row, needs runAsync to actually complete. The opened page's
+    // PageDetailView itself then does its own FFI load, so runAsync
+    // twice with a plain bounded pump between - pumpAndSettle() hangs
+    // once AppFlowyEditor mounts (its cursor blink is a periodic timer).
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
     // The new page is selected and open (shown as "Untitled" both in
     // the sidebar and as the Page-View's heading), while the sidebar

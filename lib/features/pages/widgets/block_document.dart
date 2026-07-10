@@ -10,6 +10,11 @@ import 'package:turtle_base/core/database/app_database.dart';
 /// A block's `content` maps to its Node's `attributes` (the `data` in
 /// Node JSON) - `type` and `children` come from the block row itself
 /// and its children, not from `content`.
+///
+/// Each Node's id is set to its Block's id (appflowy_editor defaults
+/// to a random one otherwise) - block_sync.dart relies on this to tell
+/// "still the same block" from "the user created a new one" when
+/// syncing edits back to storage.
 Document buildDocument(List<Block> blocks) {
   if (blocks.isEmpty) {
     // AppFlowy's document rules require at least one editable node.
@@ -26,6 +31,7 @@ Document buildDocument(List<Block> blocks) {
 
   Node buildNode(Block block) {
     return Node(
+      id: block.id,
       type: block.type,
       attributes: Map<String, dynamic>.from(
         jsonDecode(block.content) as Map,

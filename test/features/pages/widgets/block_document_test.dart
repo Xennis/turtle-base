@@ -43,6 +43,10 @@ void main() {
     expect(document.root.children, hasLength(2));
     expect(document.root.children[0].delta!.toPlainText(), 'first');
     expect(document.root.children[1].delta!.toPlainText(), 'second');
+    // block_sync.dart relies on Node.id matching Block.id to tell
+    // edited blocks from newly-created ones.
+    expect(document.root.children[0].id, 'b1');
+    expect(document.root.children[1].id, 'b2');
   });
 
   test('nested blocks become child nodes, not siblings', () {

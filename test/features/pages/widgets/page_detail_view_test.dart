@@ -44,11 +44,24 @@ void main() {
     });
 
     await tester.pumpWidget(
-      AppScope(database: database, child: wrapWithAppLocalizations(PageDetailView(pageId: pageId))),
+      AppScope(
+        database: database,
+        // AppShell normally provides the Scaffold/Material ancestor
+        // PageDetailView's TextField needs - reproduce that here.
+        child: wrapWithAppLocalizations(Scaffold(body: PageDetailView(pageId: pageId))),
+      ),
     );
-    await tester.pumpAndSettle();
+    // PageDetailView's own initial load (didChangeDependencies) does
+    // real FFI I/O too, kicked off by the framework rather than test
+    // code or a button handler - same runAsync requirement applies.
+    // pumpAndSettle() hangs here - AppFlowyEditor apparently runs a
+    // periodic timer (e.g. cursor blink) that never lets it settle.
+    // Bounded pumps instead, same as most other tests in this project.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('My notes'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'My notes'), findsOneWidget);
     // find.textContaining doesn't match here - AppFlowyEditor renders
     // the paragraph as a RichText whose text is a TextSpan tree, and
     // toPlainText() (used below) walks it correctly where the finder's
@@ -86,11 +99,23 @@ void main() {
     });
 
     await tester.pumpWidget(
-      AppScope(database: database, child: wrapWithAppLocalizations(PageDetailView(pageId: pageId))),
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(Scaffold(body: PageDetailView(pageId: pageId))),
+      ),
     );
-    await tester.pumpAndSettle();
+    // pumpAndSettle() hangs here - AppFlowyEditor apparently runs a
+    // periodic timer (e.g. cursor blink) that never lets it settle.
+    // Bounded pumps instead, same as most other tests in this project.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Untitled'), findsOneWidget);
+    // "Untitled" is the title field's hint (empty title), not its
+    // actual text content - check the widget's decoration directly.
+    final titleField = tester.widget<TextField>(find.byType(TextField).first);
+    expect(titleField.decoration?.hintText, 'Untitled');
+    expect(titleField.controller?.text, isEmpty);
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(seconds: 30)));
 }

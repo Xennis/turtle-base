@@ -22,7 +22,13 @@ class BlocksRepository {
   /// [type] is a plain string (not an enum, unlike FieldType) - block
   /// types stay open-ended, since custom ones (code, YouTube embed) are
   /// planned to be added later without touching this repository.
+  ///
+  /// [id] can be supplied explicitly so it matches an id already
+  /// assigned elsewhere (e.g. appflowy_editor's Node.id when syncing a
+  /// new node back to storage, see block_sync.dart) - generated if
+  /// omitted, like every other repository's create().
   Future<String> create({
+    String? id,
     required String pageId,
     String? parentBlockId,
     required String type,
@@ -30,13 +36,13 @@ class BlocksRepository {
   }) async {
     final userId = await _db.currentUserId();
     final now = DateTime.now();
-    final id = _uuid.v4();
+    final resolvedId = id ?? _uuid.v4();
 
     await _db
         .into(_db.blocks)
         .insert(
           BlocksCompanion.insert(
-            id: id,
+            id: resolvedId,
             pageId: pageId,
             parentBlockId: Value(parentBlockId),
             type: type,
@@ -48,7 +54,7 @@ class BlocksRepository {
             updatedBy: userId,
           ),
         );
-    return id;
+    return resolvedId;
   }
 
   Future<void> updateContent(String id, String content) {
@@ -61,6 +67,18 @@ class BlocksRepository {
 
   Future<void> reorder(String id, int position) {
     return _update(id, BlocksCompanion(position: Value(position)));
+  }
+
+  /// Changes both parent and position together (e.g. indenting a block
+  /// into a list, or the editor otherwise restructuring the tree).
+  Future<void> move(String id, {String? parentBlockId, required int position}) {
+    return _update(
+      id,
+      BlocksCompanion(
+        parentBlockId: Value(parentBlockId),
+        position: Value(position),
+      ),
+    );
   }
 
   /// Does not cascade to nested blocks - not needed by any feature yet.
