@@ -98,6 +98,7 @@ void main() {
           home: CollectionView(
             collectionId: collectionId,
             onEdit: () {},
+            onOpenEntry: (_) {},
             onLoaded: (event) => stateManager = event.stateManager,
           ),
         ),
@@ -124,6 +125,58 @@ void main() {
     expect(decodePageProperties(entry.properties)[priorityFieldId], 'High');
   }, timeout: const Timeout(Duration(seconds: 30)));
 
+  testWidgets('double-tapping a row calls onOpenEntry with its page id', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    late String entryId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final collections = CollectionsRepository(database);
+      final pages = PagesRepository(database);
+
+      collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+      entryId = await pages.create(
+        spaceId: spaceId,
+        collectionId: collectionId,
+        title: 'Buy milk',
+      );
+    });
+
+    late TrinaGridStateManager stateManager;
+    String? openedEntryId;
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: MaterialApp(
+          home: CollectionView(
+            collectionId: collectionId,
+            onEdit: () {},
+            onOpenEntry: (id) => openedEntryId = id,
+            onLoaded: (event) => stateManager = event.stateManager,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Simulate the double-tap directly through the widget's own
+    // callback, same as _onCellChanged is exercised elsewhere via
+    // changeCellValue - avoids reproducing TrinaGrid's exact gesture
+    // sequence.
+    final grid = tester.widget<TrinaGrid>(find.byType(TrinaGrid));
+    final row = stateManager.rows.single;
+    grid.onRowDoubleTap!(
+      TrinaGridOnRowDoubleTapEvent(row: row, rowIdx: 0, cell: row.cells['title']!),
+    );
+
+    expect(openedEntryId, entryId);
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
   testWidgets('Add row creates a blank entry, edited inline afterwards', (
     WidgetTester tester,
   ) async {
@@ -146,6 +199,7 @@ void main() {
           home: CollectionView(
             collectionId: collectionId,
             onEdit: () {},
+            onOpenEntry: (_) {},
             onLoaded: (event) => stateManager = event.stateManager,
           ),
         ),
@@ -199,7 +253,11 @@ void main() {
       AppScope(
         database: database,
         child: MaterialApp(
-          home: CollectionView(collectionId: collectionId, onEdit: () {}),
+          home: CollectionView(
+            collectionId: collectionId,
+            onEdit: () {},
+            onOpenEntry: (_) {},
+          ),
         ),
       ),
     );

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/pages/widgets/block_document.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
+import 'package:turtle_base/features/pages/widgets/page_properties_header.dart';
 
 /// Shows a page's title and its blocks, editable. Works for both
 /// freestanding pages and collection entries - they're the same
@@ -19,9 +20,14 @@ import 'package:turtle_base/features/pages/widgets/block_sync.dart';
 /// race against yet (sync is a later phase), so "load once, edit live,
 /// write out" is enough for now.
 class PageDetailView extends StatefulWidget {
-  const PageDetailView({super.key, required this.pageId});
+  const PageDetailView({super.key, required this.pageId, this.onOpenCollection});
 
   final String pageId;
+
+  /// Called with the entry's collection id when the user taps the back
+  /// button - only shown for collection entries, not freestanding
+  /// pages (see build()).
+  final ValueChanged<String>? onOpenCollection;
 
   @override
   State<PageDetailView> createState() => _PageDetailViewState();
@@ -34,6 +40,7 @@ class _PageDetailViewState extends State<PageDetailView> {
   StreamSubscription<EditorTransactionValue>? _transactionSubscription;
   Timer? _debounceTimer;
   bool _initializedOnce = false;
+  String? _collectionId;
 
   @override
   void didChangeDependencies() {
@@ -68,6 +75,7 @@ class _PageDetailViewState extends State<PageDetailView> {
     _editorState = null;
     _titleController = null;
     _titleFocusNode = null;
+    _collectionId = null;
   }
 
   Future<void> _initialize() async {
@@ -100,6 +108,7 @@ class _PageDetailViewState extends State<PageDetailView> {
       _titleFocusNode = titleFocusNode;
       _editorState = editorState;
       _transactionSubscription = transactionSubscription;
+      _collectionId = page.collectionId;
     });
   }
 
@@ -126,9 +135,19 @@ class _PageDetailViewState extends State<PageDetailView> {
     if (editorState == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    final collectionId = _collectionId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (collectionId != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Back to collection',
+              onPressed: () => widget.onOpenCollection?.call(collectionId),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: TextField(
@@ -142,6 +161,11 @@ class _PageDetailViewState extends State<PageDetailView> {
             onSubmitted: (value) => _saveTitle(AppScope.of(context), value),
           ),
         ),
+        if (collectionId != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: PagePropertiesHeader(pageId: widget.pageId, collectionId: collectionId),
+          ),
         Expanded(
           child: AppFlowyEditor(editorState: editorState),
         ),

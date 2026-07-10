@@ -14,6 +14,7 @@ class CollectionView extends StatelessWidget {
     super.key,
     required this.collectionId,
     required this.onEdit,
+    required this.onOpenEntry,
     this.onLoaded,
   });
 
@@ -23,6 +24,10 @@ class CollectionView extends StatelessWidget {
   /// rather than a Navigator.push, so the sidebar stays visible (see
   /// AppShell/_MainContent).
   final VoidCallback onEdit;
+
+  /// Switches the content area to the entry's Page-View, called with
+  /// the entry's page id. Same callback-not-push pattern as [onEdit].
+  final ValueChanged<String> onOpenEntry;
 
   /// Exposed for tests to reach the TrinaGridStateManager.
   final void Function(TrinaGridOnLoadedEvent event)? onLoaded;
@@ -76,6 +81,8 @@ class CollectionView extends StatelessWidget {
                           columns: _columnsFor(titleLabel, fields),
                           rows: _rowsFor(fields, entries),
                           onChanged: (event) => _onCellChanged(scope, event),
+                          onRowDoubleTap: (event) =>
+                              onOpenEntry(event.row.data as String),
                           onLoaded: onLoaded,
                         ),
                       ),

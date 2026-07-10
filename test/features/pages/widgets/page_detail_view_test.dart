@@ -3,8 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/blocks_repository.dart';
+import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/pages/widgets/page_detail_view.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
+import 'package:turtle_base/features/tables/data/collections_repository.dart';
+import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
 import '../../../support/pump_app.dart';
 
@@ -117,5 +121,66 @@ void main() {
     expect(titleField.decoration?.hintText, 'Untitled');
     expect(titleField.controller?.text, isEmpty);
     expect(tester.takeException(), isNull);
+    // A freestanding page (no collectionId) has no properties to show
+    // and nothing to go "back" to.
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('shows a back button and properties header for a collection entry', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String pageId;
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final collections = CollectionsRepository(database);
+      final fields = FieldsRepository(database);
+      final pages = PagesRepository(database);
+      collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+      final priorityField = await fields.create(
+        collectionId: collectionId,
+        name: 'Priority',
+        type: FieldType.text,
+      );
+      pageId = await pages.create(
+        spaceId: spaceId,
+        collectionId: collectionId,
+        title: 'Buy milk',
+      );
+      await pages.setPropertyValue(pageId, priorityField, 'High');
+    });
+
+    String? openedCollectionId;
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          Scaffold(
+            body: PageDetailView(
+              pageId: pageId,
+              onOpenCollection: (id) => openedCollectionId = id,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    // PagePropertiesHeader mounts its own streams once PageDetailView
+    // itself has already loaded, needing a second real-time wait, same
+    // reasoning as the app_shell_test.dart page-navigation test.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.widgetWithText(TextField, 'Buy milk'), findsOneWidget);
+    expect(find.text('Priority'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'High'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    expect(openedCollectionId, collectionId);
   }, timeout: const Timeout(Duration(seconds: 30)));
 }

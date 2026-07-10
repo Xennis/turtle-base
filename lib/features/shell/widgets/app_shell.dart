@@ -62,10 +62,11 @@ class _MainContent extends StatelessWidget {
       return CollectionView(
         collectionId: id,
         onEdit: navigation.startEditingCollection,
+        onOpenEntry: navigation.selectPage,
       );
     }
     if (navigation.selectedPageId case final id?) {
-      return PageDetailView(pageId: id);
+      return PageDetailView(pageId: id, onOpenCollection: navigation.selectCollection);
     }
     return const Center(child: Text('Select a collection or page'));
   }
