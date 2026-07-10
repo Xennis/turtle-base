@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/shell/app_shell.dart';
+import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 
 void main() {
   runApp(TurtleBaseApp(database: AppDatabase()));

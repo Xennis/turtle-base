@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/pages/blocks_repository.dart';
-import 'package:turtle_base/features/pages/pages_repository.dart';
-import 'package:turtle_base/features/spaces/spaces_repository.dart';
-import 'package:turtle_base/features/tables/collections_repository.dart';
-import 'package:turtle_base/features/tables/fields_repository.dart';
+import 'package:turtle_base/features/pages/data/blocks_repository.dart';
+import 'package:turtle_base/features/pages/data/pages_repository.dart';
+import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
+import 'package:turtle_base/features/tables/data/collections_repository.dart';
+import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
 /// Makes the database and repositories available to the widget tree,
 /// built with the plain InheritedWidget instead of a DI package.

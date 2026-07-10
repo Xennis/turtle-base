@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/tables/field_type.dart';
+import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();

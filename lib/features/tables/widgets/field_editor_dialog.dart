@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:turtle_base/features/tables/field_type.dart';
-import 'package:turtle_base/features/tables/fields_repository.dart';
+import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
 /// Shows a dialog to create a new field, or rename/retype/delete an
 /// existing one. Pass [fieldId] (plus its current name/type) to edit;

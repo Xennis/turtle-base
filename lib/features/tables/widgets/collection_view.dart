@@ -3,10 +3,10 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/pages/pages_repository.dart';
-import 'package:turtle_base/features/tables/field_editor_dialog.dart';
-import 'package:turtle_base/features/tables/field_type.dart';
-import 'package:turtle_base/features/tables/fields_repository.dart';
+import 'package:turtle_base/features/pages/data/pages_repository.dart';
+import 'package:turtle_base/features/tables/widgets/field_editor_dialog.dart';
+import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
 /// Grid view of a collection's entries, with inline cell editing for
 /// text/number/date/url. Edits are persisted immediately on commit

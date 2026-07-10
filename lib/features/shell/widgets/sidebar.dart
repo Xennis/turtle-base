@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart' hide Page;
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/shell/app_navigation_controller.dart';
-import 'package:turtle_base/features/shell/name_prompt_dialog.dart';
+import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
+import 'package:turtle_base/features/shell/widgets/name_prompt_dialog.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key, required this.navigation});

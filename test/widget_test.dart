@@ -6,13 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/pages/pages_repository.dart';
-import 'package:turtle_base/features/shell/app_shell.dart';
-import 'package:turtle_base/features/spaces/spaces_repository.dart';
-import 'package:turtle_base/features/tables/collection_view.dart';
-import 'package:turtle_base/features/tables/collections_repository.dart';
-import 'package:turtle_base/features/tables/field_type.dart';
-import 'package:turtle_base/features/tables/fields_repository.dart';
+import 'package:turtle_base/features/pages/data/pages_repository.dart';
+import 'package:turtle_base/features/shell/widgets/app_shell.dart';
+import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
+import 'package:turtle_base/features/tables/widgets/collection_view.dart';
+import 'package:turtle_base/features/tables/data/collections_repository.dart';
+import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
 /// Sets up and pumps the app against a fresh in-memory database.
 ///

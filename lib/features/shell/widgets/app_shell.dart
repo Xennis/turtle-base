@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:turtle_base/features/shell/app_navigation_controller.dart';
-import 'package:turtle_base/features/shell/sidebar.dart';
-import 'package:turtle_base/features/tables/collection_view.dart';
+import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
+import 'package:turtle_base/features/shell/widgets/sidebar.dart';
+import 'package:turtle_base/features/tables/widgets/collection_view.dart';
 
 /// Fixed side-by-side layout for now. Switching to a drawer on narrow
 /// screens (see UI_UX.md) is a follow-up, not part of this first step.
