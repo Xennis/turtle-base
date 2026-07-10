@@ -17,13 +17,20 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _seedDefaults();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Custom, per-collection label for the built-in title column
+        // (see Collections.titleFieldLabel).
+        await m.addColumn(collections, collections.titleFieldLabel);
+      }
     },
   );
 

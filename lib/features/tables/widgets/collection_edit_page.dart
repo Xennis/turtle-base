@@ -24,6 +24,8 @@ class CollectionEditPage extends StatefulWidget {
 class _CollectionEditPageState extends State<CollectionEditPage> {
   TextEditingController? _nameController;
   FocusNode? _nameFocusNode;
+  TextEditingController? _titleFieldLabelController;
+  FocusNode? _titleFieldLabelFocusNode;
   final _newFieldNameController = TextEditingController();
   FieldType _newFieldType = FieldType.text;
   final _fieldNameControllers = <String, TextEditingController>{};
@@ -33,6 +35,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   void dispose() {
     _nameController?.dispose();
     _nameFocusNode?.dispose();
+    _titleFieldLabelController?.dispose();
+    _titleFieldLabelFocusNode?.dispose();
     _newFieldNameController.dispose();
     for (final controller in _fieldNameControllers.values) {
       controller.dispose();
@@ -46,6 +50,17 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   void _saveName(String value, Future<void> Function(String) save) {
     final trimmed = value.trim();
     if (trimmed.isNotEmpty) save(trimmed);
+  }
+
+  /// Unlike _saveName, an empty value is valid here - it resets to the
+  /// "Name" default instead of being ignored.
+  void _saveTitleFieldLabel(String value) {
+    final scope = AppScope.of(context);
+    final trimmed = value.trim();
+    scope.collections.setTitleFieldLabel(
+      widget.collectionId,
+      trimmed.isEmpty ? null : trimmed,
+    );
   }
 
   TextEditingController _fieldNameControllerFor(Field field) {
@@ -110,6 +125,15 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                 );
               }
             });
+          _titleFieldLabelController ??= TextEditingController(
+            text: collection.titleFieldLabel ?? '',
+          );
+          _titleFieldLabelFocusNode ??= FocusNode()
+            ..addListener(() {
+              if (!_titleFieldLabelFocusNode!.hasFocus) {
+                _saveTitleFieldLabel(_titleFieldLabelController!.text);
+              }
+            });
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -134,6 +158,18 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                           value,
                           (name) => scope.collections.rename(widget.collectionId, name),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Name column label',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: _titleFieldLabelController,
+                        focusNode: _titleFieldLabelFocusNode,
+                        decoration: const InputDecoration(hintText: 'Name'),
+                        onSubmitted: _saveTitleFieldLabel,
                       ),
                     ],
                   ),

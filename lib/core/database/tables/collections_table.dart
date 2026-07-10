@@ -10,6 +10,11 @@ class Collections extends Table with AuditColumns {
   TextColumn get name => text()();
   TextColumn get icon => text().nullable()();
 
+  /// Display label for the built-in title column (shown as "Name" in
+  /// the grid by default) - not a Field, since every entry already has
+  /// a title (see Pages).
+  TextColumn get titleFieldLabel => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

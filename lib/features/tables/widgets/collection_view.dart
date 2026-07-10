@@ -30,51 +30,59 @@ class CollectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
-    return StreamBuilder<List<Field>>(
-      stream: scope.fields.watchAllInCollection(collectionId),
-      builder: (context, fieldsSnapshot) {
-        final fields = fieldsSnapshot.data ?? const <Field>[];
-        return StreamBuilder<List<Page>>(
-          stream: scope.pages.watchAllInCollection(collectionId),
-          builder: (context, entriesSnapshot) {
-            final entries = entriesSnapshot.data ?? const <Page>[];
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add row'),
-                          onPressed: () => _addRow(scope),
+    return StreamBuilder<Collection>(
+      stream: scope.collections.watchById(collectionId),
+      builder: (context, collectionSnapshot) {
+        final collection = collectionSnapshot.data;
+        final titleLabel = collection?.titleFieldLabel ?? 'Name';
+        return StreamBuilder<List<Field>>(
+          stream: scope.fields.watchAllInCollection(collectionId),
+          builder: (context, fieldsSnapshot) {
+            final fields = fieldsSnapshot.data ?? const <Field>[];
+            return StreamBuilder<List<Page>>(
+              stream: scope.pages.watchAllInCollection(collectionId),
+              builder: (context, entriesSnapshot) {
+                final entries = entriesSnapshot.data ?? const <Page>[];
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add row'),
+                              onPressed: () => _addRow(scope),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.edit_outlined),
+                              label: const Text('Edit collection'),
+                              onPressed: onEdit,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.edit_outlined),
-                          label: const Text('Edit collection'),
-                          onPressed: onEdit,
+                      ),
+                      Expanded(
+                        // TrinaGrid only reads columns/rows once (see
+                        // its didUpdateWidget), so a Key that changes
+                        // with the data forces a fresh grid instead of
+                        // stale rows.
+                        child: TrinaGrid(
+                          key: ValueKey(_gridVersion(titleLabel, fields, entries)),
+                          columns: _columnsFor(titleLabel, fields),
+                          rows: _rowsFor(fields, entries),
+                          onChanged: (event) => _onCellChanged(scope, event),
+                          onLoaded: onLoaded,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    // TrinaGrid only reads columns/rows once (see its
-                    // didUpdateWidget), so a Key that changes with the
-                    // data forces a fresh grid instead of stale rows.
-                    child: TrinaGrid(
-                      key: ValueKey(_gridVersion(fields, entries)),
-                      columns: _columnsFor(fields),
-                      rows: _rowsFor(fields, entries),
-                      onChanged: (event) => _onCellChanged(scope, event),
-                      onLoaded: onLoaded,
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -109,11 +117,13 @@ class CollectionView extends StatelessWidget {
     }
   }
 
-  List<TrinaColumn> _columnsFor(List<Field> fields) {
+  List<TrinaColumn> _columnsFor(String titleLabel, List<Field> fields) {
     return [
       // Not editable via "Manage fields" - it's the built-in title,
-      // not a user-defined field.
-      TrinaColumn(title: 'Name', field: 'title', type: TrinaColumnType.text()),
+      // not a user-defined field. Its label is customizable per
+      // collection (CollectionEditPage) though, unlike the column
+      // itself.
+      TrinaColumn(title: titleLabel, field: 'title', type: TrinaColumnType.text()),
       for (final field in fields)
         TrinaColumn(
           title: field.name,
@@ -154,11 +164,11 @@ class CollectionView extends StatelessWidget {
         : TrinaColumnType.text();
   }
 
-  String _gridVersion(List<Field> fields, List<Page> entries) {
+  String _gridVersion(String titleLabel, List<Field> fields, List<Page> entries) {
     final fieldPart = fields.map((f) => '${f.id}:${f.name}:${f.type}').join(',');
     final entryPart = entries
         .map((e) => '${e.id}:${e.updatedAt.millisecondsSinceEpoch}')
         .join(',');
-    return '$fieldPart|$entryPart';
+    return '$titleLabel|$fieldPart|$entryPart';
   }
 }

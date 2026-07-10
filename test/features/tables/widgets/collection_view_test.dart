@@ -180,4 +180,33 @@ void main() {
     final entry = await database.select(database.pages).getSingle();
     expect(entry.title, 'Buy milk');
   }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('grid uses a custom title column label if set', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final collections = CollectionsRepository(database);
+      collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+      await collections.setTitleFieldLabel(collectionId, 'Task');
+    });
+
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: MaterialApp(
+          home: CollectionView(collectionId: collectionId, onEdit: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Task'), findsOneWidget);
+    expect(find.text('Name'), findsNothing);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

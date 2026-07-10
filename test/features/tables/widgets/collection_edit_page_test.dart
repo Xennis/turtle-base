@@ -87,4 +87,50 @@ void main() {
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
+
+  testWidgets('Edit collection page: customize the Name column label', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      collectionId = await CollectionsRepository(
+        database,
+      ).create(spaceId: spaceId, name: 'Tasks');
+    });
+
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: MaterialApp(
+          home: CollectionEditPage(collectionId: collectionId, onDone: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Second TextField in the Collection card - the title-column
+    // label, empty by default (shows "Name" only as a hint).
+    await tester.enterText(find.byType(TextField).at(1), 'Task');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    var storedCollection = await database.select(database.collections).getSingle();
+    expect(storedCollection.titleFieldLabel, 'Task');
+
+    // Clearing it resets to the "Name" default rather than being
+    // ignored (unlike the collection's own name field).
+    await tester.enterText(find.byType(TextField).at(1), '');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    storedCollection = await database.select(database.collections).getSingle();
+    expect(storedCollection.titleFieldLabel, isNull);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

@@ -59,6 +59,12 @@ class CollectionsRepository {
     return _update(id, CollectionsCompanion(icon: Value(icon)));
   }
 
+  /// Label for the built-in title column (shown as "Name" in the grid
+  /// if null/empty) - not a field, see [Collections.titleFieldLabel].
+  Future<void> setTitleFieldLabel(String id, String? label) {
+    return _update(id, CollectionsCompanion(titleFieldLabel: Value(label)));
+  }
+
   Future<void> move(String id, String newSpaceId) {
     return _update(id, CollectionsCompanion(spaceId: Value(newSpaceId)));
   }
