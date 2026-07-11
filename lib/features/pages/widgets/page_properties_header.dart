@@ -1,5 +1,6 @@
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
@@ -118,10 +119,9 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                                     decodePageProperties(page.properties)[field.id],
                                   ),
                                 )
-                              : TextField(
+                              : ShadInput(
                                   controller: _controllerFor(field, page),
                                   focusNode: _focusNodeFor(field, scope),
-                                  decoration: const InputDecoration(isDense: true),
                                   onSubmitted: (value) => scope.pages.setPropertyValue(
                                     widget.pageId,
                                     field.id,
@@ -177,17 +177,17 @@ class _RelationFieldValue extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             for (final page in selected)
-              Chip(
-                label: Text(page.title.isEmpty ? 'Untitled' : page.title),
-                onDeleted: () => scope.pages.setPropertyValue(
+              _RelationChip(
+                label: page.title.isEmpty ? 'Untitled' : page.title,
+                onRemove: () => scope.pages.setPropertyValue(
                   pageId,
                   field.id,
                   selectedIds.where((id) => id != page.id).toList(),
                 ),
               ),
-            ActionChip(
-              avatar: const Icon(Icons.add, size: 16),
-              label: const Text('Add'),
+            ShadButton.ghost(
+              size: ShadButtonSize.sm,
+              leading: const Icon(Icons.add, size: 16),
               onPressed: () async {
                 final result = await showRelationPicker(
                   context,
@@ -199,6 +199,7 @@ class _RelationFieldValue extends StatelessWidget {
                   await scope.pages.setPropertyValue(pageId, field.id, result);
                 }
               },
+              child: const Text('Add'),
             ),
           ],
         );
@@ -208,5 +209,50 @@ class _RelationFieldValue extends StatelessWidget {
 
   Iterable<Page> _findById(List<Page> pages, String id) {
     return pages.where((p) => p.id == id);
+  }
+}
+
+/// A removable chip for a related entry - shadcn_ui's Badge has no
+/// built-in remove affordance, so this composes one from theme tokens.
+class _RelationChip extends StatelessWidget {
+  const _RelationChip({required this.label, required this.onRemove});
+
+  final String label;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondary,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.small.copyWith(
+              color: theme.colorScheme.secondaryForeground,
+            ),
+          ),
+          const SizedBox(width: 2),
+          InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(999),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(
+                Icons.close,
+                size: 14,
+                color: theme.colorScheme.secondaryForeground,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

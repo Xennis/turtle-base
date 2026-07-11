@@ -1,5 +1,6 @@
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 
@@ -11,7 +12,7 @@ Future<List<String>?> showRelationPicker(
   required String targetCollectionId,
   required List<String> selectedIds,
 }) {
-  return showDialog<List<String>>(
+  return showShadDialog<List<String>>(
     context: context,
     builder: (context) => _RelationPickerDialog(
       scope: scope,
@@ -42,16 +43,26 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return ShadDialog(
       title: const Text('Select related entries'),
-      content: SizedBox(
+      actions: [
+        ShadButton.outline(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ShadButton(
+          onPressed: () => Navigator.of(context).pop(_selectedIds.toList()),
+          child: const Text('Done'),
+        ),
+      ],
+      child: SizedBox(
         width: 400,
         height: 400,
         child: Column(
           children: [
-            TextField(
+            ShadInput(
               autofocus: true,
-              decoration: const InputDecoration(hintText: 'Search'),
+              placeholder: const Text('Search'),
               onChanged: (value) => setState(() => _query = value),
             ),
             Expanded(
@@ -68,16 +79,19 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
                   return ListView(
                     children: [
                       for (final entry in entries)
-                        CheckboxListTile(
-                          title: Text(entry.title.isEmpty ? 'Untitled' : entry.title),
-                          value: _selectedIds.contains(entry.id),
-                          onChanged: (checked) => setState(() {
-                            if (checked ?? false) {
-                              _selectedIds.add(entry.id);
-                            } else {
-                              _selectedIds.remove(entry.id);
-                            }
-                          }),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: ShadCheckbox(
+                            value: _selectedIds.contains(entry.id),
+                            onChanged: (checked) => setState(() {
+                              if (checked) {
+                                _selectedIds.add(entry.id);
+                              } else {
+                                _selectedIds.remove(entry.id);
+                              }
+                            }),
+                            label: Text(entry.title.isEmpty ? 'Untitled' : entry.title),
+                          ),
                         ),
                     ],
                   );
@@ -87,16 +101,6 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_selectedIds.toList()),
-          child: const Text('Done'),
-        ),
-      ],
     );
   }
 }

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
@@ -45,7 +45,7 @@ void main() {
     });
 
     await tester.pumpWidget(
-      AppScope(database: database, child: const MaterialApp(home: AppShell())),
+      AppScope(database: database, child: wrapWithAppLocalizations(const AppShell())),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -95,8 +95,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: CollectionView(
+        child: wrapWithAppLocalizations(
+          CollectionView(
             collectionId: collectionId,
             onEdit: () {},
             onOpenEntry: (_) {},
@@ -152,8 +152,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: CollectionView(
+        child: wrapWithAppLocalizations(
+          CollectionView(
             collectionId: collectionId,
             onEdit: () {},
             onOpenEntry: (id) => openedEntryId = id,
@@ -196,8 +196,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: CollectionView(
+        child: wrapWithAppLocalizations(
+          CollectionView(
             collectionId: collectionId,
             onEdit: () {},
             onOpenEntry: (_) {},
@@ -211,7 +211,7 @@ void main() {
 
     expect(await database.select(database.pages).get(), isEmpty);
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Add row'));
+    await tester.tap(find.widgetWithText(ShadButton, 'Add row'));
     // _addRow does real FFI I/O (a stream's .first, then an insert),
     // triggered from a button handler rather than test code directly -
     // needs runAsync to actually complete within the pump budget.
@@ -273,8 +273,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: CollectionView(
+        child: wrapWithAppLocalizations(
+          CollectionView(
             collectionId: collectionId,
             onEdit: () {},
             onOpenEntry: (_) {},
@@ -310,8 +310,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: CollectionView(
+        child: wrapWithAppLocalizations(
+          CollectionView(
             collectionId: collectionId,
             onEdit: () {},
             onOpenEntry: (_) {},

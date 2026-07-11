@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
@@ -20,19 +21,30 @@ AppDatabase newTestDatabase() {
   );
 }
 
-/// AppFlowyEditor needs its localizations delegate registered, same as
-/// the real app's MaterialApp (see main.dart) - shared by any test
-/// that pumps a widget tree that may reach it.
+/// Mirrors the real app's ShadApp.custom + MaterialApp setup (see
+/// main.dart) - shared by any test that pumps a widget tree that may
+/// reach a shadcn_ui component (ShadTheme.of requires this ancestor)
+/// or AppFlowyEditor (which needs its own localizations delegate).
 Widget wrapWithAppLocalizations(Widget home) {
-  return MaterialApp(
-    localizationsDelegates: const [
-      GlobalMaterialLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      AppFlowyEditorLocalizations.delegate,
-    ],
-    supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
-    home: home,
+  return ShadApp.custom(
+    theme: ShadThemeData(
+      brightness: Brightness.light,
+      colorScheme: const ShadZincColorScheme.light(),
+    ),
+    appBuilder: (context) {
+      return MaterialApp(
+        theme: Theme.of(context),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          AppFlowyEditorLocalizations.delegate,
+        ],
+        supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+        home: home,
+        builder: (context, child) => ShadAppBuilder(child: child!),
+      );
+    },
   );
 }
 

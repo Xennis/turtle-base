@@ -1,5 +1,6 @@
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -81,7 +82,7 @@ class CollectionView extends StatelessWidget {
                                   ],
                                   Text(
                                     collection.name,
-                                    style: Theme.of(context).textTheme.titleLarge,
+                                    style: ShadTheme.of(context).textTheme.h3,
                                   ),
                                 ],
                               ),
@@ -90,16 +91,16 @@ class CollectionView extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Row(
                               children: [
-                                OutlinedButton.icon(
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('Add row'),
+                                ShadButton.outline(
+                                  leading: const Icon(Icons.add, size: 16),
                                   onPressed: () => _addRow(scope),
+                                  child: const Text('Add row'),
                                 ),
                                 const SizedBox(width: 8),
-                                OutlinedButton.icon(
-                                  icon: const Icon(Icons.edit_outlined),
-                                  label: const Text('Edit collection'),
+                                ShadButton.outline(
+                                  leading: const Icon(Icons.edit_outlined, size: 16),
                                   onPressed: onEdit,
+                                  child: const Text('Edit collection'),
                                 ),
                               ],
                             ),

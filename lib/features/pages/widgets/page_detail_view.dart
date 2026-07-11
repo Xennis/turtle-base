@@ -4,6 +4,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/pages/widgets/block_document.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
@@ -178,15 +179,19 @@ class _PageDetailViewState extends State<PageDetailView> {
             padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: 'Back to collection',
-                  onPressed: () => widget.onOpenCollection?.call(collectionId),
+                Tooltip(
+                  message: 'Back to collection',
+                  child: ShadIconButton.ghost(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => widget.onOpenCollection?.call(collectionId),
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Delete entry',
-                  onPressed: () => _deleteEntry(context, collectionId),
+                Tooltip(
+                  message: 'Delete entry',
+                  child: ShadIconButton.ghost(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _deleteEntry(context, collectionId),
+                  ),
                 ),
               ],
             ),
@@ -208,14 +213,12 @@ class _PageDetailViewState extends State<PageDetailView> {
               ),
               const SizedBox(width: 4),
               Expanded(
-                child: TextField(
+                child: ShadInput(
                   controller: _titleController,
                   focusNode: _titleFocusNode,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Untitled',
-                  ),
+                  style: ShadTheme.of(context).textTheme.h3,
+                  decoration: ShadDecoration.none,
+                  placeholder: const Text('Untitled'),
                   onSubmitted: (value) => _saveTitle(AppScope.of(context), value),
                 ),
               ),

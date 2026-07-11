@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 /// Shows a Yes/No confirmation dialog, true if the user confirmed.
 ///
@@ -10,22 +11,18 @@ Future<bool> confirmDelete(
   required String title,
   String message = "This can't be undone from the app yet - there's no Trash UI to restore it from.",
 }) async {
-  final result = await showDialog<bool>(
+  final result = await showShadDialog<bool>(
     context: context,
     builder: (context) {
-      return AlertDialog(
+      return ShadDialog.alert(
         title: Text(title),
-        content: Text(message),
+        description: Text(message),
         actions: [
-          TextButton(
+          ShadButton.outline(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
+          ShadButton.destructive(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Delete'),
           ),

@@ -1,5 +1,6 @@
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
@@ -138,27 +139,29 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
     final scope = AppScope.of(context);
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
+        leading: ShadIconButton.ghost(
           icon: const Icon(Icons.arrow_back),
           onPressed: widget.onDone,
         ),
         title: const Text('Edit collection'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
+          Tooltip(
             // Distinct from the sidebar row's "Delete collection" -
             // both can be visible at once (sidebar stays visible while
             // editing a collection, see AppShell/_MainContent).
-            tooltip: 'Delete this collection',
-            onPressed: () async {
-              final confirmed = await confirmDelete(
-                context,
-                title: 'Delete this collection?',
-              );
-              if (!confirmed) return;
-              await scope.collections.softDelete(widget.collectionId);
-              widget.onDeleted();
-            },
+            message: 'Delete this collection',
+            child: ShadIconButton.ghost(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () async {
+                final confirmed = await confirmDelete(
+                  context,
+                  title: 'Delete this collection?',
+                );
+                if (!confirmed) return;
+                await scope.collections.softDelete(widget.collectionId);
+                widget.onDeleted();
+              },
+            ),
           ),
         ],
       ),
@@ -189,148 +192,138 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
               }
             });
 
+          final theme = ShadTheme.of(context);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Collection',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      Text('Icon', style: Theme.of(context).textTheme.labelLarge),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => _pickIcon(context),
-                            child: collection.icon != null
-                                ? Text(
-                                    collection.icon!,
-                                    style: const TextStyle(fontSize: 20),
-                                  )
-                                : const Text('Pick emoji'),
-                          ),
-                          if (collection.icon != null) ...[
-                            const SizedBox(width: 8),
-                            IconButton(
+              ShadCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Collection', style: theme.textTheme.h4),
+                    const SizedBox(height: 12),
+                    Text('Icon', style: theme.textTheme.small),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        ShadButton.outline(
+                          onPressed: () => _pickIcon(context),
+                          child: collection.icon != null
+                              ? Text(
+                                  collection.icon!,
+                                  style: const TextStyle(fontSize: 20),
+                                )
+                              : const Text('Pick emoji'),
+                        ),
+                        if (collection.icon != null) ...[
+                          const SizedBox(width: 8),
+                          Tooltip(
+                            message: 'Remove icon',
+                            child: ShadIconButton.ghost(
                               icon: const Icon(Icons.clear),
-                              tooltip: 'Remove icon',
                               onPressed: () => scope.collections.setIcon(
                                 widget.collectionId,
                                 null,
                               ),
                             ),
-                          ],
+                          ),
                         ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Name', style: theme.textTheme.small),
+                    const SizedBox(height: 4),
+                    ShadInput(
+                      controller: _nameController,
+                      focusNode: _nameFocusNode,
+                      onSubmitted: (value) => _saveName(
+                        value,
+                        (name) => scope.collections.rename(widget.collectionId, name),
                       ),
-                      const SizedBox(height: 16),
-                      Text('Name', style: Theme.of(context).textTheme.labelLarge),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: _nameController,
-                        focusNode: _nameFocusNode,
-                        onSubmitted: (value) => _saveName(
-                          value,
-                          (name) => scope.collections.rename(widget.collectionId, name),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Name column label',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: _titleFieldLabelController,
-                        focusNode: _titleFieldLabelFocusNode,
-                        decoration: const InputDecoration(hintText: 'Name'),
-                        onSubmitted: _saveTitleFieldLabel,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Name column label', style: theme.textTheme.small),
+                    const SizedBox(height: 4),
+                    ShadInput(
+                      controller: _titleFieldLabelController,
+                      focusNode: _titleFieldLabelFocusNode,
+                      placeholder: const Text('Name'),
+                      onSubmitted: _saveTitleFieldLabel,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Fields',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      // Needed for the relation type's target-collection
-                      // dropdown - other collections in the same space.
-                      StreamBuilder<List<Collection>>(
-                        stream: scope.collections.watchAllInSpace(collection.spaceId),
-                        builder: (context, collectionsSnapshot) {
-                          final collections =
-                              collectionsSnapshot.data ?? const <Collection>[];
-                          return StreamBuilder<List<Field>>(
-                            stream: scope.fields.watchAllInCollection(
-                              widget.collectionId,
-                            ),
-                            builder: (context, fieldsSnapshot) {
-                              final fields = fieldsSnapshot.data ?? const <Field>[];
-                              // Drop controllers/focus nodes of fields
-                              // that no longer exist (deleted, or from a
-                              // previous collection).
-                              _fieldNameControllers.removeWhere((id, controller) {
-                                final stillExists = fields.any((f) => f.id == id);
-                                if (!stillExists) controller.dispose();
-                                return !stillExists;
-                              });
-                              _fieldFocusNodes.removeWhere((id, focusNode) {
-                                final stillExists = fields.any((f) => f.id == id);
-                                if (!stillExists) focusNode.dispose();
-                                return !stillExists;
-                              });
-                              return Column(
-                                children: [
-                                  if (fields.isEmpty)
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 8),
-                                      child: Text('No fields yet'),
-                                    ),
-                                  for (final field in fields)
-                                    _FieldRow(
-                                      field: field,
-                                      nameController: _fieldNameControllerFor(field),
-                                      focusNode: _fieldFocusNodeFor(field, scope.fields),
-                                      fields: scope.fields,
-                                      collections: collections,
-                                    ),
-                                  const Divider(),
-                                  _AddFieldRow(
-                                    nameController: _newFieldNameController,
-                                    type: _newFieldType,
-                                    onTypeChanged: (type) => setState(() {
-                                      _newFieldType = type;
-                                    }),
-                                    collections: collections,
-                                    relationTargetId: _newFieldRelationTargetId,
-                                    onRelationTargetChanged: (id) => setState(() {
-                                      _newFieldRelationTargetId = id;
-                                    }),
-                                    onAdd: () => _addField(scope.fields),
+              ShadCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Fields', style: theme.textTheme.h4),
+                    const SizedBox(height: 12),
+                    // Needed for the relation type's target-collection
+                    // dropdown - other collections in the same space.
+                    StreamBuilder<List<Collection>>(
+                      stream: scope.collections.watchAllInSpace(collection.spaceId),
+                      builder: (context, collectionsSnapshot) {
+                        final collections =
+                            collectionsSnapshot.data ?? const <Collection>[];
+                        return StreamBuilder<List<Field>>(
+                          stream: scope.fields.watchAllInCollection(
+                            widget.collectionId,
+                          ),
+                          builder: (context, fieldsSnapshot) {
+                            final fields = fieldsSnapshot.data ?? const <Field>[];
+                            // Drop controllers/focus nodes of fields
+                            // that no longer exist (deleted, or from a
+                            // previous collection).
+                            _fieldNameControllers.removeWhere((id, controller) {
+                              final stillExists = fields.any((f) => f.id == id);
+                              if (!stillExists) controller.dispose();
+                              return !stillExists;
+                            });
+                            _fieldFocusNodes.removeWhere((id, focusNode) {
+                              final stillExists = fields.any((f) => f.id == id);
+                              if (!stillExists) focusNode.dispose();
+                              return !stillExists;
+                            });
+                            return Column(
+                              children: [
+                                if (fields.isEmpty)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    child: Text('No fields yet'),
                                   ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                                for (final field in fields)
+                                  _FieldRow(
+                                    field: field,
+                                    nameController: _fieldNameControllerFor(field),
+                                    focusNode: _fieldFocusNodeFor(field, scope.fields),
+                                    fields: scope.fields,
+                                    collections: collections,
+                                  ),
+                                const ShadSeparator.horizontal(),
+                                _AddFieldRow(
+                                  nameController: _newFieldNameController,
+                                  type: _newFieldType,
+                                  onTypeChanged: (type) => setState(() {
+                                    _newFieldType = type;
+                                  }),
+                                  collections: collections,
+                                  relationTargetId: _newFieldRelationTargetId,
+                                  onRelationTargetChanged: (id) => setState(() {
+                                    _newFieldRelationTargetId = id;
+                                  }),
+                                  onAdd: () => _addField(scope.fields),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -367,7 +360,7 @@ class _FieldRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
+            child: ShadInput(
               controller: nameController,
               focusNode: focusNode,
               onSubmitted: (value) {
@@ -377,11 +370,12 @@ class _FieldRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          DropdownButton<FieldType>(
-            value: FieldType.values.byName(field.type),
-            items: [
+          ShadSelect<FieldType>(
+            initialValue: FieldType.values.byName(field.type),
+            selectedOptionBuilder: (context, value) => Text(value.label),
+            options: [
               for (final type in FieldType.values)
-                DropdownMenuItem(value: type, child: Text(type.label)),
+                ShadOption(value: type, child: Text(type.label)),
             ],
             onChanged: (type) {
               if (type != null) fields.changeType(field.id, type);
@@ -389,12 +383,14 @@ class _FieldRow extends StatelessWidget {
           ),
           if (isRelation) ...[
             const SizedBox(width: 8),
-            DropdownButton<String>(
-              hint: const Text('Relates to...'),
-              value: decodeRelationTargetCollectionId(field.config),
-              items: [
+            ShadSelect<String>(
+              initialValue: decodeRelationTargetCollectionId(field.config),
+              placeholder: const Text('Relates to...'),
+              selectedOptionBuilder: (context, value) =>
+                  Text(collections.firstWhere((c) => c.id == value).name),
+              options: [
                 for (final collection in collections)
-                  DropdownMenuItem(value: collection.id, child: Text(collection.name)),
+                  ShadOption(value: collection.id, child: Text(collection.name)),
               ],
               onChanged: (targetId) {
                 if (targetId != null) {
@@ -403,10 +399,12 @@ class _FieldRow extends StatelessWidget {
               },
             ),
           ],
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Delete field',
-            onPressed: () => fields.softDelete(field.id),
+          Tooltip(
+            message: 'Delete field',
+            child: ShadIconButton.ghost(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => fields.softDelete(field.id),
+            ),
           ),
         ],
       ),
@@ -442,18 +440,19 @@ class _AddFieldRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          child: ShadInput(
             controller: nameController,
-            decoration: const InputDecoration(hintText: 'New field name'),
+            placeholder: const Text('New field name'),
             onSubmitted: (_) => onAdd(),
           ),
         ),
         const SizedBox(width: 8),
-        DropdownButton<FieldType>(
-          value: type,
-          items: [
+        ShadSelect<FieldType>(
+          initialValue: type,
+          selectedOptionBuilder: (context, value) => Text(value.label),
+          options: [
             for (final t in FieldType.values)
-              DropdownMenuItem(value: t, child: Text(t.label)),
+              ShadOption(value: t, child: Text(t.label)),
           ],
           onChanged: (t) {
             if (t != null) onTypeChanged(t);
@@ -461,20 +460,24 @@ class _AddFieldRow extends StatelessWidget {
         ),
         if (isRelation) ...[
           const SizedBox(width: 8),
-          DropdownButton<String>(
-            hint: const Text('Relates to...'),
-            value: relationTargetId,
-            items: [
+          ShadSelect<String>(
+            initialValue: relationTargetId,
+            placeholder: const Text('Relates to...'),
+            selectedOptionBuilder: (context, value) =>
+                Text(collections.firstWhere((c) => c.id == value).name),
+            options: [
               for (final collection in collections)
-                DropdownMenuItem(value: collection.id, child: Text(collection.name)),
+                ShadOption(value: collection.id, child: Text(collection.name)),
             ],
             onChanged: onRelationTargetChanged,
           ),
         ],
-        IconButton(
-          icon: const Icon(Icons.add),
-          tooltip: 'Add field',
-          onPressed: canAdd ? onAdd : null,
+        Tooltip(
+          message: 'Add field',
+          child: ShadIconButton.ghost(
+            icon: const Icon(Icons.add),
+            onPressed: canAdd ? onAdd : null,
+          ),
         ),
       ],
     );

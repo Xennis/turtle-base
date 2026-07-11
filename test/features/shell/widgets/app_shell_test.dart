@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:trina_grid/trina_grid.dart';
 
 import '../../../support/pump_app.dart';
@@ -23,11 +24,11 @@ void main() {
 
     // "New space" lives inside the space dropdown's menu now, not a
     // separate button - open it, then pick that entry.
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(ShadSelect<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('New space'));
     await tester.pump();
-    await tester.enterText(find.byType(TextField), 'Fitness');
+    await tester.enterText(find.byType(ShadInput), 'Fitness');
     await tester.tap(find.text('Save'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -40,7 +41,7 @@ void main() {
     // currently selected (Fitness, just created).
     await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pump();
-    await tester.enterText(find.byType(TextField), 'Home');
+    await tester.enterText(find.byType(ShadInput), 'Home');
     await tester.tap(find.text('Save'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -50,7 +51,7 @@ void main() {
 
     // "Default" is still there, just not selected - visible in the
     // dropdown's menu.
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(ShadSelect<String>));
     await tester.pumpAndSettle();
     expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
@@ -63,7 +64,7 @@ void main() {
 
     await tester.tap(find.byTooltip('New collection'));
     await tester.pump();
-    await tester.enterText(find.byType(TextField), 'Tasks');
+    await tester.enterText(find.byType(ShadInput), 'Tasks');
     await tester.tap(find.text('Save'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -89,7 +90,7 @@ void main() {
 
     await tester.tap(find.byTooltip('New collection'));
     await tester.pump();
-    await tester.enterText(find.byType(TextField), 'Tasks');
+    await tester.enterText(find.byType(ShadInput), 'Tasks');
     await tester.tap(find.text('Save'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -98,7 +99,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Edit collection'));
+    await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -106,7 +107,7 @@ void main() {
     expect(find.text('Fields'), findsOneWidget);
     // ...while the sidebar, a sibling in the same Row, is still there.
     expect(find.text('Default'), findsOneWidget);
-    expect(find.byType(DropdownButton<String>), findsOneWidget);
+    expect(find.byType(ShadSelect<String>), findsOneWidget);
 
     // Going back returns to the grid, still with the sidebar visible.
     await tester.tap(find.byIcon(Icons.arrow_back));
@@ -125,7 +126,7 @@ void main() {
 
     await tester.tap(find.byTooltip('New collection'));
     await tester.pump();
-    await tester.enterText(find.byType(TextField), 'Tasks');
+    await tester.enterText(find.byType(ShadInput), 'Tasks');
     await tester.tap(find.text('Save'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -155,7 +156,7 @@ void main() {
 
       await tester.tap(find.byTooltip('New collection'));
       await tester.pump();
-      await tester.enterText(find.byType(TextField), 'Tasks');
+      await tester.enterText(find.byType(ShadInput), 'Tasks');
       await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -163,7 +164,7 @@ void main() {
       await tester.tap(find.text('Tasks'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Edit collection'));
+      await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -209,8 +210,8 @@ void main() {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
-    final deleteButton = tester.widget<IconButton>(
-      find.widgetWithIcon(IconButton, Icons.delete_outline).first,
+    final deleteButton = tester.widget<ShadIconButton>(
+      find.widgetWithIcon(ShadIconButton, Icons.delete_outline).first,
     );
     expect(deleteButton.onPressed, isNull);
   }, timeout: const Timeout(Duration(seconds: 30)));

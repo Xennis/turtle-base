@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/pages/widgets/page_properties_header.dart';
@@ -39,8 +40,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: Scaffold(
+        child: wrapWithAppLocalizations(
+          Scaffold(
             body: PagePropertiesHeader(pageId: pageId, collectionId: collectionId),
           ),
         ),
@@ -50,7 +51,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Priority'), findsOneWidget);
-    expect(find.widgetWithText(TextField, 'High'), findsOneWidget);
+    expect(find.widgetWithText(ShadInput, 'High'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
   testWidgets('editing a field value persists it', (WidgetTester tester) async {
@@ -78,8 +79,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: Scaffold(
+        child: wrapWithAppLocalizations(
+          Scaffold(
             body: PagePropertiesHeader(pageId: pageId, collectionId: collectionId),
           ),
         ),
@@ -88,7 +89,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    await tester.enterText(find.byType(TextField), 'Urgent');
+    await tester.enterText(find.byType(ShadInput), 'Urgent');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
@@ -135,8 +136,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: Scaffold(
+        child: wrapWithAppLocalizations(
+          Scaffold(
             body: PagePropertiesHeader(pageId: pageId, collectionId: collectionId),
           ),
         ),
@@ -147,7 +148,7 @@ void main() {
 
     expect(find.text('Website relaunch'), findsNothing);
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Add'));
+    await tester.tap(find.widgetWithText(ShadButton, 'Add'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/blocks_repository.dart';
@@ -65,7 +66,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.widgetWithText(TextField, 'My notes'), findsOneWidget);
+    expect(find.widgetWithText(ShadInput, 'My notes'), findsOneWidget);
     // find.textContaining doesn't match here - AppFlowyEditor renders
     // the paragraph as a RichText whose text is a TextSpan tree, and
     // toPlainText() (used below) walks it correctly where the finder's
@@ -115,10 +116,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    // "Untitled" is the title field's hint (empty title), not its
-    // actual text content - check the widget's decoration directly.
-    final titleField = tester.widget<TextField>(find.byType(TextField).first);
-    expect(titleField.decoration?.hintText, 'Untitled');
+    // "Untitled" is the title field's placeholder (empty title), not
+    // its actual text content - check the controller directly too.
+    expect(find.text('Untitled'), findsOneWidget);
+    final titleField = tester.widget<ShadInput>(find.byType(ShadInput).first);
     expect(titleField.controller?.text, isEmpty);
     expect(tester.takeException(), isNull);
     // A freestanding page (no collectionId) has no properties to show
@@ -176,9 +177,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.widgetWithText(TextField, 'Buy milk'), findsOneWidget);
+    expect(find.widgetWithText(ShadInput, 'Buy milk'), findsOneWidget);
     expect(find.text('Priority'), findsOneWidget);
-    expect(find.widgetWithText(TextField, 'High'), findsOneWidget);
+    expect(find.widgetWithText(ShadInput, 'High'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.arrow_back));
     expect(openedCollectionId, collectionId);

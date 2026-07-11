@@ -1,5 +1,6 @@
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
@@ -35,7 +36,7 @@ class Sidebar extends StatelessWidget {
         return Column(
           children: [
             _SpaceSelector(spaces: spaces, navigation: navigation),
-            const Divider(height: 1),
+            const ShadSeparator.horizontal(),
             Expanded(
               child: ListenableBuilder(
                 listenable: navigation,
@@ -74,14 +75,18 @@ class _SpaceSelector extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  underline: const SizedBox.shrink(),
-                  value: selectedSpace?.id,
-                  items: [
+                child: ShadSelect<String>(
+                  initialValue: selectedSpace?.id,
+                  placeholder: const Text('Select a space'),
+                  selectedOptionBuilder: (context, value) => Text(
+                    value == Sidebar.newSpaceSentinel
+                        ? 'New space'
+                        : spaces.firstWhere((s) => s.id == value).name,
+                  ),
+                  options: [
                     for (final space in spaces)
-                      DropdownMenuItem(value: space.id, child: Text(space.name)),
-                    const DropdownMenuItem(
+                      ShadOption(value: space.id, child: Text(space.name)),
+                    const ShadOption(
                       value: Sidebar.newSpaceSentinel,
                       child: Row(
                         children: [
@@ -107,42 +112,46 @@ class _SpaceSelector extends StatelessWidget {
                 ),
               ),
               if (selectedSpace != null) ...[
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Rename space',
-                  onPressed: () async {
-                    final name = await promptForName(
-                      context,
-                      title: 'Rename space',
-                      initialValue: selectedSpace.name,
-                    );
-                    if (name != null) {
-                      await scope.spaces.rename(selectedSpace.id, name);
-                    }
-                  },
+                Tooltip(
+                  message: 'Rename space',
+                  child: ShadIconButton.ghost(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () async {
+                      final name = await promptForName(
+                        context,
+                        title: 'Rename space',
+                        initialValue: selectedSpace.name,
+                      );
+                      if (name != null) {
+                        await scope.spaces.rename(selectedSpace.id, name);
+                      }
+                    },
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: spaces.length > 1
+                Tooltip(
+                  message: spaces.length > 1
                       ? 'Delete space'
                       : "Can't delete the last space",
-                  // Architecture guarantees at least one space always
-                  // exists - disable rather than let softDelete violate it.
-                  onPressed: spaces.length > 1
-                      ? () async {
-                          final confirmed = await confirmDelete(
-                            context,
-                            title: "Delete space '${selectedSpace.name}'?",
-                            message:
-                                "Its collections and pages will stop being "
-                                "shown until it's restored - there's no "
-                                'Trash UI for that yet.',
-                          );
-                          if (confirmed) {
-                            await scope.spaces.softDelete(selectedSpace.id);
+                  child: ShadIconButton.ghost(
+                    icon: const Icon(Icons.delete_outline),
+                    // Architecture guarantees at least one space always
+                    // exists - disable rather than let softDelete violate it.
+                    onPressed: spaces.length > 1
+                        ? () async {
+                            final confirmed = await confirmDelete(
+                              context,
+                              title: "Delete space '${selectedSpace.name}'?",
+                              message:
+                                  "Its collections and pages will stop being "
+                                  "shown until it's restored - there's no "
+                                  'Trash UI for that yet.',
+                            );
+                            if (confirmed) {
+                              await scope.spaces.softDelete(selectedSpace.id);
+                            }
                           }
-                        }
-                      : null,
+                        : null,
+                  ),
                 ),
               ],
             ],
@@ -164,20 +173,17 @@ class _SpaceContent extends StatelessWidget {
     final scope = AppScope.of(context);
     return ListView(
       children: [
-        ListTile(
-          title: const Text('Collections'),
-          trailing: IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'New collection',
-            onPressed: () async {
-              final name = await promptForName(context, title: 'New collection');
-              if (name == null) return;
-              // No starter field: every entry already has a title
-              // (see PagesRepository) - that's the grid's first column,
-              // not a user-defined field.
-              await scope.collections.create(spaceId: spaceId, name: name);
-            },
-          ),
+        _SidebarHeaderRow(
+          title: 'Collections',
+          tooltip: 'New collection',
+          onAdd: () async {
+            final name = await promptForName(context, title: 'New collection');
+            if (name == null) return;
+            // No starter field: every entry already has a title
+            // (see PagesRepository) - that's the grid's first column,
+            // not a user-defined field.
+            await scope.collections.create(spaceId: spaceId, name: name);
+          },
         ),
         StreamBuilder<List<Collection>>(
           stream: scope.collections.watchAllInSpace(spaceId),
@@ -186,47 +192,38 @@ class _SpaceContent extends StatelessWidget {
             return Column(
               children: [
                 for (final collection in collections)
-                  ListTile(
+                  _SidebarRow(
                     leading: collection.icon != null
-                        ? Text(
-                            collection.icon!,
-                            style: const TextStyle(fontSize: 20),
-                          )
-                        : const Icon(Icons.table_chart_outlined),
-                    title: Text(collection.name),
+                        ? Text(collection.icon!, style: const TextStyle(fontSize: 20))
+                        : const Icon(Icons.table_chart_outlined, size: 18),
+                    title: collection.name,
                     selected: navigation.selectedCollectionId == collection.id,
                     onTap: () => navigation.selectCollection(collection.id),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Delete collection',
-                      onPressed: () async {
-                        final confirmed = await confirmDelete(
-                          context,
-                          title: "Delete '${collection.name}'?",
-                        );
-                        if (!confirmed) return;
-                        if (navigation.selectedCollectionId == collection.id) {
-                          navigation.clearSelection();
-                        }
-                        await scope.collections.softDelete(collection.id);
-                      },
-                    ),
+                    trailingTooltip: 'Delete collection',
+                    onTrailingTap: () async {
+                      final confirmed = await confirmDelete(
+                        context,
+                        title: "Delete '${collection.name}'?",
+                      );
+                      if (!confirmed) return;
+                      if (navigation.selectedCollectionId == collection.id) {
+                        navigation.clearSelection();
+                      }
+                      await scope.collections.softDelete(collection.id);
+                    },
                   ),
               ],
             );
           },
         ),
-        const Divider(),
-        ListTile(
-          title: const Text('Pages'),
-          trailing: IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'New page',
-            onPressed: () async {
-              final id = await scope.pages.create(spaceId: spaceId);
-              navigation.selectPage(id);
-            },
-          ),
+        const ShadSeparator.horizontal(),
+        _SidebarHeaderRow(
+          title: 'Pages',
+          tooltip: 'New page',
+          onAdd: () async {
+            final id = await scope.pages.create(spaceId: spaceId);
+            navigation.selectPage(id);
+          },
         ),
         StreamBuilder<List<Page>>(
           stream: scope.pages.watchTopLevelInSpace(spaceId),
@@ -235,35 +232,130 @@ class _SpaceContent extends StatelessWidget {
             return Column(
               children: [
                 for (final page in pages)
-                  ListTile(
+                  _SidebarRow(
                     leading: page.icon != null
                         ? Text(page.icon!, style: const TextStyle(fontSize: 20))
-                        : const Icon(Icons.description_outlined),
-                    title: Text(page.title.isEmpty ? 'Untitled' : page.title),
+                        : const Icon(Icons.description_outlined, size: 18),
+                    title: page.title.isEmpty ? 'Untitled' : page.title,
                     selected: navigation.selectedPageId == page.id,
                     onTap: () => navigation.selectPage(page.id),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Delete page',
-                      onPressed: () async {
-                        final confirmed = await confirmDelete(
-                          context,
-                          title:
-                              "Delete '${page.title.isEmpty ? 'Untitled' : page.title}'?",
-                        );
-                        if (!confirmed) return;
-                        if (navigation.selectedPageId == page.id) {
-                          navigation.clearSelection();
-                        }
-                        await scope.pages.softDelete(page.id);
-                      },
-                    ),
+                    trailingTooltip: 'Delete page',
+                    onTrailingTap: () async {
+                      final confirmed = await confirmDelete(
+                        context,
+                        title:
+                            "Delete '${page.title.isEmpty ? 'Untitled' : page.title}'?",
+                      );
+                      if (!confirmed) return;
+                      if (navigation.selectedPageId == page.id) {
+                        navigation.clearSelection();
+                      }
+                      await scope.pages.softDelete(page.id);
+                    },
                   ),
               ],
             );
           },
         ),
       ],
+    );
+  }
+}
+
+/// The "Collections"/"Pages" section header, with its "+" action - not
+/// a list entry itself, so it's kept separate from [_SidebarRow].
+class _SidebarHeaderRow extends StatelessWidget {
+  const _SidebarHeaderRow({
+    required this.title,
+    required this.tooltip,
+    required this.onAdd,
+  });
+
+  final String title;
+  final String tooltip;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(title, style: theme.textTheme.small)),
+          Tooltip(
+            message: tooltip,
+            child: ShadIconButton.ghost(
+              icon: const Icon(Icons.add, size: 18),
+              onPressed: onAdd,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A selectable sidebar entry (collection or page) with a leading
+/// icon/emoji, a title, and a trailing delete action - shadcn_ui has no
+/// ListTile equivalent, so this composes one from theme tokens.
+class _SidebarRow extends StatelessWidget {
+  const _SidebarRow({
+    required this.leading,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    required this.trailingTooltip,
+    required this.onTrailingTap,
+  });
+
+  final Widget leading;
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+  final String trailingTooltip;
+  final VoidCallback onTrailingTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      child: Material(
+        color: selected ? theme.colorScheme.accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                leading,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: selected
+                        ? theme.textTheme.small.copyWith(
+                            color: theme.colorScheme.accentForeground,
+                          )
+                        : theme.textTheme.small,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Tooltip(
+                  message: trailingTooltip,
+                  child: ShadIconButton.ghost(
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    onPressed: onTrailingTap,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

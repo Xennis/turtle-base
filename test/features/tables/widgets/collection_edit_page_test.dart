@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
@@ -27,8 +28,8 @@ void main() {
       await tester.pumpWidget(
         AppScope(
           database: database,
-          child: MaterialApp(
-            home: CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+          child: wrapWithAppLocalizations(
+            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
           ),
         ),
       );
@@ -38,7 +39,7 @@ void main() {
       expect(find.text('No fields yet'), findsOneWidget);
 
       // Rename the collection via its own name field.
-      await tester.enterText(find.widgetWithText(TextField, 'Tasks'), 'To-dos');
+      await tester.enterText(find.widgetWithText(ShadInput, 'Tasks'), 'To-dos');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -47,8 +48,8 @@ void main() {
       expect(storedCollection.name, 'To-dos');
 
       // Add a field via the "new field" row, defaulting to text.
-      await tester.enterText(find.byType(TextField).last, 'Priority');
-      await tester.tap(find.widgetWithIcon(IconButton, Icons.add));
+      await tester.enterText(find.byType(ShadInput).last, 'Priority');
+      await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -59,7 +60,7 @@ void main() {
 
       // Rename it inline (the field row's TextField, identified by its
       // current value).
-      await tester.enterText(find.widgetWithText(TextField, 'Priority'), 'Urgency');
+      await tester.enterText(find.widgetWithText(ShadInput, 'Priority'), 'Urgency');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -71,8 +72,8 @@ void main() {
       // the "new field" row's - it comes first in the list). The
       // Collection card's Icon row pushes it down, so ensure it's
       // scrolled into view before tapping.
-      await tester.ensureVisible(find.byType(DropdownButton<FieldType>).first);
-      await tester.tap(find.byType(DropdownButton<FieldType>).first);
+      await tester.ensureVisible(find.byType(ShadSelect<FieldType>).first);
+      await tester.tap(find.byType(ShadSelect<FieldType>).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Number').last);
       await tester.pumpAndSettle();
@@ -109,8 +110,8 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         database: database,
-        child: MaterialApp(
-          home: CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
         ),
       ),
     );
@@ -119,7 +120,7 @@ void main() {
 
     // Second TextField in the Collection card - the title-column
     // label, empty by default (shows "Name" only as a hint).
-    await tester.enterText(find.byType(TextField).at(1), 'Task');
+    await tester.enterText(find.byType(ShadInput).at(1), 'Task');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -129,7 +130,7 @@ void main() {
 
     // Clearing it resets to the "Name" default rather than being
     // ignored (unlike the collection's own name field).
-    await tester.enterText(find.byType(TextField).at(1), '');
+    await tester.enterText(find.byType(ShadInput).at(1), '');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -156,33 +157,33 @@ void main() {
       await tester.pumpWidget(
         AppScope(
           database: database,
-          child: MaterialApp(
-            home: CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+          child: wrapWithAppLocalizations(
+            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
           ),
         ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      await tester.enterText(find.byType(TextField).last, 'Project');
-      await tester.tap(find.byType(DropdownButton<FieldType>).last);
+      await tester.enterText(find.byType(ShadInput).last, 'Project');
+      await tester.tap(find.byType(ShadSelect<FieldType>).last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Relation').last);
       await tester.pumpAndSettle();
 
       // Blocked until a target collection is picked - a relation field
       // without one is useless.
-      final addButton = tester.widget<IconButton>(
-        find.widgetWithIcon(IconButton, Icons.add),
+      final addButton = tester.widget<ShadIconButton>(
+        find.widgetWithIcon(ShadIconButton, Icons.add),
       );
       expect(addButton.onPressed, isNull);
 
-      await tester.tap(find.byType(DropdownButton<String>));
+      await tester.tap(find.byType(ShadSelect<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Projects').last);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithIcon(IconButton, Icons.add));
+      await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
