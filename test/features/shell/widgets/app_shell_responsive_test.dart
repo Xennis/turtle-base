@@ -123,4 +123,25 @@ void main() {
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
+
+  testWidgets(
+    'opening Settings on a narrow screen closes the drawer and shows its own back button',
+    (WidgetTester tester) async {
+      setNarrowSize(tester);
+      final database = await pumpApp(tester);
+      addTearDown(database.close);
+
+      await openDrawer(tester);
+
+      await tester.tap(find.text('Settings'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The drawer closed itself, same as selecting a page/collection.
+      expect(find.text('Collections'), findsNothing);
+      expect(find.text('Theme'), findsOneWidget);
+      expect(find.byType(AppBar), findsOneWidget);
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 }

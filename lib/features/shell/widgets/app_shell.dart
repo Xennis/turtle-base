@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turtle_base/features/pages/widgets/page_detail_view.dart';
+import 'package:turtle_base/features/settings/widgets/settings_page.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/widgets/sidebar.dart';
 import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
@@ -102,7 +103,9 @@ class _NarrowShellState extends State<_NarrowShell> {
 
   void _closeDrawerOnSelection() {
     final navigation = widget.navigation;
-    if (navigation.selectedCollectionId != null || navigation.selectedPageId != null) {
+    if (navigation.selectedCollectionId != null ||
+        navigation.selectedPageId != null ||
+        navigation.isShowingSettings) {
       _scaffoldKey.currentState?.closeDrawer();
     }
   }
@@ -113,7 +116,7 @@ class _NarrowShellState extends State<_NarrowShell> {
     return ListenableBuilder(
       listenable: navigation,
       builder: (context, _) {
-        if (navigation.isEditingCollection) {
+        if (navigation.isEditingCollection || navigation.isShowingSettings) {
           return _MainContent(navigation: navigation);
         }
         final hasSelection =
@@ -147,6 +150,9 @@ class _MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (navigation.isShowingSettings) {
+      return SettingsPage(onDone: navigation.hideSettings);
+    }
     if (navigation.selectedCollectionId case final id?) {
       if (navigation.isEditingCollection) {
         return CollectionEditPage(

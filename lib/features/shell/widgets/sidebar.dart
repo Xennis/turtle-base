@@ -47,6 +47,21 @@ class Sidebar extends StatelessWidget {
                 },
               ),
             ),
+            const ShadSeparator.horizontal(),
+            // Fixed entry, not tied to the current space (see UI_UX.md's
+            // Sidebar section - Papierkorb follows later as a second one).
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: ListenableBuilder(
+                listenable: navigation,
+                builder: (context, _) => _SidebarRow(
+                  leading: const Icon(Icons.settings_outlined, size: 18),
+                  title: 'Settings',
+                  selected: navigation.isShowingSettings,
+                  onTap: navigation.showSettings,
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -296,25 +311,30 @@ class _SidebarHeaderRow extends StatelessWidget {
   }
 }
 
-/// A selectable sidebar entry (collection or page) with a leading
-/// icon/emoji, a title, and a trailing delete action - shadcn_ui has no
-/// ListTile equivalent, so this composes one from theme tokens.
+/// A selectable sidebar entry (collection, page, or a fixed entry like
+/// Settings) with a leading icon/emoji, a title, and an optional
+/// trailing delete action - shadcn_ui has no ListTile equivalent, so
+/// this composes one from theme tokens. Fixed entries (no delete
+/// action) leave [trailingTooltip]/[onTrailingTap] unset.
 class _SidebarRow extends StatelessWidget {
   const _SidebarRow({
     required this.leading,
     required this.title,
     required this.selected,
     required this.onTap,
-    required this.trailingTooltip,
-    required this.onTrailingTap,
-  });
+    this.trailingTooltip,
+    this.onTrailingTap,
+  }) : assert(
+         (trailingTooltip == null) == (onTrailingTap == null),
+         'trailingTooltip and onTrailingTap must be set together',
+       );
 
   final Widget leading;
   final String title;
   final bool selected;
   final VoidCallback onTap;
-  final String trailingTooltip;
-  final VoidCallback onTrailingTap;
+  final String? trailingTooltip;
+  final VoidCallback? onTrailingTap;
 
   @override
   Widget build(BuildContext context) {
@@ -344,13 +364,14 @@ class _SidebarRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Tooltip(
-                  message: trailingTooltip,
-                  child: ShadIconButton.ghost(
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    onPressed: onTrailingTap,
+                if (trailingTooltip != null)
+                  Tooltip(
+                    message: trailingTooltip!,
+                    child: ShadIconButton.ghost(
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      onPressed: onTrailingTap,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

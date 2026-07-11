@@ -41,6 +41,7 @@ dependencies:
   path: ^1.9.1
   path_provider: ^2.1.6
   shadcn_ui: ^0.43.4
+  shared_preferences: ^2.5.5
   sqlite_crdt: ^3.0.3
   trina_grid: ^2.2.2
   uuid: ^4.5.3

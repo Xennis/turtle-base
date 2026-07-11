@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/core/theme/theme_controller.dart';
+import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 
 /// An in-memory database for widget tests.
@@ -56,10 +59,17 @@ Widget wrapWithAppLocalizations(Widget home) {
 Future<AppDatabase> pumpApp(WidgetTester tester) async {
   final database = newTestDatabase();
   await tester.runAsync(() => database.currentUserId());
+  // Mocked (no real platform channel), so unlike the database above,
+  // this doesn't need runAsync().
+  SharedPreferences.setMockInitialValues({});
+  final themeController = await ThemeController.load();
   await tester.pumpWidget(
-    AppScope(
-      database: database,
-      child: wrapWithAppLocalizations(const AppShell()),
+    ThemeScope(
+      controller: themeController,
+      child: AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(const AppShell()),
+      ),
     ),
   );
   await tester.pump();
