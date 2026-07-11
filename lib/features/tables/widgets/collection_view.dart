@@ -89,14 +89,18 @@ class CollectionView extends StatelessWidget {
                             ),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
+                            // Wrap rather than Row - on narrow screens
+                            // (see UI_UX.md's Responsive/Adaptive Layout)
+                            // both buttons side by side don't fit.
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
                               children: [
                                 ShadButton.outline(
                                   leading: const Icon(Icons.add, size: 16),
                                   onPressed: () => _addRow(scope),
                                   child: const Text('Add row'),
                                 ),
-                                const SizedBox(width: 8),
                                 ShadButton.outline(
                                   leading: const Icon(Icons.edit_outlined, size: 16),
                                   onPressed: onEdit,

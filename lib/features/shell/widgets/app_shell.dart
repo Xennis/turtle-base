@@ -5,10 +5,18 @@ import 'package:turtle_base/features/shell/widgets/sidebar.dart';
 import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 import 'package:turtle_base/features/tables/widgets/collection_view.dart';
 
-/// Fixed side-by-side layout for now. Switching to a drawer on narrow
-/// screens (see UI_UX.md) is a follow-up, not part of this first step.
+/// Desktop (wide screens): sidebar permanently visible, side-by-side with
+/// content. Mobile (narrow screens): sidebar becomes a drawer, navigation
+/// is list-then-detail with a back button, instead of two columns side
+/// by side (see UI_UX.md's Responsive/Adaptive Layout section).
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
+
+  /// Below this width, use the narrow (drawer + stack) layout - the
+  /// common Material breakpoint between compact (phone) and medium
+  /// (tablet/desktop) window sizes. UI_UX.md doesn't pin an exact
+  /// number.
+  static const wideBreakpoint = 600.0;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -25,6 +33,18 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= AppShell.wideBreakpoint;
+    return isWide ? _WideShell(navigation: _navigation) : _NarrowShell(navigation: _navigation);
+  }
+}
+
+class _WideShell extends StatelessWidget {
+  const _WideShell({required this.navigation});
+
+  final AppNavigationController navigation;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: [
@@ -33,17 +53,89 @@ class _AppShellState extends State<AppShell> {
             // delete icon buttons alongside the dropdown without
             // overflowing.
             width: 300,
-            child: Sidebar(navigation: _navigation),
+            child: Sidebar(navigation: navigation),
           ),
           const VerticalDivider(width: 1),
           Expanded(
             child: ListenableBuilder(
-              listenable: _navigation,
-              builder: (context, _) => _MainContent(navigation: _navigation),
+              listenable: navigation,
+              builder: (context, _) => _MainContent(navigation: navigation),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Sidebar lives in a drawer instead of being permanently visible; the
+/// content area is either the sidebar's "nothing selected" fallback (with
+/// the drawer's hamburger reachable) or the selected collection/page,
+/// full-screen, with a back button that clears the selection.
+///
+/// CollectionEditPage already brings its own full Scaffold/AppBar/back
+/// button (see AppShell/_MainContent) - shown as-is here rather than
+/// nested inside a second AppBar.
+class _NarrowShell extends StatefulWidget {
+  const _NarrowShell({required this.navigation});
+
+  final AppNavigationController navigation;
+
+  @override
+  State<_NarrowShell> createState() => _NarrowShellState();
+}
+
+class _NarrowShellState extends State<_NarrowShell> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.navigation.addListener(_closeDrawerOnSelection);
+  }
+
+  @override
+  void dispose() {
+    widget.navigation.removeListener(_closeDrawerOnSelection);
+    super.dispose();
+  }
+
+  void _closeDrawerOnSelection() {
+    final navigation = widget.navigation;
+    if (navigation.selectedCollectionId != null || navigation.selectedPageId != null) {
+      _scaffoldKey.currentState?.closeDrawer();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final navigation = widget.navigation;
+    return ListenableBuilder(
+      listenable: navigation,
+      builder: (context, _) {
+        if (navigation.isEditingCollection) {
+          return _MainContent(navigation: navigation);
+        }
+        final hasSelection =
+            navigation.selectedCollectionId != null || navigation.selectedPageId != null;
+        return Scaffold(
+          key: _scaffoldKey,
+          appBar: AppBar(
+            leading: hasSelection
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: 'Back',
+                    onPressed: navigation.clearSelection,
+                  )
+                // Left null (rather than removed) so Scaffold still
+                // auto-shows the drawer's hamburger button here.
+                : null,
+            title: const Text('Turtle Base'),
+          ),
+          drawer: Drawer(child: SafeArea(child: Sidebar(navigation: navigation))),
+          body: _MainContent(navigation: navigation),
+        );
+      },
     );
   }
 }

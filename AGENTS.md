@@ -9,7 +9,7 @@ Code (identifiers, comments) is always written in English.
 Format: `type(scope): Description`
 
 - Types: `chore`, `feat`, `fix`
-- Scope: default `app`; use the platform folder name (e.g. `linux`) when a change only touches that platform folder (`linux/`, later `android/`, ...)
+- Scope: default `app`; use the platform folder name (e.g. `linux`, `android`) when a change only touches that platform folder
 
 Example: `chore(app): Init Flutter project with Linux as platform`
 
@@ -25,9 +25,12 @@ Skill content itself isn't checked in - only `skills-lock.json` is tracked. Run
 
 ## Platforms
 
-Linux is the only supported Flutter platform. Don't run `flutter create --platforms=...` for
-other platforms (e.g. web, android) and don't add platform folders like `web/` — verify changes
-via `flutter run -d linux` (or `flutter analyze`/`flutter test` when no display is available).
+Linux and Android are the supported Flutter platforms (see ARCHITECTURE.md's
+Plattform-Reihenfolge). Don't run `flutter create --platforms=...` for other platforms (e.g. web,
+iOS) and don't add platform folders like `web/` — verify changes via `flutter run -d linux` and,
+for anything responsive/layout-related, also on Android (emulator `vPixel_10`, or
+`flutter run -d android`); fall back to `flutter analyze`/`flutter test` when no display is
+available.
 
 ## Structure
 
