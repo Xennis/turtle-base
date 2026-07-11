@@ -19,9 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  # Held below 3.12.0 to match the Flutter version pinned in mise.toml
-  # (see the comment there for why).
-  sdk: ^3.11.0
+  sdk: ^3.12.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -32,15 +30,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Alphabetical order
+  # Alphabetical order. appflowy_editor and sqlite_crdt are patched via
+  # dependency_overrides below - see there for why.
+  appflowy_editor: ^6.2.0
   cupertino_icons: ^1.0.8
   drift: 2.34.1
   drift_flutter: ^0.3.0
-  uuid: ^4.5.3
-  trina_grid: ^2.2.2
-  appflowy_editor: ^6.2.0
   flutter_localizations:
     sdk: flutter
+  sqlite_crdt: ^3.0.3
+  trina_grid: ^2.2.2
+  uuid: ^4.5.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -48,6 +48,32 @@ dev_dependencies:
   build_runner: ^2.15.1
   drift_dev: ^2.34.0
   flutter_lints: ^6.0.0
+
+# Two packages here are patched via git forks rather than plain pub.dev
+# versions - both because of a real upstream compatibility gap, not
+# preference. Whenever the underlying issue is fixed upstream, drop the
+# override and go back to a normal hosted version constraint above.
+dependency_overrides:
+  # sqlite_crdt (see ARCHITECTURE.md's sync section) pulls in sql_crdt,
+  # which does the actual CRDT merge logic. sql_crdt has never released
+  # a version supporting sqlparser >=0.42 (our drift_dev needs ^0.45.0,
+  # which itself has breaking API changes vs. the ^0.41.0 sql_crdt last
+  # targeted) - upstream: https://github.com/cachapa/sql_crdt. No PR
+  # open there yet; this fork bumps the sqlparser constraint and fixes
+  # the resulting breakage in sql_crdt's own code.
+  sql_crdt:
+    git:
+      url: https://github.com/Xennis/sql_crdt.git
+      ref: chore_sqlparser_0.45.0
+  # appflowy_editor 6.2.0 (latest release on pub.dev) doesn't implement
+  # TextInputClient.onFocusReceived, a method Flutter 3.44 made
+  # required - without it the app fails to compile on Flutter 3.44+.
+  # Points at an open upstream PR's branch until it's merged/released:
+  # https://github.com/AppFlowy-IO/appflowy-editor/pull/1208
+  appflowy_editor:
+    git:
+      url: https://github.com/onedigitalde/appflowy-editor.git
+      ref: fix/flutter-3-44-on-focus-received
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

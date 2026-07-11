@@ -1,6 +1,2 @@
-# Pinned below 3.44 because appflowy_editor 6.2.0 (latest stable) doesn't
-# implement TextInputClient.onFocusReceived, a method Flutter 3.44 added.
-# Tracked upstream: https://github.com/AppFlowy-IO/appflowy-editor/issues/1204
-# Bump back to the latest Flutter once that's fixed in a release.
 [tools]
-flutter = { version = "3.41.9", postinstall = "dart run build_runner build" }
+flutter = { version = "3.44.6", postinstall = "dart run build_runner build" }
