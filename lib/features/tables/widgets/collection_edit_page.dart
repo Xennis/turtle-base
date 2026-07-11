@@ -4,6 +4,7 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
+import 'package:turtle_base/features/tables/data/relation_field.dart';
 
 /// Shown in the same content area as CollectionView (see
 /// AppShell/_MainContent) rather than pushed via Navigator, so the
@@ -34,6 +35,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   FocusNode? _titleFieldLabelFocusNode;
   final _newFieldNameController = TextEditingController();
   FieldType _newFieldType = FieldType.text;
+  String? _newFieldRelationTargetId;
   final _fieldNameControllers = <String, TextEditingController>{};
   final _fieldFocusNodes = <String, FocusNode>{};
 
@@ -94,13 +96,24 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   Future<void> _addField(FieldsRepository fields) async {
     final name = _newFieldNameController.text.trim();
     if (name.isEmpty) return;
+    // A relation field needs a target collection to be usable - the
+    // "Add" button is disabled until one is picked, see build().
+    if (_newFieldType == FieldType.relation && _newFieldRelationTargetId == null) {
+      return;
+    }
     await fields.create(
       collectionId: widget.collectionId,
       name: name,
       type: _newFieldType,
+      config: _newFieldType == FieldType.relation
+          ? encodeRelationConfig(_newFieldRelationTargetId!)
+          : null,
     );
     _newFieldNameController.clear();
-    setState(() => _newFieldType = FieldType.text);
+    setState(() {
+      _newFieldType = FieldType.text;
+      _newFieldRelationTargetId = null;
+    });
   }
 
   @override
@@ -211,48 +224,64 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
-                      StreamBuilder<List<Field>>(
-                        stream: scope.fields.watchAllInCollection(
-                          widget.collectionId,
-                        ),
-                        builder: (context, fieldsSnapshot) {
-                          final fields = fieldsSnapshot.data ?? const <Field>[];
-                          // Drop controllers/focus nodes of fields that
-                          // no longer exist (deleted, or from a
-                          // previous collection).
-                          _fieldNameControllers.removeWhere((id, controller) {
-                            final stillExists = fields.any((f) => f.id == id);
-                            if (!stillExists) controller.dispose();
-                            return !stillExists;
-                          });
-                          _fieldFocusNodes.removeWhere((id, focusNode) {
-                            final stillExists = fields.any((f) => f.id == id);
-                            if (!stillExists) focusNode.dispose();
-                            return !stillExists;
-                          });
-                          return Column(
-                            children: [
-                              if (fields.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8),
-                                  child: Text('No fields yet'),
-                                ),
-                              for (final field in fields)
-                                _FieldRow(
-                                  field: field,
-                                  nameController: _fieldNameControllerFor(field),
-                                  focusNode: _fieldFocusNodeFor(field, scope.fields),
-                                  fields: scope.fields,
-                                ),
-                              const Divider(),
-                              _AddFieldRow(
-                                nameController: _newFieldNameController,
-                                type: _newFieldType,
-                                onTypeChanged: (type) =>
-                                    setState(() => _newFieldType = type),
-                                onAdd: () => _addField(scope.fields),
-                              ),
-                            ],
+                      // Needed for the relation type's target-collection
+                      // dropdown - other collections in the same space.
+                      StreamBuilder<List<Collection>>(
+                        stream: scope.collections.watchAllInSpace(collection.spaceId),
+                        builder: (context, collectionsSnapshot) {
+                          final collections =
+                              collectionsSnapshot.data ?? const <Collection>[];
+                          return StreamBuilder<List<Field>>(
+                            stream: scope.fields.watchAllInCollection(
+                              widget.collectionId,
+                            ),
+                            builder: (context, fieldsSnapshot) {
+                              final fields = fieldsSnapshot.data ?? const <Field>[];
+                              // Drop controllers/focus nodes of fields
+                              // that no longer exist (deleted, or from a
+                              // previous collection).
+                              _fieldNameControllers.removeWhere((id, controller) {
+                                final stillExists = fields.any((f) => f.id == id);
+                                if (!stillExists) controller.dispose();
+                                return !stillExists;
+                              });
+                              _fieldFocusNodes.removeWhere((id, focusNode) {
+                                final stillExists = fields.any((f) => f.id == id);
+                                if (!stillExists) focusNode.dispose();
+                                return !stillExists;
+                              });
+                              return Column(
+                                children: [
+                                  if (fields.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 8),
+                                      child: Text('No fields yet'),
+                                    ),
+                                  for (final field in fields)
+                                    _FieldRow(
+                                      field: field,
+                                      nameController: _fieldNameControllerFor(field),
+                                      focusNode: _fieldFocusNodeFor(field, scope.fields),
+                                      fields: scope.fields,
+                                      collections: collections,
+                                    ),
+                                  const Divider(),
+                                  _AddFieldRow(
+                                    nameController: _newFieldNameController,
+                                    type: _newFieldType,
+                                    onTypeChanged: (type) => setState(() {
+                                      _newFieldType = type;
+                                    }),
+                                    collections: collections,
+                                    relationTargetId: _newFieldRelationTargetId,
+                                    onRelationTargetChanged: (id) => setState(() {
+                                      _newFieldRelationTargetId = id;
+                                    }),
+                                    onAdd: () => _addField(scope.fields),
+                                  ),
+                                ],
+                              );
+                            },
                           );
                         },
                       ),
@@ -274,6 +303,7 @@ class _FieldRow extends StatelessWidget {
     required this.nameController,
     required this.focusNode,
     required this.fields,
+    required this.collections,
   });
 
   final Field field;
@@ -281,8 +311,13 @@ class _FieldRow extends StatelessWidget {
   final FocusNode focusNode;
   final FieldsRepository fields;
 
+  /// Other collections in the same space - the relation type's target
+  /// picker offers these (see build()).
+  final List<Collection> collections;
+
   @override
   Widget build(BuildContext context) {
+    final isRelation = field.type == FieldType.relation.name;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -308,6 +343,22 @@ class _FieldRow extends StatelessWidget {
               if (type != null) fields.changeType(field.id, type);
             },
           ),
+          if (isRelation) ...[
+            const SizedBox(width: 8),
+            DropdownButton<String>(
+              hint: const Text('Relates to...'),
+              value: decodeRelationTargetCollectionId(field.config),
+              items: [
+                for (final collection in collections)
+                  DropdownMenuItem(value: collection.id, child: Text(collection.name)),
+              ],
+              onChanged: (targetId) {
+                if (targetId != null) {
+                  fields.updateConfig(field.id, encodeRelationConfig(targetId));
+                }
+              },
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Delete field',
@@ -324,16 +375,26 @@ class _AddFieldRow extends StatelessWidget {
     required this.nameController,
     required this.type,
     required this.onTypeChanged,
+    required this.collections,
+    required this.relationTargetId,
+    required this.onRelationTargetChanged,
     required this.onAdd,
   });
 
   final TextEditingController nameController;
   final FieldType type;
   final ValueChanged<FieldType> onTypeChanged;
+  final List<Collection> collections;
+  final String? relationTargetId;
+  final ValueChanged<String?> onRelationTargetChanged;
   final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
+    final isRelation = type == FieldType.relation;
+    // A relation field is useless without a target - block adding
+    // until one's picked, rather than creating a half-configured field.
+    final canAdd = !isRelation || relationTargetId != null;
     return Row(
       children: [
         Expanded(
@@ -354,10 +415,22 @@ class _AddFieldRow extends StatelessWidget {
             if (t != null) onTypeChanged(t);
           },
         ),
+        if (isRelation) ...[
+          const SizedBox(width: 8),
+          DropdownButton<String>(
+            hint: const Text('Relates to...'),
+            value: relationTargetId,
+            items: [
+              for (final collection in collections)
+                DropdownMenuItem(value: collection.id, child: Text(collection.name)),
+            ],
+            onChanged: onRelationTargetChanged,
+          ),
+        ],
         IconButton(
           icon: const Icon(Icons.add),
           tooltip: 'Add field',
-          onPressed: onAdd,
+          onPressed: canAdd ? onAdd : null,
         ),
       ],
     );

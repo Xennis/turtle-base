@@ -4,6 +4,7 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 
 import '../../../support/pump_app.dart';
@@ -133,4 +134,62 @@ void main() {
     storedCollection = await database.select(database.collections).getSingle();
     expect(storedCollection.titleFieldLabel, isNull);
   }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets(
+    'a relation field requires and stores a target collection',
+    (WidgetTester tester) async {
+      final database = newTestDatabase();
+      addTearDown(database.close);
+
+      late String collectionId;
+      late String targetCollectionId;
+      await tester.runAsync(() async {
+        final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+        final collections = CollectionsRepository(database);
+        collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+        targetCollectionId = await collections.create(spaceId: spaceId, name: 'Projects');
+      });
+
+      await tester.pumpWidget(
+        AppScope(
+          database: database,
+          child: MaterialApp(
+            home: CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.enterText(find.byType(TextField).last, 'Project');
+      await tester.tap(find.byType(DropdownButton<FieldType>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Relation').last);
+      await tester.pumpAndSettle();
+
+      // Blocked until a target collection is picked - a relation field
+      // without one is useless.
+      final addButton = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.add),
+      );
+      expect(addButton.onPressed, isNull);
+
+      await tester.tap(find.byType(DropdownButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Projects').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithIcon(IconButton, Icons.add));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final storedFields = await database.select(database.fields).get();
+      expect(storedFields.single.type, 'relation');
+      expect(
+        decodeRelationTargetCollectionId(storedFields.single.config),
+        targetCollectionId,
+      );
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 }

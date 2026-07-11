@@ -5,6 +5,7 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/relation_field.dart';
 
 /// Grid view of a collection's entries, with inline cell editing for
 /// text/number/date/url. Edits are persisted immediately on commit
@@ -48,46 +49,68 @@ class CollectionView extends StatelessWidget {
               stream: scope.pages.watchAllInCollection(collectionId),
               builder: (context, entriesSnapshot) {
                 final entries = entriesSnapshot.data ?? const <Page>[];
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add row'),
-                              onPressed: () => _addRow(scope),
+                // Relation cells show the related entries' titles, not
+                // their ids - resolve them from whichever collections
+                // this collection's relation fields target.
+                final relationTargetIds = fields
+                    .where((f) => f.type == FieldType.relation.name)
+                    .map((f) => decodeRelationTargetCollectionId(f.config))
+                    .whereType<String>()
+                    .toSet()
+                    .toList();
+                return _RelatedPagesResolver(
+                  scope: scope,
+                  collectionIds: relationTargetIds,
+                  builder: (context, relatedPagesByCollection) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Add row'),
+                                  onPressed: () => _addRow(scope),
+                                ),
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.edit_outlined),
+                                  label: const Text('Edit collection'),
+                                  onPressed: onEdit,
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.edit_outlined),
-                              label: const Text('Edit collection'),
-                              onPressed: onEdit,
+                          ),
+                          Expanded(
+                            // TrinaGrid only reads columns/rows once (see
+                            // its didUpdateWidget), so a Key that changes
+                            // with the data forces a fresh grid instead of
+                            // stale rows.
+                            child: TrinaGrid(
+                              key: ValueKey(
+                                _gridVersion(
+                                  titleLabel,
+                                  fields,
+                                  entries,
+                                  relatedPagesByCollection,
+                                ),
+                              ),
+                              columns: _columnsFor(titleLabel, fields),
+                              rows: _rowsFor(fields, entries, relatedPagesByCollection),
+                              onChanged: (event) => _onCellChanged(scope, event),
+                              onRowDoubleTap: (event) =>
+                                  onOpenEntry(event.row.data as String),
+                              onLoaded: onLoaded,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Expanded(
-                        // TrinaGrid only reads columns/rows once (see
-                        // its didUpdateWidget), so a Key that changes
-                        // with the data forces a fresh grid instead of
-                        // stale rows.
-                        child: TrinaGrid(
-                          key: ValueKey(_gridVersion(titleLabel, fields, entries)),
-                          columns: _columnsFor(titleLabel, fields),
-                          rows: _rowsFor(fields, entries),
-                          onChanged: (event) => _onCellChanged(scope, event),
-                          onRowDoubleTap: (event) =>
-                              onOpenEntry(event.row.data as String),
-                          onLoaded: onLoaded,
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             );
@@ -136,11 +159,18 @@ class CollectionView extends StatelessWidget {
           title: field.name,
           field: field.id,
           type: _columnTypeFor(field),
+          // Relations are edited via a picker in the entry's Page-View
+          // (see PagePropertiesHeader), not inline in the grid.
+          readOnly: field.type == FieldType.relation.name,
         ),
     ];
   }
 
-  List<TrinaRow> _rowsFor(List<Field> fields, List<Page> entries) {
+  List<TrinaRow> _rowsFor(
+    List<Field> fields,
+    List<Page> entries,
+    Map<String, List<Page>> relatedPagesByCollection,
+  ) {
     return [
       for (final entry in entries)
         TrinaRow(
@@ -148,19 +178,40 @@ class CollectionView extends StatelessWidget {
           cells: {
             'title': TrinaCell(value: entry.title),
             for (final field in fields)
-              field.id: TrinaCell(value: _cellValue(field, entry)),
+              field.id: TrinaCell(
+                value: _cellValue(field, entry, relatedPagesByCollection),
+              ),
           },
         ),
     ];
   }
 
-  Object _cellValue(Field field, Page entry) {
+  Object _cellValue(
+    Field field,
+    Page entry,
+    Map<String, List<Page>> relatedPagesByCollection,
+  ) {
     final raw = decodePageProperties(entry.properties)[field.id];
+    if (field.type == FieldType.relation.name) {
+      final targetId = decodeRelationTargetCollectionId(field.config);
+      final targetPages = relatedPagesByCollection[targetId] ?? const <Page>[];
+      final titles = [
+        for (final id in decodeRelationValue(raw)) _titleOf(targetPages, id),
+      ];
+      return titles.join(', ');
+    }
     if (raw == null) return '';
     if (field.type == FieldType.number.name) {
       return num.tryParse(raw.toString()) ?? raw;
     }
     return raw;
+  }
+
+  String _titleOf(List<Page> pages, String id) {
+    for (final page in pages) {
+      if (page.id == id) return page.title.isEmpty ? 'Untitled' : page.title;
+    }
+    return '?';
   }
 
   TrinaColumnType _columnTypeFor(Field field) {
@@ -171,11 +222,58 @@ class CollectionView extends StatelessWidget {
         : TrinaColumnType.text();
   }
 
-  String _gridVersion(String titleLabel, List<Field> fields, List<Page> entries) {
+  String _gridVersion(
+    String titleLabel,
+    List<Field> fields,
+    List<Page> entries,
+    Map<String, List<Page>> relatedPagesByCollection,
+  ) {
     final fieldPart = fields.map((f) => '${f.id}:${f.name}:${f.type}').join(',');
     final entryPart = entries
         .map((e) => '${e.id}:${e.updatedAt.millisecondsSinceEpoch}')
         .join(',');
-    return '$titleLabel|$fieldPart|$entryPart';
+    // Included so renaming a related entry elsewhere refreshes the
+    // resolved titles shown here too (TrinaGrid only reads rows once).
+    final relatedPart = relatedPagesByCollection.values
+        .expand((pages) => pages)
+        .map((p) => '${p.id}:${p.updatedAt.millisecondsSinceEpoch}')
+        .join(',');
+    return '$titleLabel|$fieldPart|$entryPart|$relatedPart';
+  }
+}
+
+/// Resolves [collectionIds] to their entries, nesting one StreamBuilder
+/// per id - not meant for large numbers of collections, but a
+/// collection's relation fields are expected to target only a few.
+class _RelatedPagesResolver extends StatelessWidget {
+  const _RelatedPagesResolver({
+    required this.scope,
+    required this.collectionIds,
+    required this.builder,
+  });
+
+  final AppScope scope;
+  final List<String> collectionIds;
+  final Widget Function(BuildContext, Map<String, List<Page>>) builder;
+
+  @override
+  Widget build(BuildContext context) => _build(context, collectionIds, const {});
+
+  Widget _build(
+    BuildContext context,
+    List<String> remaining,
+    Map<String, List<Page>> resolved,
+  ) {
+    if (remaining.isEmpty) return builder(context, resolved);
+    final collectionId = remaining.first;
+    return StreamBuilder<List<Page>>(
+      stream: scope.pages.watchAllInCollection(collectionId),
+      builder: (context, snapshot) {
+        return _build(context, remaining.sublist(1), {
+          ...resolved,
+          collectionId: snapshot.data ?? const <Page>[],
+        });
+      },
+    );
   }
 }

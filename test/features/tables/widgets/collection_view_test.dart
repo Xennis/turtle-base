@@ -8,6 +8,7 @@ import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
+import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_view.dart';
 
 import '../../../support/pump_app.dart';
@@ -233,6 +234,63 @@ void main() {
 
     final entry = await database.select(database.pages).getSingle();
     expect(entry.title, 'Buy milk');
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('shows a relation field as resolved, read-only titles', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final collections = CollectionsRepository(database);
+      final fields = FieldsRepository(database);
+      final pages = PagesRepository(database);
+
+      collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+      final projectsId = await collections.create(spaceId: spaceId, name: 'Projects');
+      final projectEntryId = await pages.create(
+        spaceId: spaceId,
+        collectionId: projectsId,
+        title: 'Website relaunch',
+      );
+      final relationField = await fields.create(
+        collectionId: collectionId,
+        name: 'Project',
+        type: FieldType.relation,
+        config: encodeRelationConfig(projectsId),
+      );
+      final entryId = await pages.create(
+        spaceId: spaceId,
+        collectionId: collectionId,
+        title: 'Buy milk',
+      );
+      await pages.setPropertyValue(entryId, relationField, [projectEntryId]);
+    });
+
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: MaterialApp(
+          home: CollectionView(
+            collectionId: collectionId,
+            onEdit: () {},
+            onOpenEntry: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Website relaunch'), findsOneWidget);
+    final relationColumn = tester
+        .widget<TrinaGrid>(find.byType(TrinaGrid))
+        .columns
+        .firstWhere((c) => c.title == 'Project');
+    expect(relationColumn.readOnly, isTrue);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
   testWidgets('grid uses a custom title column label if set', (

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
+import 'package:turtle_base/features/pages/widgets/relation_picker_dialog.dart';
+import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/relation_field.dart';
 
 /// The typed-fields area of a collection entry's Page-View, shown above
 /// the rich-text body (see UI_UX.md). Not used for freestanding pages.
@@ -94,23 +97,37 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(
-                          width: 120,
-                          child: Text(
-                            field.name,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SizedBox(
+                            width: 120,
+                            child: Text(
+                              field.name,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
                           ),
                         ),
                         Expanded(
-                          child: TextField(
-                            controller: _controllerFor(field, page),
-                            focusNode: _focusNodeFor(field, scope),
-                            decoration: const InputDecoration(isDense: true),
-                            onSubmitted: (value) =>
-                                scope.pages.setPropertyValue(widget.pageId, field.id, value),
-                          ),
+                          child: field.type == FieldType.relation.name
+                              ? _RelationFieldValue(
+                                  pageId: widget.pageId,
+                                  field: field,
+                                  selectedIds: decodeRelationValue(
+                                    decodePageProperties(page.properties)[field.id],
+                                  ),
+                                )
+                              : TextField(
+                                  controller: _controllerFor(field, page),
+                                  focusNode: _focusNodeFor(field, scope),
+                                  decoration: const InputDecoration(isDense: true),
+                                  onSubmitted: (value) => scope.pages.setPropertyValue(
+                                    widget.pageId,
+                                    field.id,
+                                    value,
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -121,5 +138,75 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
         );
       },
     );
+  }
+}
+
+/// A relation field's value: chips for the currently related entries
+/// (each removable), plus an "Add" chip opening the picker dialog.
+class _RelationFieldValue extends StatelessWidget {
+  const _RelationFieldValue({
+    required this.pageId,
+    required this.field,
+    required this.selectedIds,
+  });
+
+  final String pageId;
+  final Field field;
+  final List<String> selectedIds;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = AppScope.of(context);
+    final targetCollectionId = decodeRelationTargetCollectionId(field.config);
+    if (targetCollectionId == null) {
+      // No target picked yet (shouldn't normally happen - the
+      // Field-Editor requires one - but a relation field is otherwise
+      // unusable, so fail visibly rather than silently doing nothing).
+      return const Text('No target collection configured');
+    }
+    return StreamBuilder<List<Page>>(
+      stream: scope.pages.watchAllInCollection(targetCollectionId),
+      builder: (context, snapshot) {
+        final targetPages = snapshot.data ?? const <Page>[];
+        final selected = [
+          for (final id in selectedIds) ..._findById(targetPages, id),
+        ];
+        return Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final page in selected)
+              Chip(
+                label: Text(page.title.isEmpty ? 'Untitled' : page.title),
+                onDeleted: () => scope.pages.setPropertyValue(
+                  pageId,
+                  field.id,
+                  selectedIds.where((id) => id != page.id).toList(),
+                ),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 16),
+              label: const Text('Add'),
+              onPressed: () async {
+                final result = await showRelationPicker(
+                  context,
+                  scope: scope,
+                  targetCollectionId: targetCollectionId,
+                  selectedIds: selectedIds,
+                );
+                if (result != null) {
+                  await scope.pages.setPropertyValue(pageId, field.id, result);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Iterable<Page> _findById(List<Page> pages, String id) {
+    return pages.where((p) => p.id == id);
   }
 }
