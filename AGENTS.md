@@ -17,6 +17,12 @@ Example: `chore(app): Init Flutter project with Linux as platform`
 
 Tool versions (e.g. Flutter) are managed via [mise](https://mise.jdx.dev/) — see `mise.toml`.
 
+## Platforms
+
+Linux is the only supported Flutter platform. Don't run `flutter create --platforms=...` for
+other platforms (e.g. web, android) and don't add platform folders like `web/` — verify changes
+via `flutter run -d linux` (or `flutter analyze`/`flutter test` when no display is available).
+
 ## Structure
 
 Each `lib/features/<name>/` folder is split into:
