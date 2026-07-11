@@ -35,10 +35,11 @@ dependencies:
   appflowy_editor: ^6.2.0
   cupertino_icons: ^1.0.8
   drift: 2.34.1
-  drift_flutter: ^0.3.0
   emoji_picker_flutter: ^4.4.0
   flutter_localizations:
     sdk: flutter
+  path: ^1.9.1
+  path_provider: ^2.1.6
   shadcn_ui: ^0.43.4
   sqlite_crdt: ^3.0.3
   trina_grid: ^2.2.2

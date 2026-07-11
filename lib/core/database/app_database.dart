@@ -1,5 +1,8 @@
+import 'package:drift/backends.dart';
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:turtle_base/core/database/crdt_database_delegate.dart';
 import 'package:turtle_base/core/database/tables/blocks_table.dart';
 import 'package:turtle_base/core/database/tables/collections_table.dart';
 import 'package:turtle_base/core/database/tables/fields_table.dart';
@@ -58,8 +61,29 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  /// Routes every statement through [CrdtDatabaseDelegate] instead of
+  /// straight to sqlite3, so ordinary repository writes get CRDT tracking
+  /// for sync (see ARCHITECTURE.md) without repositories knowing about it.
+  /// Same file location `drift_flutter`'s driftDatabase() used to pick
+  /// (`getApplicationDocumentsDirectory()`/turtle_base.sqlite).
+  ///
+  /// Note: sqlite_crdt assumes every table it finds already has its
+  /// tracking columns (hlc/node_id/modified) - opening a database file
+  /// that predates this integration throws immediately. No real users
+  /// yet, so this is accepted rather than solved: reset your local
+  /// turtle_base.sqlite once when picking this up. Revisit with a
+  /// proper migration (ALTER TABLE ADD COLUMN + backfill) before that's
+  /// no longer true.
   static QueryExecutor _openConnection() {
-    return driftDatabase(name: 'turtle_base');
+    return DatabaseConnection.delayed(
+      Future(() async {
+        final dir = await getApplicationDocumentsDirectory();
+        final path = p.join(dir.path, 'turtle_base.sqlite');
+        return DatabaseConnection(
+          DelegatedDatabase(CrdtDatabaseDelegate(path: path)),
+        );
+      }),
+    );
   }
 
   /// Single-user app: there is always exactly one user row (seeded on
