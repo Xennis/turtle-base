@@ -4,7 +4,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/core/theme/app_color_scheme.dart';
 import 'package:turtle_base/core/theme/theme_controller.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
@@ -45,11 +44,11 @@ class TurtleBaseApp extends StatelessWidget {
               themeMode: themeMode,
               theme: ShadThemeData(
                 brightness: Brightness.light,
-                colorScheme: appLightColorScheme,
+                colorScheme: ShadGreenColorScheme.light(),
               ),
               darkTheme: ShadThemeData(
                 brightness: Brightness.dark,
-                colorScheme: appDarkColorScheme,
+                colorScheme: ShadGreenColorScheme.dark(),
               ),
               appBuilder: (context) {
                 return MaterialApp(

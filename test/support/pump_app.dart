@@ -8,7 +8,6 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/core/theme/app_color_scheme.dart';
 import 'package:turtle_base/core/theme/theme_controller.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
@@ -33,7 +32,7 @@ Widget wrapWithAppLocalizations(Widget home) {
   return ShadApp.custom(
     theme: ShadThemeData(
       brightness: Brightness.light,
-      colorScheme: appLightColorScheme,
+      colorScheme: const ShadZincColorScheme.light(),
     ),
     appBuilder: (context) {
       return MaterialApp(
