@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   drift: 2.34.1
   drift_flutter: ^0.3.0
+  emoji_picker_flutter: ^4.4.0
   flutter_localizations:
     sdk: flutter
   sqlite_crdt: ^3.0.3

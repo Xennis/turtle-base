@@ -187,7 +187,12 @@ class _SpaceContent extends StatelessWidget {
               children: [
                 for (final collection in collections)
                   ListTile(
-                    leading: const Icon(Icons.table_chart_outlined),
+                    leading: collection.icon != null
+                        ? Text(
+                            collection.icon!,
+                            style: const TextStyle(fontSize: 20),
+                          )
+                        : const Icon(Icons.table_chart_outlined),
                     title: Text(collection.name),
                     selected: navigation.selectedCollectionId == collection.id,
                     onTap: () => navigation.selectCollection(collection.id),
@@ -231,7 +236,9 @@ class _SpaceContent extends StatelessWidget {
               children: [
                 for (final page in pages)
                   ListTile(
-                    leading: const Icon(Icons.description_outlined),
+                    leading: page.icon != null
+                        ? Text(page.icon!, style: const TextStyle(fontSize: 20))
+                        : const Icon(Icons.description_outlined),
                     title: Text(page.title.isEmpty ? 'Untitled' : page.title),
                     selected: navigation.selectedPageId == page.id,
                     onTap: () => navigation.selectPage(page.id),

@@ -67,6 +67,25 @@ class CollectionView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (collection != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  if (collection.icon != null) ...[
+                                    Text(
+                                      collection.icon!,
+                                      style: const TextStyle(fontSize: 24),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Text(
+                                    collection.name,
+                                    style: Theme.of(context).textTheme.titleLarge,
+                                  ),
+                                ],
+                              ),
+                            ),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Row(

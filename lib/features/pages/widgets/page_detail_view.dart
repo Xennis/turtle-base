@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
 import 'package:turtle_base/core/app_scope.dart';
@@ -42,6 +43,7 @@ class _PageDetailViewState extends State<PageDetailView> {
   Timer? _debounceTimer;
   bool _initializedOnce = false;
   String? _collectionId;
+  String? _icon;
 
   @override
   void didChangeDependencies() {
@@ -77,6 +79,7 @@ class _PageDetailViewState extends State<PageDetailView> {
     _titleController = null;
     _titleFocusNode = null;
     _collectionId = null;
+    _icon = null;
   }
 
   Future<void> _initialize() async {
@@ -110,11 +113,32 @@ class _PageDetailViewState extends State<PageDetailView> {
       _editorState = editorState;
       _transactionSubscription = transactionSubscription;
       _collectionId = page.collectionId;
+      _icon = page.icon;
     });
   }
 
   void _saveTitle(AppScope scope, String value) {
     scope.pages.rename(widget.pageId, value.trim());
+  }
+
+  /// No dedicated edit page exists for a page (unlike collections) -
+  /// the icon itself, shown before the title, is the affordance for
+  /// changing it.
+  Future<void> _pickIcon(BuildContext context) async {
+    final scope = AppScope.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SizedBox(
+        height: 320,
+        child: EmojiPicker(
+          onEmojiSelected: (category, emoji) {
+            scope.pages.setIcon(widget.pageId, emoji.emoji);
+            setState(() => _icon = emoji.emoji);
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteEntry(BuildContext context, String collectionId) async {
@@ -169,15 +193,33 @@ class _PageDetailViewState extends State<PageDetailView> {
           ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: TextField(
-            controller: _titleController,
-            focusNode: _titleFocusNode,
-            style: Theme.of(context).textTheme.headlineSmall,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              hintText: 'Untitled',
-            ),
-            onSubmitted: (value) => _saveTitle(AppScope.of(context), value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              InkWell(
+                onTap: () => _pickIcon(context),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: _icon != null
+                      ? Text(_icon!, style: const TextStyle(fontSize: 28))
+                      : const Icon(Icons.add_reaction_outlined),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: TextField(
+                  controller: _titleController,
+                  focusNode: _titleFocusNode,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'Untitled',
+                  ),
+                  onSubmitted: (value) => _saveTitle(AppScope.of(context), value),
+                ),
+              ),
+            ],
           ),
         ),
         if (collectionId != null)

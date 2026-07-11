@@ -1,3 +1,4 @@
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -68,6 +69,22 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
     scope.collections.setTitleFieldLabel(
       widget.collectionId,
       trimmed.isEmpty ? null : trimmed,
+    );
+  }
+
+  Future<void> _pickIcon(BuildContext context) async {
+    final scope = AppScope.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SizedBox(
+        height: 320,
+        child: EmojiPicker(
+          onEmojiSelected: (category, emoji) {
+            scope.collections.setIcon(widget.collectionId, emoji.emoji);
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
     );
   }
 
@@ -186,6 +203,33 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
+                      Text('Icon', style: Theme.of(context).textTheme.labelLarge),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _pickIcon(context),
+                            child: collection.icon != null
+                                ? Text(
+                                    collection.icon!,
+                                    style: const TextStyle(fontSize: 20),
+                                  )
+                                : const Text('Pick emoji'),
+                          ),
+                          if (collection.icon != null) ...[
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.clear),
+                              tooltip: 'Remove icon',
+                              onPressed: () => scope.collections.setIcon(
+                                widget.collectionId,
+                                null,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                       Text('Name', style: Theme.of(context).textTheme.labelLarge),
                       const SizedBox(height: 4),
                       TextField(

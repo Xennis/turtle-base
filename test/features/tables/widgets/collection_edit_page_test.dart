@@ -68,7 +68,10 @@ void main() {
       expect(storedFields.single.name, 'Urgency');
 
       // Change its type via the row's dropdown (the field row's, not
-      // the "new field" row's - it comes first in the list).
+      // the "new field" row's - it comes first in the list). The
+      // Collection card's Icon row pushes it down, so ensure it's
+      // scrolled into view before tapping.
+      await tester.ensureVisible(find.byType(DropdownButton<FieldType>).first);
       await tester.tap(find.byType(DropdownButton<FieldType>).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Number').last);
