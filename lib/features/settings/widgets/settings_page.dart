@@ -31,23 +31,49 @@ class SettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Theme', style: ShadTheme.of(context).textTheme.h4),
+                  Text('Appearance', style: ShadTheme.of(context).textTheme.h4),
                   const SizedBox(height: 12),
-                  // Per-device, not synced - see ThemeController.
-                  ShadRadioGroup<ThemeMode>(
-                    initialValue: themeController.mode,
-                    onChanged: (mode) {
-                      if (mode != null) themeController.setMode(mode);
-                    },
-                    items: [
-                      for (final mode in ThemeMode.values)
-                        ShadRadio<ThemeMode>(value: mode, label: Text(mode.label)),
-                    ],
+                  _SettingsRow(
+                    label: 'Theme',
+                    // Per-device, not synced - see ThemeController.
+                    control: ShadSelect<ThemeMode>(
+                      initialValue: themeController.mode,
+                      selectedOptionBuilder: (context, value) => Text(value.label),
+                      options: [
+                        for (final mode in ThemeMode.values)
+                          ShadOption(value: mode, child: Text(mode.label)),
+                      ],
+                      onChanged: (mode) {
+                        if (mode != null) themeController.setMode(mode);
+                      },
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A label on the left, its control on the right - one row per
+/// setting, so further settings just add another row in the same Card.
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({required this.label, required this.control});
+
+  final String label;
+  final Widget control;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          control,
         ],
       ),
     );
