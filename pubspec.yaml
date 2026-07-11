@@ -52,11 +52,17 @@ dev_dependencies:
   drift_dev: ^2.34.0
   flutter_lints: ^6.0.0
 
-# Two packages here are patched via git forks rather than plain pub.dev
-# versions - both because of a real upstream compatibility gap, not
-# preference. Whenever the underlying issue is fixed upstream, drop the
-# override and go back to a normal hosted version constraint above.
+# Every package here is overridden because of a real upstream
+# compatibility gap, not preference. Whenever the underlying issue is
+# fixed upstream, drop the override and go back to a normal hosted
+# version constraint above.
 dependency_overrides:
+  # appflowy_editor pins keyboard_height_plugin ^0.1.5, whose Android
+  # build.gradle hardcodes compileSdkVersion 31 - too old for
+  # androidx.fragment 1.7.1 (needs 34+), which fails the Android build.
+  # 0.3.0 (latest) bumped it to 34 and didn't change its (tiny) public
+  # API, so overriding past appflowy_editor's caret constraint is safe.
+  keyboard_height_plugin: ^0.3.0
   # sqlite_crdt (see ARCHITECTURE.md's sync section) pulls in sql_crdt,
   # which does the actual CRDT merge logic. sql_crdt has never released
   # a version supporting sqlparser >=0.42 (our drift_dev needs ^0.45.0,
