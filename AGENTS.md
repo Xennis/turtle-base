@@ -17,6 +17,12 @@ Example: `chore(app): Init Flutter project with Linux as platform`
 
 Tool versions (e.g. Flutter) are managed via [mise](https://mise.jdx.dev/) — see `mise.toml`.
 
+## Claude Code skills
+
+Skill content itself isn't checked in - only `skills-lock.json` is tracked. Run
+`mise run skills-install` to (re)install the skills it references into `.claude/skills/`
+(gitignored).
+
 ## Platforms
 
 Linux is the only supported Flutter platform. Don't run `flutter create --platforms=...` for

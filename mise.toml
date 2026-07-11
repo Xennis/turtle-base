@@ -1,2 +1,6 @@
 [tools]
 flutter = { version = "3.44.6", postinstall = "dart run build_runner build" }
+
+[tasks.skills-install]
+description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
+run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --agent claude-code -y"
