@@ -67,6 +67,19 @@ class _AiSettingsCardState extends State<AiSettingsCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('AI', style: theme.textTheme.h4),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.lock_outline, size: 14, color: theme.colorScheme.mutedForeground),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'API keys are stored locally on this device only - never synced or sent anywhere but the chosen provider.',
+                    style: theme.textTheme.small.copyWith(color: theme.colorScheme.mutedForeground),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             for (final provider in AiProvider.values) _ApiKeyRow(provider: provider, keyStorage: _keyStorage),
             SettingsRow(
