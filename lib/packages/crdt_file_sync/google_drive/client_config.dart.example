@@ -1,0 +1,20 @@
+/// OAuth client identifiers for Google Drive sync - see
+/// `.local/GOOGLE_DRIVE_SETUP.md` for how to obtain these.
+///
+/// Copy this file to `client_config.dart` (gitignored) in the same folder
+/// and fill in your own values. Never commit the real `client_config.dart`.
+class DriveClientConfig {
+  const DriveClientConfig._();
+
+  /// "Desktop app" OAuth client, used by [DesktopDriveAuthenticator]'s
+  /// loopback consent flow. Not confidential for installed apps (see
+  /// RFC 8252) - safe to ship in the app binary, but still kept out of
+  /// version control since it's specific to whoever registered it.
+  static const desktopClientId = 'YOUR_DESKTOP_CLIENT_ID.apps.googleusercontent.com';
+  static const desktopClientSecret = 'YOUR_DESKTOP_CLIENT_SECRET';
+
+  /// "Android" OAuth client. `google_sign_in` matches it automatically via
+  /// package name + signing certificate fingerprint - nothing to reference
+  /// here at runtime, this is just a record of which client ID that is.
+  static const androidClientId = 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com';
+}
