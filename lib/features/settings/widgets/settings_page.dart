@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
+import 'package:turtle_base/features/settings/widgets/settings_row.dart';
 
 /// Shown in the same content area as the rest of the shell (see
 /// AppShell/_MainContent) rather than pushed via Navigator, matching
@@ -33,7 +34,7 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   Text('Appearance', style: ShadTheme.of(context).textTheme.h4),
                   const SizedBox(height: 12),
-                  _SettingsRow(
+                  SettingsRow(
                     label: 'Theme',
                     // Per-device, not synced - see ThemeController.
                     control: ShadSelect<ThemeMode>(
@@ -52,28 +53,6 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A label on the left, its control on the right - one row per
-/// setting, so further settings just add another row in the same Card.
-class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({required this.label, required this.control});
-
-  final String label;
-  final Widget control;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          control,
         ],
       ),
     );
