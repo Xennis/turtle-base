@@ -37,10 +37,13 @@ dependencies:
   dartantic_ai: ^3.4.2
   drift: 2.34.1
   emoji_picker_flutter: ^4.4.0
+  extension_google_sign_in_as_googleapis_auth: ^3.0.0
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^10.3.1
+  google_sign_in: ^7.2.0
   googleapis: ^16.0.0
+  googleapis_auth: ^2.3.3
   http: ^1.6.0
   path: ^1.9.1
   path_provider: ^2.1.6
@@ -48,6 +51,7 @@ dependencies:
   shared_preferences: ^2.5.5
   sqlite_crdt: ^3.0.3
   trina_grid: ^2.2.2
+  url_launcher: ^6.3.2
   uuid: ^4.5.3
 dev_dependencies:
   flutter_test:
