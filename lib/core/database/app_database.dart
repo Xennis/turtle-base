@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:drift/backends.dart';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite_crdt/sqlite_crdt.dart';
 import 'package:turtle_base/core/database/crdt_database_delegate.dart';
 import 'package:turtle_base/core/database/tables/blocks_table.dart';
 import 'package:turtle_base/core/database/tables/collections_table.dart';
@@ -15,9 +18,35 @@ part 'app_database.g.dart';
 
 @DriftDatabase(tables: [Users, Spaces, Collections, Fields, Pages, Blocks])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : this._(_openConnection());
 
-  AppDatabase.withExecutor(super.executor);
+  AppDatabase._((QueryExecutor, Future<CrdtDatabaseDelegate>) connection)
+    : _delegate = connection.$2,
+      super(connection.$1);
+
+  /// [delegate] only needs to be passed when a caller needs [crdt] - most
+  /// `.withExecutor` call sites (widget/repository tests) don't care about
+  /// CRDT sync and can omit it.
+  AppDatabase.withExecutor(super.executor, [Future<CrdtDatabaseDelegate>? delegate])
+    : _delegate = delegate;
+
+  final Future<CrdtDatabaseDelegate>? _delegate;
+
+  /// The `sqlite_crdt` instance backing this database - the single
+  /// source of sync primitives (`nodeId`, `getChangeset`, `merge`, ...)
+  /// consumed by `lib/packages/crdt_file_sync/`.
+  ///
+  /// Only resolves once the connection has actually opened (i.e. after
+  /// at least one query ran, e.g. via [currentUserId]) - [DatabaseConnection.delayed]
+  /// means the [CrdtDatabaseDelegate] itself only exists once path
+  /// resolution has finished, which callers must not race.
+  Future<SqliteCrdt> get crdt async {
+    final delegate = _delegate;
+    if (delegate == null) {
+      throw StateError('AppDatabase was created without a CrdtDatabaseDelegate');
+    }
+    return (await delegate).crdt;
+  }
 
   @override
   int get schemaVersion => 2;
@@ -74,16 +103,18 @@ class AppDatabase extends _$AppDatabase {
   /// turtle_base.sqlite once when picking this up. Revisit with a
   /// proper migration (ALTER TABLE ADD COLUMN + backfill) before that's
   /// no longer true.
-  static QueryExecutor _openConnection() {
-    return DatabaseConnection.delayed(
+  static (QueryExecutor, Future<CrdtDatabaseDelegate>) _openConnection() {
+    final delegateCompleter = Completer<CrdtDatabaseDelegate>();
+    final executor = DatabaseConnection.delayed(
       Future(() async {
         final dir = await getApplicationDocumentsDirectory();
         final path = p.join(dir.path, 'turtle_base.sqlite');
-        return DatabaseConnection(
-          DelegatedDatabase(CrdtDatabaseDelegate(path: path)),
-        );
+        final delegate = CrdtDatabaseDelegate(path: path);
+        delegateCompleter.complete(delegate);
+        return DatabaseConnection(DelegatedDatabase(delegate));
       }),
     );
+    return (executor, delegateCompleter.future);
   }
 
   /// Single-user app: there is always exactly one user row (seeded on
