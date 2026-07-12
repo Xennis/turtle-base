@@ -48,6 +48,27 @@ void main() {
     expect(prefs.getString('theme_mode'), 'dark');
   }, timeout: const Timeout(Duration(seconds: 30)));
 
+  testWidgets('shows the Sync card, not connected by default', (
+    WidgetTester tester,
+  ) async {
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Sync'), findsOneWidget);
+    expect(find.text('Google Drive'), findsOneWidget);
+    expect(find.text('Not connected'), findsOneWidget);
+    expect(find.widgetWithText(ShadButton, 'Connect'), findsOneWidget);
+    // Nothing to sync yet - the button is disabled while disconnected.
+    final syncNowButton = tester.widget<ShadButton>(
+      find.widgetWithText(ShadButton, 'Sync now'),
+    );
+    expect(syncNowButton.onPressed, isNull);
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
   testWidgets('back returns to whatever was showing before Settings', (
     WidgetTester tester,
   ) async {

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:turtle_base/core/sync/app_sync_controller.dart';
+import 'package:turtle_base/core/sync/sync_scope.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_card.dart';
 import 'package:turtle_base/features/settings/widgets/settings_row.dart';
+import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
 
 /// Shown in the same content area as the rest of the shell (see
 /// AppShell/_MainContent) rather than pushed via Navigator, matching
@@ -56,6 +59,86 @@ class SettingsPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const AiSettingsCard(),
+          const SizedBox(height: 16),
+          const Card(
+            child: Padding(padding: EdgeInsets.all(16), child: _SyncSection()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Wrapped in its own [ListenableBuilder] (rather than the whole page)
+/// so a sync status change doesn't rebuild the Appearance card above it.
+class _SyncSection extends StatelessWidget {
+  const _SyncSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final sync = SyncScope.of(context);
+    return ListenableBuilder(
+      listenable: sync,
+      builder: (context, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Sync', style: ShadTheme.of(context).textTheme.h4),
+            const SizedBox(height: 12),
+            _SettingsRow(
+              label: 'Google Drive',
+              control: sync.isConnected
+                  ? ShadButton.outline(
+                      onPressed: () => sync.disconnect(),
+                      child: const Text('Disconnect'),
+                    )
+                  : ShadButton(
+                      onPressed: () => sync.connect(),
+                      child: const Text('Connect'),
+                    ),
+            ),
+            _SettingsRow(label: 'Status', control: Text(_statusLabel(sync))),
+            _SettingsRow(
+              label: '',
+              control: ShadButton.outline(
+                onPressed: sync.isConnected && sync.status != SyncStatus.syncing
+                    ? () => sync.syncNow()
+                    : null,
+                child: const Text('Sync now'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _statusLabel(AppSyncController sync) {
+    if (!sync.isConnected) return 'Not connected';
+    return switch (sync.status) {
+      SyncStatus.syncing => 'Syncing…',
+      SyncStatus.error => 'Error: ${sync.lastError}',
+      SyncStatus.idle => sync.lastSyncedAt == null ? 'Connected' : 'Last synced ${sync.lastSyncedAt}',
+    };
+  }
+}
+
+/// A label on the left, its control on the right - one row per
+/// setting, so further settings just add another row in the same Card.
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({required this.label, required this.control});
+
+  final String label;
+  final Widget control;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          control,
         ],
       ),
     );
