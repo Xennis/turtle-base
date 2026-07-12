@@ -6,13 +6,18 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqlite_crdt/sqlite_crdt.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/core/sync/app_sync_controller.dart';
+import 'package:turtle_base/core/sync/sync_scope.dart';
 import 'package:turtle_base/core/theme/theme_controller.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
+
+import 'fake_drive_authenticator.dart';
 
 /// An in-memory database for widget tests.
 ///
@@ -22,7 +27,10 @@ import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 /// timer at teardown. See drift.simonbinder.eu/testing.
 AppDatabase newTestDatabase() {
   return AppDatabase.withExecutor(
-    DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true),
+    DatabaseConnection(
+      NativeDatabase.memory(),
+      closeStreamsSynchronously: true,
+    ),
   );
 }
 
@@ -66,14 +74,28 @@ Future<AppDatabase> pumpApp(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({});
   final themeController = await ThemeController.load();
   final aiSettingsController = await AiSettingsController.load();
+  // Unrelated to `database` above - SyncScope just needs *a* SqliteCrdt to
+  // construct AppSyncController; no widget test exercises sync itself
+  // (FakeDriveAuthenticator never reaches Google).
+  final syncCrdt = await tester.runAsync(SqliteCrdt.openInMemory);
+  final syncController = AppSyncController(
+    crdt: syncCrdt!,
+    authenticator: FakeDriveAuthenticator(),
+  );
   await tester.pumpWidget(
     ThemeScope(
       controller: themeController,
       child: AiSettingsScope(
         controller: aiSettingsController,
-        child: AppScope(
-          database: database,
-          child: wrapWithAppLocalizations(const AppShell()),
+        child: ThemeScope(
+          controller: themeController,
+          child: SyncScope(
+            controller: syncController,
+            child: AppScope(
+              database: database,
+              child: wrapWithAppLocalizations(const AppShell()),
+            ),
+          ),
         ),
       ),
     ),
