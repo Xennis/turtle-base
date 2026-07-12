@@ -12,7 +12,7 @@ extension AiProviderLabel on AiProvider {
 /// v1: exactly one hardcoded model per provider, picked from a single
 /// dropdown that spans both providers (no per-provider model choice yet).
 enum AiModel {
-  geminiFlash(provider: AiProvider.google, id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash'),
+  geminiFlash(provider: AiProvider.google, id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash'),
   claudeSonnet(provider: AiProvider.anthropic, id: 'claude-sonnet-5', label: 'Claude Sonnet 5');
 
   const AiModel({required this.provider, required this.id, required this.label});
