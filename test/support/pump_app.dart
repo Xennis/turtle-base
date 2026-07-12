@@ -10,6 +10,8 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/core/theme/theme_controller.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
+import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
+import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 
 /// An in-memory database for widget tests.
@@ -63,12 +65,16 @@ Future<AppDatabase> pumpApp(WidgetTester tester) async {
   // this doesn't need runAsync().
   SharedPreferences.setMockInitialValues({});
   final themeController = await ThemeController.load();
+  final aiSettingsController = await AiSettingsController.load();
   await tester.pumpWidget(
     ThemeScope(
       controller: themeController,
-      child: AppScope(
-        database: database,
-        child: wrapWithAppLocalizations(const AppShell()),
+      child: AiSettingsScope(
+        controller: aiSettingsController,
+        child: AppScope(
+          database: database,
+          child: wrapWithAppLocalizations(const AppShell()),
+        ),
       ),
     ),
   );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
+import 'package:turtle_base/features/ai/widgets/ai_settings_card.dart';
 import 'package:turtle_base/features/settings/widgets/settings_row.dart';
 
 /// Shown in the same content area as the rest of the shell (see
@@ -53,6 +54,8 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          const AiSettingsCard(),
         ],
       ),
     );
