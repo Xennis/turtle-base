@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/backends.dart';
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -101,4 +102,25 @@ void main() {
       );
     },
   );
+
+  test('AppDatabase.crdt resolves to the SqliteCrdt behind its CrdtDatabaseDelegate', () async {
+    final delegate = CrdtDatabaseDelegate(path: null);
+    final db = AppDatabase.withExecutor(
+      DatabaseConnection(DelegatedDatabase(delegate)),
+      Future.value(delegate),
+    );
+    addTearDown(db.close);
+
+    // Trigger the connection to actually open before reading crdt.
+    await db.select(db.spaces).get();
+
+    expect(await db.crdt, same(delegate.crdt));
+  });
+
+  test('AppDatabase.crdt throws when constructed without a delegate', () async {
+    final db = AppDatabase.withExecutor(NativeDatabase.memory());
+    addTearDown(db.close);
+
+    expect(db.crdt, throwsStateError);
+  });
 }
