@@ -40,14 +40,17 @@ class SyncController extends ChangeNotifier {
     lastError = null;
     notifyListeners();
 
+    debugPrint('[sync] syncNow() starting - own nodeId=${_crdt.nodeId}');
     try {
       await _push();
       await _pull();
       status = SyncStatus.idle;
       lastSyncedAt = DateTime.now();
+      debugPrint('[sync] syncNow() done');
     } catch (e) {
       status = SyncStatus.error;
       lastError = e;
+      debugPrint('[sync] syncNow() failed: $e');
     }
     notifyListeners();
   }
@@ -66,26 +69,36 @@ class SyncController extends ChangeNotifier {
       onlyNodeId: _crdt.nodeId,
       modifiedAfter: _lastPushedAt,
     );
-    if (changeset.recordCount == 0) return;
+    if (changeset.recordCount == 0) {
+      debugPrint('[sync] push: nothing new since $_lastPushedAt');
+      return;
+    }
 
     final pushedAt = await _crdt.getLastModified(onlyNodeId: _crdt.nodeId);
     final name = '${_crdt.nodeId}/${_fileNameFor(pushedAt)}';
     final bytes = Uint8List.fromList(utf8.encode(jsonEncode(changeset)));
+    debugPrint('[sync] push: uploading $name (${changeset.recordCount} records)');
     await _transport.upload(name, bytes);
     _lastPushedAt = pushedAt;
   }
 
   Future<void> _pull() async {
     final names = await _transport.list();
+    debugPrint('[sync] pull: transport.list() -> $names');
     for (final name in names) {
       final slash = name.indexOf('/');
       if (slash == -1) continue;
       final nodeId = name.substring(0, slash);
-      if (nodeId == _crdt.nodeId) continue;
+      if (nodeId == _crdt.nodeId) {
+        debugPrint('[sync] pull: skipping own file $name');
+        continue;
+      }
 
+      debugPrint('[sync] pull: downloading+merging $name');
       final bytes = await _transport.download(name);
       final wireFormat = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
       await _crdt.merge(parseCrdtChangeset(wireFormat));
+      debugPrint('[sync] pull: merged $name');
     }
   }
 
