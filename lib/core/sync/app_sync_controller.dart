@@ -17,10 +17,15 @@ class AppSyncController extends ChangeNotifier {
   });
 
   final SqliteCrdt _crdt;
-  final DriveAuthenticator _authenticator;
+  final DriveAuthenticator? _authenticator;
   final String appFolderName;
 
   SyncController? _sync;
+
+  /// Whether an OAuth client was configured for this platform (see
+  /// `createDriveAuthenticator`) - false hides the Drive sync UI entirely
+  /// rather than showing a feature that can never connect.
+  bool get isAvailable => _authenticator != null;
 
   bool get isConnected => _sync != null;
   SyncStatus get status => _sync?.status ?? SyncStatus.idle;
@@ -28,22 +33,26 @@ class AppSyncController extends ChangeNotifier {
   Object? get lastError => _sync?.lastError;
 
   /// Restores a previous connection without prompting - call once at app
-  /// start. A no-op (stays disconnected) if there's nothing to restore.
+  /// start. A no-op (stays disconnected) if there's nothing to restore or
+  /// if Drive sync isn't [isAvailable].
   Future<void> restoreConnection() async {
-    final client = await _authenticator.signInSilently();
+    final authenticator = _authenticator;
+    if (authenticator == null) return;
+    final client = await authenticator.signInSilently();
     if (client != null) {
       _attach(GoogleDriveTransport(authClient: client, appFolderName: appFolderName));
     }
   }
 
-  /// Prompts the user through the OAuth consent flow.
+  /// Prompts the user through the OAuth consent flow. Only call when
+  /// [isAvailable] - the Settings UI hides the "Connect" button otherwise.
   Future<void> connect() async {
-    final client = await _authenticator.signIn();
+    final client = await _authenticator!.signIn();
     _attach(GoogleDriveTransport(authClient: client, appFolderName: appFolderName));
   }
 
   Future<void> disconnect() async {
-    await _authenticator.signOut();
+    await _authenticator?.signOut();
     _sync?.removeListener(notifyListeners);
     _sync = null;
     notifyListeners();

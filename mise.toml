@@ -9,3 +9,15 @@ run = "dart run build_runner build"
 [tasks.skills-install]
 description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
 run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --agent claude-code -y"
+
+# Forward the Google Drive sync OAuth config from env (see README.md's
+# "Google Drive sync configuration") as --dart-define. Set the vars in a
+# gitignored .mise.local.toml's [env] table; omitting them still builds
+# fine, just with Drive sync disabled - see client_config.dart.
+[tasks.run-linux]
+description = "flutter run on Linux with Google Drive sync config from env"
+run = "flutter run -d linux --dart-define=DRIVE_DESKTOP_CLIENT_ID=$DRIVE_DESKTOP_CLIENT_ID --dart-define=DRIVE_DESKTOP_CLIENT_SECRET=$DRIVE_DESKTOP_CLIENT_SECRET"
+
+[tasks.run-android]
+description = "flutter run on Android with Google Drive sync config from env"
+run = "flutter run -d android --dart-define=DRIVE_ANDROID_SERVER_CLIENT_ID=$DRIVE_ANDROID_SERVER_CLIENT_ID"

@@ -109,13 +109,13 @@ Same **Clients** tab → Create client:
   to `GoogleSignIn.instance.initialize()` - see
   `AndroidDriveAuthenticator`'s doc comment).
 
-## 5. Fill in the app's config file
+## 5. Pass the values to the app
 
-Copy
-`lib/packages/crdt_file_sync/google_drive/client_config.dart.example` to
-`client_config.dart` (same folder) and fill in the values from steps
-3-4a. `client_config.dart` is gitignored - never commit your real
-client ID/secret.
+The app reads these as `--dart-define` build variables rather than a
+committed/copied config file - see the
+[README.md's "Google Drive sync configuration"](../../README.md#google-drive-sync-configuration)
+section for the variable names and how to supply them locally and in
+CI.
 
 ## Why only the API is automated
 

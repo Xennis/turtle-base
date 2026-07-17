@@ -59,10 +59,7 @@ class SettingsPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const AiSettingsCard(),
-          const SizedBox(height: 16),
-          const Card(
-            child: Padding(padding: EdgeInsets.all(16), child: _SyncSection()),
-          ),
+          const _SyncSection(),
         ],
       ),
     );
@@ -71,6 +68,9 @@ class SettingsPage extends StatelessWidget {
 
 /// Wrapped in its own [ListenableBuilder] (rather than the whole page)
 /// so a sync status change doesn't rebuild the Appearance card above it.
+/// Renders nothing if Drive sync isn't configured for this platform (see
+/// [AppSyncController.isAvailable]) - no OAuth client means it could never
+/// connect, so showing the controls would just be confusing.
 class _SyncSection extends StatelessWidget {
   const _SyncSection();
 
@@ -80,34 +80,43 @@ class _SyncSection extends StatelessWidget {
     return ListenableBuilder(
       listenable: sync,
       builder: (context, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Sync', style: ShadTheme.of(context).textTheme.h4),
-            const SizedBox(height: 12),
-            _SettingsRow(
-              label: 'Google Drive',
-              control: sync.isConnected
-                  ? ShadButton.outline(
-                      onPressed: () => sync.disconnect(),
-                      child: const Text('Disconnect'),
-                    )
-                  : ShadButton(
-                      onPressed: () => sync.connect(),
-                      child: const Text('Connect'),
+        if (!sync.isAvailable) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Sync', style: ShadTheme.of(context).textTheme.h4),
+                  const SizedBox(height: 12),
+                  _SettingsRow(
+                    label: 'Google Drive',
+                    control: sync.isConnected
+                        ? ShadButton.outline(
+                            onPressed: () => sync.disconnect(),
+                            child: const Text('Disconnect'),
+                          )
+                        : ShadButton(
+                            onPressed: () => sync.connect(),
+                            child: const Text('Connect'),
+                          ),
+                  ),
+                  _SettingsRow(label: 'Status', control: Text(_statusLabel(sync))),
+                  _SettingsRow(
+                    label: '',
+                    control: ShadButton.outline(
+                      onPressed: sync.isConnected && sync.status != SyncStatus.syncing
+                          ? () => sync.syncNow()
+                          : null,
+                      child: const Text('Sync now'),
                     ),
-            ),
-            _SettingsRow(label: 'Status', control: Text(_statusLabel(sync))),
-            _SettingsRow(
-              label: '',
-              control: ShadButton.outline(
-                onPressed: sync.isConnected && sync.status != SyncStatus.syncing
-                    ? () => sync.syncNow()
-                    : null,
-                child: const Text('Sync now'),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       },
     );

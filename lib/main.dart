@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -32,13 +31,19 @@ Future<void> main() async {
   // see AppDatabase.crdt's doc comment.
   await database.currentUserId();
 
-  final syncController = AppSyncController(
-    crdt: await database.crdt,
-    authenticator: createDriveAuthenticator(
-      desktopClientId: ClientId(DriveClientConfig.desktopClientId, DriveClientConfig.desktopClientSecret),
-      androidServerClientId: DriveClientConfig.androidServerClientId,
-    ),
+  final driveAuthenticator = createDriveAuthenticator(
+    desktopClientId: DriveClientConfig.desktopClientId,
+    desktopClientSecret: DriveClientConfig.desktopClientSecret,
+    androidServerClientId: DriveClientConfig.androidServerClientId,
   );
+  if (driveAuthenticator == null) {
+    debugPrint(
+      '[sync] Google Drive sync disabled - no OAuth client configured for '
+      'this platform, see README.md\'s "Google Drive sync configuration".',
+    );
+  }
+
+  final syncController = AppSyncController(crdt: await database.crdt, authenticator: driveAuthenticator);
   // Fire-and-forget: don't delay the first frame on a network-ish silent
   // sign-in check - SyncScope's listeners update once/if it resolves.
   unawaited(syncController.restoreConnection());

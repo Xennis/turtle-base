@@ -52,10 +52,15 @@ jobs:
         run: mise run generate
 
       - name: Build Linux release bundle
+        env:
+          DRIVE_DESKTOP_CLIENT_ID: ${{ secrets.DRIVE_DESKTOP_CLIENT_ID }}
+          DRIVE_DESKTOP_CLIENT_SECRET: ${{ secrets.DRIVE_DESKTOP_CLIENT_SECRET }}
         run: |
           flutter build linux --release \
             --build-name="${{ needs.resolve-version.outputs.build_name }}" \
-            --build-number="${{ needs.resolve-version.outputs.build_number }}"
+            --build-number="${{ needs.resolve-version.outputs.build_number }}" \
+            --dart-define=DRIVE_DESKTOP_CLIENT_ID="$DRIVE_DESKTOP_CLIENT_ID" \
+            --dart-define=DRIVE_DESKTOP_CLIENT_SECRET="$DRIVE_DESKTOP_CLIENT_SECRET"
 
       - name: Assemble AppDir
         run: |
@@ -102,10 +107,13 @@ jobs:
       # (see android/app/build.gradle.kts). Real release signing is a
       # separate, deliberately deferred piece of work.
       - name: Build Android release APK
+        env:
+          DRIVE_ANDROID_SERVER_CLIENT_ID: ${{ secrets.DRIVE_ANDROID_SERVER_CLIENT_ID }}
         run: |
           flutter build apk --release \
             --build-name="${{ needs.resolve-version.outputs.build_name }}" \
-            --build-number="${{ needs.resolve-version.outputs.build_number }}"
+            --build-number="${{ needs.resolve-version.outputs.build_number }}" \
+            --dart-define=DRIVE_ANDROID_SERVER_CLIENT_ID="$DRIVE_ANDROID_SERVER_CLIENT_ID"
 
       - uses: actions/upload-artifact@v7
         with:
