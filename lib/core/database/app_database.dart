@@ -1,11 +1,7 @@
-import 'dart:async';
-
-import 'package:drift/backends.dart';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
-import 'package:turtle_base/core/database/crdt_database_delegate.dart';
 import 'package:turtle_base/core/database/local_user_id_store.dart';
 import 'package:turtle_base/core/database/tables/blocks_table.dart';
 import 'package:turtle_base/core/database/tables/collections_table.dart';
@@ -13,6 +9,8 @@ import 'package:turtle_base/core/database/tables/fields_table.dart';
 import 'package:turtle_base/core/database/tables/pages_table.dart';
 import 'package:turtle_base/core/database/tables/spaces_table.dart';
 import 'package:turtle_base/core/database/tables/users_table.dart';
+import 'package:turtle_base/packages/drift_crdt/crdt_database_delegate.dart';
+import 'package:turtle_base/packages/drift_crdt/crdt_query_executor.dart';
 import 'package:uuid/uuid.dart';
 
 part 'app_database.g.dart';
@@ -111,17 +109,10 @@ class AppDatabase extends _$AppDatabase {
   /// proper migration (ALTER TABLE ADD COLUMN + backfill) before that's
   /// no longer true.
   static (QueryExecutor, Future<CrdtDatabaseDelegate>) _openConnection() {
-    final delegateCompleter = Completer<CrdtDatabaseDelegate>();
-    final executor = DatabaseConnection.delayed(
-      Future(() async {
-        final dir = await getApplicationSupportDirectory();
-        final path = p.join(dir.path, 'turtle_base.sqlite');
-        final delegate = CrdtDatabaseDelegate(path: path);
-        delegateCompleter.complete(delegate);
-        return DatabaseConnection(DelegatedDatabase(delegate));
-      }),
-    );
-    return (executor, delegateCompleter.future);
+    return openCrdtDatabaseConnection(() async {
+      final dir = await getApplicationSupportDirectory();
+      return p.join(dir.path, 'turtle_base.sqlite');
+    });
   }
 
   String? _cachedUserId;
