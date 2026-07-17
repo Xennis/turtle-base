@@ -2,13 +2,13 @@ import 'package:drift/backends.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/core/database/crdt_database_delegate.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_transport.dart';
 import 'package:turtle_base/packages/crdt_file_sync/testing/fake_sync_transport.dart';
+import 'package:turtle_base/packages/drift_crdt/crdt_database_delegate.dart';
 
-/// Mirrors `test/core/database/crdt_database_delegate_test.dart`'s helper -
+/// Mirrors `test/packages/drift_crdt/crdt_database_delegate_test.dart`'s helper -
 /// gives each simulated "device" its own independent, already-seeded
 /// in-memory database plus direct access to its `SqliteCrdt`.
 (AppDatabase, CrdtDatabaseDelegate) _openCrdtDatabase() {

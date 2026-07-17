@@ -6,7 +6,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/core/database/crdt_database_delegate.dart';
+import 'package:turtle_base/packages/drift_crdt/crdt_database_delegate.dart';
 
 /// Pairs the database with its delegate so tests can reach
 /// getChangeset()/merge() directly, alongside typed Drift queries.
