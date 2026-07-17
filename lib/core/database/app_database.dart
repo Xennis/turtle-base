@@ -96,8 +96,12 @@ class AppDatabase extends _$AppDatabase {
   /// Routes every statement through [CrdtDatabaseDelegate] instead of
   /// straight to sqlite3, so ordinary repository writes get CRDT tracking
   /// for sync (see ARCHITECTURE.md) without repositories knowing about it.
-  /// Same file location `drift_flutter`'s driftDatabase() used to pick
-  /// (`getApplicationDocumentsDirectory()`/turtle_base.sqlite).
+  ///
+  /// Uses `getApplicationSupportDirectory()` rather than
+  /// `getApplicationDocumentsDirectory()`: the database is app data, not a
+  /// user-facing document, so on Linux it belongs under `XDG_DATA_HOME`
+  /// (`~/.local/share/<app-id>`) rather than `~/Documents`. On Android both
+  /// map to private internal app storage either way.
   ///
   /// Note: sqlite_crdt assumes every table it finds already has its
   /// tracking columns (hlc/node_id/modified) - opening a database file
@@ -110,7 +114,7 @@ class AppDatabase extends _$AppDatabase {
     final delegateCompleter = Completer<CrdtDatabaseDelegate>();
     final executor = DatabaseConnection.delayed(
       Future(() async {
-        final dir = await getApplicationDocumentsDirectory();
+        final dir = await getApplicationSupportDirectory();
         final path = p.join(dir.path, 'turtle_base.sqlite');
         final delegate = CrdtDatabaseDelegate(path: path);
         delegateCompleter.complete(delegate);
