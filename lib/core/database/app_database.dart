@@ -45,15 +45,18 @@ class AppDatabase extends _$AppDatabase {
   /// source of sync primitives (`nodeId`, `getChangeset`, `merge`, ...)
   /// consumed by `lib/packages/crdt_file_sync/`.
   ///
-  /// Only resolves once the connection has actually opened (i.e. after
-  /// at least one query ran, e.g. via [currentUserId]) - [DatabaseConnection.delayed]
-  /// means the [CrdtDatabaseDelegate] itself only exists once path
-  /// resolution has finished, which callers must not race.
+  /// [DatabaseConnection.delayed] means the [CrdtDatabaseDelegate] itself
+  /// only exists once path resolution has finished, and even then it isn't
+  /// opened until Drift actually runs a statement against it - so this
+  /// forces a trivial query first (rather than relying on callers like
+  /// [currentUserId] having already done so: that one skips its own query
+  /// whenever [_localUserIdStore] already has a cached id).
   Future<SqliteCrdt> get crdt async {
     final delegate = _delegate;
     if (delegate == null) {
       throw StateError('AppDatabase was created without a CrdtDatabaseDelegate');
     }
+    await customStatement('SELECT 1');
     return (await delegate).crdt;
   }
 

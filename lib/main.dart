@@ -27,11 +27,11 @@ Future<void> main() async {
   final aiSettingsController = await AiSettingsController.load();
 
   final database = AppDatabase(localUserIdStore: await SharedPreferencesLocalUserIdStore.load());
-  // Forces the (otherwise lazily-opened) connection to actually open now,
-  // so CrdtDatabaseDelegate exists and `database.crdt` below can resolve -
-  // see AppDatabase.crdt's doc comment. Also this device's first (and
-  // only) chance to adopt a fresh users row as its own before sync can
-  // merge in any others - see AppDatabase.currentUserId's doc comment.
+  // This device's first (and only) chance to adopt a fresh users row as
+  // its own before sync can merge in any others - see
+  // AppDatabase.currentUserId's doc comment. (`database.crdt` below opens
+  // the connection itself if this didn't, e.g. because the id was already
+  // cached in [LocalUserIdStore].)
   await database.currentUserId();
 
   final driveAuthenticator = createDriveAuthenticator(
