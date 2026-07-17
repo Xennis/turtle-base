@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 
@@ -49,6 +50,11 @@ class GoogleDriveTransport implements SyncTransport {
       spaces: 'drive',
       $fields: 'files(id,name)',
     );
+    debugPrint(
+      '[sync] drive: app folder $appFolderName ($appFolderId) has '
+      '${deviceFolders.files?.length ?? 0} device folder(s): '
+      '${deviceFolders.files?.map((f) => '${f.name} (${f.id})').toList()}',
+    );
 
     final names = <String>[];
     for (final folder in deviceFolders.files ?? const <drive.File>[]) {
@@ -60,6 +66,7 @@ class GoogleDriveTransport implements SyncTransport {
         spaces: 'drive',
         $fields: 'files(id,name)',
       );
+      debugPrint('[sync] drive: device folder $nodeId has ${files.files?.length ?? 0} file(s)');
       for (final file in files.files ?? const <drive.File>[]) {
         final name = '$nodeId/${file.name}';
         _fileIds[name] = file.id!;
@@ -135,7 +142,10 @@ class GoogleDriveTransport implements SyncTransport {
       $fields: 'files(id,name)',
     );
     final existingId = existing.files?.firstOrNull?.id;
-    if (existingId != null) return existingId;
+    if (existingId != null) {
+      debugPrint('[sync] drive: found existing folder "$name" ($existingId)');
+      return existingId;
+    }
 
     final created = await _drive.files.create(
       drive.File(
@@ -144,6 +154,7 @@ class GoogleDriveTransport implements SyncTransport {
         parents: parentId == null ? null : [parentId],
       ),
     );
+    debugPrint('[sync] drive: created new folder "$name" (${created.id})');
     return created.id!;
   }
 
