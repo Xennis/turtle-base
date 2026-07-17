@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
 import 'package:turtle_base/core/database/crdt_database_delegate.dart';
+import 'package:turtle_base/core/database/local_user_id_store.dart';
 import 'package:turtle_base/core/database/tables/blocks_table.dart';
 import 'package:turtle_base/core/database/tables/collections_table.dart';
 import 'package:turtle_base/core/database/tables/fields_table.dart';
@@ -18,19 +19,29 @@ part 'app_database.g.dart';
 
 @DriftDatabase(tables: [Users, Spaces, Collections, Fields, Pages, Blocks])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : this._(_openConnection());
+  AppDatabase({LocalUserIdStore? localUserIdStore}) : this._(_openConnection(), localUserIdStore);
 
-  AppDatabase._((QueryExecutor, Future<CrdtDatabaseDelegate>) connection)
+  AppDatabase._((QueryExecutor, Future<CrdtDatabaseDelegate>) connection, LocalUserIdStore? localUserIdStore)
     : _delegate = connection.$2,
+      _localUserIdStore = localUserIdStore,
       super(connection.$1);
 
   /// [delegate] only needs to be passed when a caller needs [crdt] - most
   /// `.withExecutor` call sites (widget/repository tests) don't care about
-  /// CRDT sync and can omit it.
-  AppDatabase.withExecutor(super.executor, [Future<CrdtDatabaseDelegate>? delegate])
-    : _delegate = delegate;
+  /// CRDT sync and can omit it. [localUserIdStore] likewise - tests
+  /// simulating a single device within one process don't need
+  /// [currentUserId] to persist across restarts, just to stay consistent
+  /// within that device's own [AppDatabase] instance (see
+  /// [LocalUserIdStore]'s doc comment).
+  AppDatabase.withExecutor(
+    super.executor, [
+    Future<CrdtDatabaseDelegate>? delegate,
+    LocalUserIdStore? localUserIdStore,
+  ]) : _delegate = delegate,
+       _localUserIdStore = localUserIdStore;
 
   final Future<CrdtDatabaseDelegate>? _delegate;
+  final LocalUserIdStore? _localUserIdStore;
 
   /// The `sqlite_crdt` instance backing this database - the single
   /// source of sync primitives (`nodeId`, `getChangeset`, `merge`, ...)
@@ -109,11 +120,34 @@ class AppDatabase extends _$AppDatabase {
     return (executor, delegateCompleter.future);
   }
 
-  /// Single-user app: there is always exactly one user row (seeded on
-  /// first start). Repositories use this to fill createdBy/updatedBy
-  /// without every caller having to know or pass a user id.
+  String? _cachedUserId;
+
+  /// Which [users] row this device considers "itself", for filling
+  /// createdBy/updatedBy without every caller having to know or pass a
+  /// user id. Resolved via [_localUserIdStore] rather than by querying
+  /// [users] for "the" row, because sync can merge in rows seeded by
+  /// other devices (and eventually AI users) - there's no longer
+  /// necessarily just one.
   Future<String> currentUserId() async {
-    final user = await select(users).getSingle();
-    return user.id;
+    final cached = _cachedUserId;
+    if (cached != null) return cached;
+
+    final stored = _localUserIdStore?.get();
+    if (stored != null) {
+      _cachedUserId = stored;
+      return stored;
+    }
+
+    // First time this device resolves its identity: onCreate seeds
+    // exactly one row before sync can bring in any others (currentUserId
+    // runs before restoreConnection() - see main.dart), so the row found
+    // here is this device's own. If sync somehow got there first, there
+    // is no way to tell which (if any) row belongs to this device -
+    // arbitrarily adopt the first.
+    final rows = await select(users).get();
+    final userId = rows.first.id;
+    await _localUserIdStore?.set(userId);
+    _cachedUserId = userId;
+    return userId;
   }
 }
