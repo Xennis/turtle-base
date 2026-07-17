@@ -67,8 +67,11 @@ class AppDatabase extends _$AppDatabase {
   );
 
   /// Runs once, when the database file is created for the first time.
-  /// There is no login/auth - a local user profile and a default space
-  /// (freely renameable afterwards) always exist from the first start.
+  /// There is no login/auth - a local user profile always exists from
+  /// the first start. No space is seeded: a fresh device may be about
+  /// to sync in existing spaces from elsewhere rather than start its
+  /// own, so the UI offers "create a space" and "go to Settings to
+  /// sync" instead of assuming a space (see _MainContent's empty state).
   Future<void> _seedDefaults() async {
     const uuid = Uuid();
     final now = DateTime.now();
@@ -76,17 +79,6 @@ class AppDatabase extends _$AppDatabase {
 
     await into(users).insert(
       UsersCompanion.insert(id: userId, name: 'You', createdAt: now),
-    );
-    await into(spaces).insert(
-      SpacesCompanion.insert(
-        id: uuid.v4(),
-        name: 'Default',
-        position: 0,
-        createdAt: now,
-        updatedAt: now,
-        createdBy: userId,
-        updatedBy: userId,
-      ),
     );
   }
 

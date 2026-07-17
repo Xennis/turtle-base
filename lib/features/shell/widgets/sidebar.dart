@@ -93,11 +93,16 @@ class _SpaceSelector extends StatelessWidget {
                 child: ShadSelect<String>(
                   initialValue: selectedSpace?.id,
                   placeholder: const Text('Select a space'),
-                  selectedOptionBuilder: (context, value) => Text(
-                    value == Sidebar.newSpaceSentinel
-                        ? 'New space'
-                        : spaces.firstWhere((s) => s.id == value).name,
-                  ),
+                  selectedOptionBuilder: (context, value) {
+                    if (value == Sidebar.newSpaceSentinel) return const Text('New space');
+                    // The select's own controller can still hold the
+                    // just-deleted space's id for a frame after `spaces`
+                    // has already gone empty (e.g. right after deleting
+                    // the last one) - fall back to blank rather than
+                    // firstWhere() throwing on no match.
+                    final matches = spaces.where((s) => s.id == value);
+                    return Text(matches.isEmpty ? '' : matches.first.name);
+                  },
                   options: [
                     for (final space in spaces)
                       ShadOption(value: space.id, child: Text(space.name)),
@@ -144,28 +149,25 @@ class _SpaceSelector extends StatelessWidget {
                   ),
                 ),
                 Tooltip(
-                  message: spaces.length > 1
-                      ? 'Delete space'
-                      : "Can't delete the last space",
+                  // Deleting down to zero spaces is fine - _MainContent
+                  // shows a "create a space"/"go to Settings" empty
+                  // state instead of assuming one always exists.
+                  message: 'Delete space',
                   child: ShadIconButton.ghost(
                     icon: const Icon(Icons.delete_outline),
-                    // Architecture guarantees at least one space always
-                    // exists - disable rather than let softDelete violate it.
-                    onPressed: spaces.length > 1
-                        ? () async {
-                            final confirmed = await confirmDelete(
-                              context,
-                              title: "Delete space '${selectedSpace.name}'?",
-                              message:
-                                  "Its collections and pages will stop being "
-                                  "shown until it's restored - there's no "
-                                  'Trash UI for that yet.',
-                            );
-                            if (confirmed) {
-                              await scope.spaces.softDelete(selectedSpace.id);
-                            }
-                          }
-                        : null,
+                    onPressed: () async {
+                      final confirmed = await confirmDelete(
+                        context,
+                        title: "Delete space '${selectedSpace.name}'?",
+                        message:
+                            "Its collections and pages will stop being "
+                            "shown until it's restored - there's no "
+                            'Trash UI for that yet.',
+                      );
+                      if (confirmed) {
+                        await scope.spaces.softDelete(selectedSpace.id);
+                      }
+                    },
                   ),
                 ),
               ],

@@ -22,7 +22,7 @@ void main() {
 
     late String pageId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       // Reuse the same repository the app uses to create the page, so
       // the title/space wiring matches; the AppDatabase is shared.
       final pagesTable = database.pages;
@@ -86,7 +86,7 @@ void main() {
 
     late String pageId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       final now = DateTime.now();
       pageId = 'page_1';
       await database.into(database.pages).insert(
@@ -136,7 +136,7 @@ void main() {
     late String pageId;
     late String collectionId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       final collections = CollectionsRepository(database);
       final fields = FieldsRepository(database);
       final pages = PagesRepository(database);
@@ -194,7 +194,7 @@ void main() {
     late String pageId;
     late String collectionId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       collectionId = await CollectionsRepository(
         database,
       ).create(spaceId: spaceId, name: 'Tasks');

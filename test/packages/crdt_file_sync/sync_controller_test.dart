@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/core/database/crdt_database_delegate.dart';
+import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_transport.dart';
 import 'package:turtle_base/packages/crdt_file_sync/testing/fake_sync_transport.dart';
@@ -40,14 +41,16 @@ void main() {
     final (dbB, crdtB) = _openCrdtDatabase();
     addTearDown(dbB.close);
 
-    final spaceA = (await dbA.select(dbA.spaces).get()).single;
-    final spaceB = (await dbB.select(dbB.spaces).get()).single;
+    // AppDatabase no longer seeds a default space - create one per
+    // simulated device, like a user would on each of their devices.
+    final spaceAId = await SpacesRepository(dbA).create(name: 'On A');
+    final spaceBId = await SpacesRepository(dbB).create(name: 'On B');
 
     final transport = FakeSyncTransport();
     final controllerA = SyncController(crdtA.crdt, transport);
     final controllerB = SyncController(crdtB.crdt, transport);
 
-    await (dbA.update(dbA.spaces)..where((s) => s.id.equals(spaceA.id))).write(
+    await (dbA.update(dbA.spaces)..where((s) => s.id.equals(spaceAId))).write(
       const SpacesCompanion(name: Value('Renamed on A')),
     );
 
@@ -55,15 +58,15 @@ void main() {
     await controllerB.syncNow();
 
     final spacesOnB = await dbB.select(dbB.spaces).get();
-    expect(spacesOnB.map((s) => s.id), containsAll([spaceA.id, spaceB.id]));
-    expect(spacesOnB.firstWhere((s) => s.id == spaceA.id).name, 'Renamed on A');
+    expect(spacesOnB.map((s) => s.id), containsAll([spaceAId, spaceBId]));
+    expect(spacesOnB.firstWhere((s) => s.id == spaceAId).name, 'Renamed on A');
 
     // B also has to push its own (unmodified) space back to A to converge.
     await controllerB.syncNow();
     await controllerA.syncNow();
 
     final spacesOnA = await dbA.select(dbA.spaces).get();
-    expect(spacesOnA.map((s) => s.id), containsAll([spaceA.id, spaceB.id]));
+    expect(spacesOnA.map((s) => s.id), containsAll([spaceAId, spaceBId]));
   });
 
   test('a second sync does not re-upload an already-pushed changeset', () async {

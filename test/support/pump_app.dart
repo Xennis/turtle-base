@@ -16,6 +16,7 @@ import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
+import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 
 import 'fake_drive_authenticator.dart';
 
@@ -66,9 +67,17 @@ Widget wrapWithAppLocalizations(Widget home) {
 /// NativeDatabase does real FFI I/O for migration/seeding, which needs
 /// runAsync() - but only for the real async work, not for pumping
 /// (mixing the two hangs the test).
-Future<AppDatabase> pumpApp(WidgetTester tester) async {
+///
+/// [seedDefaultSpace] mirrors what most tests need - some existing
+/// space to select/populate - even though AppDatabase itself no longer
+/// seeds one (see its _seedDefaults doc comment). Tests covering the
+/// "no spaces yet" empty state pass false.
+Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true}) async {
   final database = newTestDatabase();
   await tester.runAsync(() => database.currentUserId());
+  if (seedDefaultSpace) {
+    await tester.runAsync(() => SpacesRepository(database).create(name: 'Default'));
+  }
   // Mocked (no real platform channel), so unlike the database above,
   // this doesn't need runAsync().
   SharedPreferences.setMockInitialValues({});

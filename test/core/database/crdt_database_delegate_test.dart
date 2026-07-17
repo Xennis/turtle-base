@@ -18,14 +18,38 @@ import 'package:turtle_base/core/database/crdt_database_delegate.dart';
   return (db, delegate);
 }
 
+/// AppDatabase no longer seeds a default space (see its
+/// _seedDefaults doc comment) - tests that need one create it directly.
+Future<Space> _createSpace(AppDatabase db, {required String id, required String name}) async {
+  final userId = await db.currentUserId();
+  final now = DateTime.now();
+  await db
+      .into(db.spaces)
+      .insert(
+        SpacesCompanion.insert(
+          id: id,
+          name: name,
+          position: 0,
+          createdAt: now,
+          updatedAt: now,
+          createdBy: userId,
+          updatedBy: userId,
+        ),
+      );
+  return (db.select(db.spaces)..where((s) => s.id.equals(id))).getSingle();
+}
+
 void main() {
   test('runs migrations/seeding through the CRDT delegate like any other executor', () async {
     final (db, _) = _openCrdtDatabase();
     addTearDown(db.close);
 
+    // Only the single-user profile is seeded - no default space (see
+    // AppDatabase._seedDefaults's doc comment).
+    final users = await db.select(db.users).get();
+    expect(users, hasLength(1));
     final spaces = await db.select(db.spaces).get();
-    expect(spaces, hasLength(1));
-    expect(spaces.single.name, 'Default');
+    expect(spaces, isEmpty);
   });
 
   test('typed repository-style writes and reads work through the delegate', () async {
@@ -33,8 +57,21 @@ void main() {
     addTearDown(db.close);
 
     final userId = await db.currentUserId();
-    final spaceId = (await db.select(db.spaces).get()).single.id;
     final now = DateTime.now();
+    const spaceId = 'space_1';
+    await db
+        .into(db.spaces)
+        .insert(
+          SpacesCompanion.insert(
+            id: spaceId,
+            name: 'Space',
+            position: 0,
+            createdAt: now,
+            updatedAt: now,
+            createdBy: userId,
+            updatedBy: userId,
+          ),
+        );
 
     await db
         .into(db.pages)
@@ -74,10 +111,10 @@ void main() {
       final (dbB, crdtB) = _openCrdtDatabase();
       addTearDown(dbB.close);
 
-      // Each database seeds its own independent default space - simulating
-      // two devices that have never synced.
-      final spaceA = (await dbA.select(dbA.spaces).get()).single;
-      final spaceB = (await dbB.select(dbB.spaces).get()).single;
+      // Each database creates its own independent space - simulating two
+      // devices that have never synced.
+      final spaceA = await _createSpace(dbA, id: 'space_a', name: 'On A');
+      final spaceB = await _createSpace(dbB, id: 'space_b', name: 'On B');
       expect(spaceA.id, isNot(spaceB.id));
 
       // A renames its own space, B never sees this until synced.

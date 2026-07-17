@@ -204,17 +204,29 @@ void main() {
     expect(pages.single.deletedAt, isNotNull);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets("the delete-space button is disabled when it's the only space", (
-    WidgetTester tester,
-  ) async {
-    final database = await pumpApp(tester);
-    addTearDown(database.close);
+  testWidgets(
+    'deleting the only space is allowed and shows the empty-spaces state',
+    (WidgetTester tester) async {
+      final database = await pumpApp(tester);
+      addTearDown(database.close);
 
-    final deleteButton = tester.widget<ShadIconButton>(
-      find.widgetWithIcon(ShadIconButton, Icons.delete_outline).first,
-    );
-    expect(deleteButton.onPressed, isNull);
-  }, timeout: const Timeout(Duration(seconds: 30)));
+      final deleteButton = tester.widget<ShadIconButton>(
+        find.widgetWithIcon(ShadIconButton, Icons.delete_outline).first,
+      );
+      expect(deleteButton.onPressed, isNotNull);
+
+      await tester.tap(find.byIcon(Icons.delete_outline).first);
+      await tester.pump();
+      await tester.tap(find.text('Delete'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('No spaces yet'), findsOneWidget);
+      expect(find.widgetWithText(ShadButton, 'Create your first space'), findsOneWidget);
+      expect(find.widgetWithText(ShadButton, 'Go to Settings to sync'), findsOneWidget);
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 
   testWidgets('creates a page via the sidebar and opens it', (
     WidgetTester tester,

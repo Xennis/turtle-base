@@ -1,7 +1,12 @@
-import 'package:flutter/material.dart';
+// Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
+import 'package:flutter/material.dart' hide Page;
+import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:turtle_base/core/app_scope.dart';
+import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/widgets/page_detail_view.dart';
 import 'package:turtle_base/features/settings/widgets/settings_page.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
+import 'package:turtle_base/features/shell/widgets/name_prompt_dialog.dart';
 import 'package:turtle_base/features/shell/widgets/sidebar.dart';
 import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 import 'package:turtle_base/features/tables/widgets/collection_view.dart';
@@ -170,6 +175,58 @@ class _MainContent extends StatelessWidget {
     if (navigation.selectedPageId case final id?) {
       return PageDetailView(pageId: id, onOpenCollection: navigation.selectCollection);
     }
-    return const Center(child: Text('Select a collection or page'));
+    return StreamBuilder<List<Space>>(
+      stream: AppScope.of(context).spaces.watchAll(),
+      builder: (context, snapshot) {
+        // No spaces yet on this device isn't necessarily "starting from
+        // scratch" - it may be a fresh install about to pull existing
+        // spaces from another device via Sync, so offer both.
+        if (snapshot.data?.isEmpty ?? false) {
+          return _EmptySpacesState(navigation: navigation);
+        }
+        return const Center(child: Text('Select a collection or page'));
+      },
+    );
+  }
+}
+
+/// Shown instead of "Select a collection or page" when this device has
+/// no spaces at all yet - offers to either start fresh or, since this
+/// may well be a second device, go connect/sync instead of creating a
+/// space that's about to be replaced by a synced one anyway.
+class _EmptySpacesState extends StatelessWidget {
+  const _EmptySpacesState({required this.navigation});
+
+  final AppNavigationController navigation;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = AppScope.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('No spaces yet'),
+          const SizedBox(height: 16),
+          ShadButton(
+            onPressed: () async {
+              final name = await promptForName(context, title: 'New space');
+              if (name != null) {
+                await scope.spaces.create(name: name);
+              }
+            },
+            child: const Text('Create your first space'),
+          ),
+          const SizedBox(height: 8),
+          // MVP: just navigates to Settings, where the user connects
+          // Google Drive and triggers a sync themselves - no dedicated
+          // "connect and sync now" one-tap flow yet.
+          ShadButton.outline(
+            onPressed: navigation.showSettings,
+            child: const Text('Go to Settings to sync'),
+          ),
+        ],
+      ),
+    );
   }
 }

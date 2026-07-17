@@ -19,7 +19,7 @@ void main() {
 
       late String collectionId;
       await tester.runAsync(() async {
-        final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+        final spaceId = await SpacesRepository(database).create(name: 'Space');
         collectionId = await CollectionsRepository(
           database,
         ).create(spaceId: spaceId, name: 'Tasks');
@@ -101,7 +101,7 @@ void main() {
 
     late String collectionId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       collectionId = await CollectionsRepository(
         database,
       ).create(spaceId: spaceId, name: 'Tasks');
@@ -148,7 +148,7 @@ void main() {
       late String collectionId;
       late String targetCollectionId;
       await tester.runAsync(() async {
-        final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+        final spaceId = await SpacesRepository(database).create(name: 'Space');
         final collections = CollectionsRepository(database);
         collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
         targetCollectionId = await collections.create(spaceId: spaceId, name: 'Projects');

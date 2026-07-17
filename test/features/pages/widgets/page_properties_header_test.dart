@@ -22,7 +22,7 @@ void main() {
     late String collectionId;
     late String pageId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       final collections = CollectionsRepository(database);
       final fields = FieldsRepository(database);
       final pages = PagesRepository(database);
@@ -62,7 +62,7 @@ void main() {
     late String pageId;
     late String priorityFieldId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       final collections = CollectionsRepository(database);
       final fields = FieldsRepository(database);
       final pages = PagesRepository(database);
@@ -112,7 +112,7 @@ void main() {
     late String projectEntryId;
     late String relationFieldId;
     await tester.runAsync(() async {
-      final spaceId = (await SpacesRepository(database).watchAll().first).single.id;
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
       final collections = CollectionsRepository(database);
       final fields = FieldsRepository(database);
       final pages = PagesRepository(database);
