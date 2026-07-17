@@ -17,4 +17,11 @@ class DriveClientConfig {
   /// package name + signing certificate fingerprint - nothing to reference
   /// here at runtime, this is just a record of which client ID that is.
   static const androidClientId = 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com';
+
+  /// "Web application" OAuth client, passed as `serverClientId` to
+  /// `GoogleSignIn.instance.initialize()`. `google_sign_in`'s Credential
+  /// Manager-based Android flow requires this unconditionally, even though
+  /// this app never uses server-side/offline access - see
+  /// AndroidDriveAuthenticator's doc comment.
+  static const androidServerClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
 }

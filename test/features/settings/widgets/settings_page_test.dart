@@ -58,6 +58,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
+    // The Sync card now sits below Appearance + the AI settings card, so
+    // it may not be built yet within the ListView's initial extent.
+    // The sidebar is also a ListView - Settings' own is the one with
+    // EdgeInsets.all(16) padding, i.e. the last one in the tree.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
+    await tester.pump();
+
     expect(find.text('Sync'), findsOneWidget);
     expect(find.text('Google Drive'), findsOneWidget);
     expect(find.text('Not connected'), findsOneWidget);

@@ -36,6 +36,7 @@ Future<void> main() async {
     crdt: await database.crdt,
     authenticator: createDriveAuthenticator(
       desktopClientId: ClientId(DriveClientConfig.desktopClientId, DriveClientConfig.desktopClientSecret),
+      androidServerClientId: DriveClientConfig.androidServerClientId,
     ),
   );
   // Fire-and-forget: don't delay the first frame on a network-ish silent
