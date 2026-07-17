@@ -23,14 +23,19 @@ abstract class DriveAuthenticator {
 
 /// Picks the [DriveAuthenticator] implementation for the current platform.
 /// [desktopClientId] is only needed on Linux (see
-/// `.local/GOOGLE_DRIVE_SETUP.md` step 3) - Android resolves its OAuth
-/// client automatically from the app's package name + signing certificate.
+/// `.local/GOOGLE_DRIVE_SETUP.md` step 3). [androidServerClientId] is only
+/// needed on Android - it's a separate **Web application**-type OAuth
+/// client id that `google_sign_in`'s Credential Manager-based flow always
+/// requires, in addition to the Android-type client Google resolves
+/// automatically from the app's package name + signing certificate (see
+/// `.local/GOOGLE_DRIVE_SETUP.md` step 4).
 DriveAuthenticator createDriveAuthenticator({
   required ClientId desktopClientId,
+  required String androidServerClientId,
   List<String> scopes = const [DriveApi.driveFileScope],
 }) {
   if (Platform.isAndroid) {
-    return AndroidDriveAuthenticator(scopes: scopes);
+    return AndroidDriveAuthenticator(serverClientId: androidServerClientId, scopes: scopes);
   }
   if (Platform.isLinux) {
     return DesktopDriveAuthenticator(clientId: desktopClientId, scopes: scopes);
