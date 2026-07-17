@@ -140,6 +140,36 @@ void main() {
     },
   );
 
+  test(
+    "currentUserId() stays stable after sync merges in another device's user row",
+    () async {
+      final (dbA, crdtA) = _openCrdtDatabase();
+      addTearDown(dbA.close);
+      final (dbB, crdtB) = _openCrdtDatabase();
+      addTearDown(dbB.close);
+
+      // Each device resolves (and caches) its own identity first, exactly
+      // as main.dart does before restoreConnection() can pull in a merge.
+      final userIdA = await dbA.currentUserId();
+      final userIdB = await dbB.currentUserId();
+      expect(userIdA, isNot(userIdB));
+
+      // A's changeset includes its onCreate-seeded user row - merging it
+      // into B simulates two devices connecting Drive sync to the same
+      // account, which leaves B with two rows in `users`.
+      final changeset = await crdtA.crdt.getChangeset();
+      final wireFormat = jsonDecode(jsonEncode(changeset)) as Map<String, dynamic>;
+      await crdtB.crdt.merge(parseCrdtChangeset(wireFormat));
+
+      final usersOnB = await dbB.select(dbB.users).get();
+      expect(usersOnB, hasLength(2));
+      // B still resolves to its own (cached) id, not A's - and doesn't
+      // throw "Bad state: Too many elements" the way a plain
+      // `select(users).getSingle()` would.
+      expect(await dbB.currentUserId(), userIdB);
+    },
+  );
+
   test('AppDatabase.crdt resolves to the SqliteCrdt behind its CrdtDatabaseDelegate', () async {
     final delegate = CrdtDatabaseDelegate(path: null);
     final db = AppDatabase.withExecutor(

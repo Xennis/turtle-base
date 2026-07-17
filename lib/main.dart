@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/core/database/local_user_id_store.dart';
 import 'package:turtle_base/core/sync/app_sync_controller.dart';
 import 'package:turtle_base/core/sync/sync_scope.dart';
 import 'package:turtle_base/core/theme/theme_controller.dart';
@@ -25,10 +26,12 @@ Future<void> main() async {
   final themeController = await ThemeController.load();
   final aiSettingsController = await AiSettingsController.load();
 
-  final database = AppDatabase();
+  final database = AppDatabase(localUserIdStore: await SharedPreferencesLocalUserIdStore.load());
   // Forces the (otherwise lazily-opened) connection to actually open now,
   // so CrdtDatabaseDelegate exists and `database.crdt` below can resolve -
-  // see AppDatabase.crdt's doc comment.
+  // see AppDatabase.crdt's doc comment. Also this device's first (and
+  // only) chance to adopt a fresh users row as its own before sync can
+  // merge in any others - see AppDatabase.currentUserId's doc comment.
   await database.currentUserId();
 
   final driveAuthenticator = createDriveAuthenticator(
