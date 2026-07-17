@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Turtle Base
+Exec=turtle_base
+Icon=turtle-base
+Categories=Utility;
+Terminal=false

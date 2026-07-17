@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      build_name: ${{ steps.version.outputs.build_name }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      full_version: ${{ steps.version.outputs.full_version }}
+    steps:
+      - name: Parse version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match required format vX.Y.Z+N"
+            exit 1
+          fi
+          echo "build_name=${TAG%+*}" >> "$GITHUB_OUTPUT"
+          echo "build_number=${TAG##*+}" >> "$GITHUB_OUTPUT"
+          echo "full_version=$TAG" >> "$GITHUB_OUTPUT"
+
+  build-linux:
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the exact Flutter version pinned in mise.toml.
+      - uses: jdx/mise-action@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build libgtk-3-dev cmake pkg-config clang liblzma-dev \
+            libsecret-1-dev libjsoncpp-dev \
+            file
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: mise run generate
+
+      - name: Build Linux release bundle
+        run: |
+          flutter build linux --release \
+            --build-name="${{ needs.resolve-version.outputs.build_name }}" \
+            --build-number="${{ needs.resolve-version.outputs.build_number }}"
+
+      - name: Assemble AppDir
+        run: |
+          mkdir -p AppDir/usr/bin
+          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+          ln -s usr/bin/turtle_base AppDir/AppRun
+          cp .github/workflows/turtle-base.desktop AppDir/turtle-base.desktop
+          cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png AppDir/turtle-base.png
+
+      - name: Build AppImage
+        run: |
+          wget -q -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          ./appimagetool --appimage-extract-and-run AppDir \
+            "turtle-base-${{ needs.resolve-version.outputs.full_version }}-linux-x86_64.AppImage"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-appimage
+          path: turtle-base-*.AppImage
+          if-no-files-found: error
+
+  build-android:
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: mise run generate
+
+      # NOTE: release builds are currently signed with the debug keystore
+      # (see android/app/build.gradle.kts). Real release signing is a
+      # separate, deliberately deferred piece of work.
+      - name: Build Android release APK
+        run: |
+          flutter build apk --release \
+            --build-name="${{ needs.resolve-version.outputs.build_name }}" \
+            --build-number="${{ needs.resolve-version.outputs.build_number }}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  release:
+    needs: [resolve-version, build-linux, build-android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-appimage
+          path: artifacts
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-apk
+          path: artifacts
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.resolve-version.outputs.full_version }}
+        run: |
+          mv "artifacts/app-release.apk" "artifacts/turtle-base-${VERSION}-android.apk"
+          gh release create "${{ github.ref_name }}" \
+            "artifacts/turtle-base-${VERSION}-linux-x86_64.AppImage" \
+            "artifacts/turtle-base-${VERSION}-android.apk" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            --prerelease
