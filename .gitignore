@@ -54,3 +54,11 @@ app.*.map.json
 # Google Drive sync OAuth client config - personal, see
 # .local/GOOGLE_DRIVE_SETUP.md and client_config.dart.example.
 lib/packages/crdt_file_sync/google_drive/client_config.dart
+
+# OpenTofu (ops/infra) - state and local files, see ops/infra/README.md.
+# .terraform.lock.hcl stays committed (provider dependency lock).
+ops/infra/.terraform/
+ops/infra/*.tfstate
+ops/infra/*.tfstate.*
+ops/infra/terraform.tfvars
+ops/infra/crash.log
