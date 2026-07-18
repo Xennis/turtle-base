@@ -205,7 +205,11 @@ class _SpaceContent extends StatelessWidget {
         StreamBuilder<List<Collection>>(
           stream: scope.collections.watchAllInSpace(spaceId),
           builder: (context, snapshot) {
-            final collections = snapshot.data ?? const <Collection>[];
+            // Sorted for display only - the repository keeps creation
+            // order for other consumers (e.g. the relation-field target
+            // picker in CollectionEditPage).
+            final collections = [...snapshot.data ?? const <Collection>[]]
+              ..sort((a, b) => a.name.compareTo(b.name));
             return Column(
               children: [
                 for (final collection in collections)
@@ -216,18 +220,6 @@ class _SpaceContent extends StatelessWidget {
                     title: collection.name,
                     selected: navigation.selectedCollectionId == collection.id,
                     onTap: () => navigation.selectCollection(collection.id),
-                    trailingTooltip: 'Delete collection',
-                    onTrailingTap: () async {
-                      final confirmed = await confirmDelete(
-                        context,
-                        title: "Delete '${collection.name}'?",
-                      );
-                      if (!confirmed) return;
-                      if (navigation.selectedCollectionId == collection.id) {
-                        navigation.clearSelection();
-                      }
-                      await scope.collections.softDelete(collection.id);
-                    },
                   ),
               ],
             );
