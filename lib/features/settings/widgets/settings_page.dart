@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/sync/app_sync_controller.dart';
 import 'package:turtle_base/core/sync/sync_scope.dart';
+import 'package:turtle_base/core/theme/theme_preset.dart';
+import 'package:turtle_base/core/theme/theme_preset_scope.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_card.dart';
 import 'package:turtle_base/features/settings/widgets/settings_row.dart';
@@ -19,6 +21,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
+    final themePresetController = ThemePresetScope.of(context);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -50,6 +53,21 @@ class SettingsPage extends StatelessWidget {
                       ],
                       onChanged: (mode) {
                         if (mode != null) themeController.setMode(mode);
+                      },
+                    ),
+                  ),
+                  SettingsRow(
+                    label: 'Color',
+                    // Per-device, not synced - see ThemePresetController.
+                    control: ShadSelect<ThemePreset>(
+                      initialValue: themePresetController.preset,
+                      selectedOptionBuilder: (context, value) => Text(value.label),
+                      options: [
+                        for (final preset in ThemePreset.values)
+                          ShadOption(value: preset, child: Text(preset.label)),
+                      ],
+                      onChanged: (preset) {
+                        if (preset != null) themePresetController.setPreset(preset);
                       },
                     ),
                   ),
