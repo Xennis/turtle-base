@@ -6,11 +6,23 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/field_validation.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Storage/display format for date fields - also what TrinaGrid's date
+/// picker writes back on selection (see TrinaColumnTypeDate).
+const _dateFormat = 'yyyy-MM-dd';
 
 /// Grid view of a collection's entries, with inline cell editing for
 /// text/number/date/url. Edits are persisted immediately on commit
 /// (TrinaGrid's onChanged fires on Enter/Tab/blur, not per keystroke).
+/// Invalid values (bad date, malformed URL) are rejected by TrinaGrid's
+/// column validation and never reach [_onCellChanged]. Stored values
+/// that no longer match a field's type (e.g. after changing it from
+/// Text to Number/Date/URL - see FieldsRepository.changeType) are never
+/// silently dropped or misrepresented as valid; each typed column's
+/// renderer flags them in red instead.
 class CollectionView extends StatelessWidget {
   const CollectionView({
     super.key,
@@ -102,7 +114,10 @@ class CollectionView extends StatelessWidget {
                                   child: const Text('Add row'),
                                 ),
                                 ShadButton.outline(
-                                  leading: const Icon(Icons.edit_outlined, size: 16),
+                                  leading: const Icon(
+                                    Icons.edit_outlined,
+                                    size: 16,
+                                  ),
                                   onPressed: onEdit,
                                   child: const Text('Edit collection'),
                                 ),
@@ -124,10 +139,17 @@ class CollectionView extends StatelessWidget {
                                 ),
                               ),
                               columns: _columnsFor(titleLabel, fields),
-                              rows: _rowsFor(fields, entries, relatedPagesByCollection),
-                              onChanged: (event) => _onCellChanged(scope, event),
+                              rows: _rowsFor(
+                                fields,
+                                entries,
+                                relatedPagesByCollection,
+                              ),
+                              onChanged: (event) =>
+                                  _onCellChanged(scope, event),
                               onRowDoubleTap: (event) =>
                                   onOpenEntry(event.row.data as String),
+                              onValidationFailed: (event) =>
+                                  _onValidationFailed(context, event),
                               onLoaded: onLoaded,
                             ),
                           ),
@@ -177,7 +199,11 @@ class CollectionView extends StatelessWidget {
       // not a user-defined field. Its label is customizable per
       // collection (CollectionEditPage) though, unlike the column
       // itself.
-      TrinaColumn(title: titleLabel, field: 'title', type: TrinaColumnType.text()),
+      TrinaColumn(
+        title: titleLabel,
+        field: 'title',
+        type: TrinaColumnType.text(),
+      ),
       for (final field in fields)
         TrinaColumn(
           title: field.name,
@@ -186,8 +212,94 @@ class CollectionView extends StatelessWidget {
           // Relations are edited via a picker in the entry's Page-View
           // (see PagePropertiesHeader), not inline in the grid.
           readOnly: field.type == FieldType.relation.name,
+          validator: field.type == FieldType.url.name ? _validateUrl : null,
+          renderer: _rendererFor(field),
         ),
     ];
+  }
+
+  TrinaColumnRenderer? _rendererFor(Field field) {
+    if (field.type == FieldType.url.name) return _urlRenderer;
+    if (field.type == FieldType.number.name) return _numberRenderer;
+    if (field.type == FieldType.date.name) return _dateRenderer;
+    return null;
+  }
+
+  String? _validateUrl(dynamic value, TrinaValidationContext context) {
+    final text = value?.toString() ?? '';
+    if (text.isEmpty || isValidUrl(text)) return null;
+    return 'Enter a valid URL, e.g. example.com';
+  }
+
+  Widget _urlRenderer(TrinaColumnRendererContext context) {
+    final text = context.cell.value?.toString() ?? '';
+    if (text.isEmpty) return const SizedBox.shrink();
+    // Not every stored value is still a URL - e.g. a field changed
+    // from Text to URL keeps its old free-text values (see
+    // FieldsRepository.changeType) - flag those instead of rendering
+    // them as a clickable link they aren't.
+    if (!isValidUrl(text)) {
+      return Text(text, style: const TextStyle(color: Colors.red));
+    }
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      // GestureDetector rather than InkWell - no Material ancestor is
+      // guaranteed inside a TrinaGrid cell.
+      child: GestureDetector(
+        onTap: () => launchUrl(
+          Uri.parse(text.contains('://') ? text : 'https://$text'),
+          mode: LaunchMode.externalApplication,
+        ),
+        child: Text(
+          text,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dateRenderer(TrinaColumnRendererContext context) {
+    final text = context.cell.value?.toString() ?? '';
+    if (text.isEmpty) return const SizedBox.shrink();
+    // TrinaColumnTypeDate.applyFormat silently returns '' for a value
+    // it can't parse, which would hide a stored value that no longer
+    // matches the field's type (see FieldsRepository.changeType) -
+    // flag it instead.
+    if (!isValidDate(text)) {
+      return Text(text, style: const TextStyle(color: Colors.red));
+    }
+    return Text(context.column.type.applyFormat(text));
+  }
+
+  Widget _numberRenderer(TrinaColumnRendererContext context) {
+    final value = context.cell.value;
+    if (value == null || value.toString().isEmpty) {
+      return const SizedBox.shrink();
+    }
+    // A genuine num (parsed in _cellValue) formats normally; anything
+    // else is a stored value that never was a number (e.g. typed as
+    // "3a" in the entry's Page-View, which only warns, doesn't block -
+    // see PagePropertiesHeader) - flag it rather than silently showing
+    // it as 0 (TrinaColumnTypeNumber's own formatting would do that).
+    if (value is num) {
+      return Text(context.column.type.applyFormat(value));
+    }
+    return Text(value.toString(), style: const TextStyle(color: Colors.red));
+  }
+
+  void _onValidationFailed(
+    BuildContext context,
+    TrinaGridValidationEvent event,
+  ) {
+    ShadToaster.of(context).show(
+      ShadToast.destructive(
+        title: Text('${event.column.title}: ${event.errorMessage}'),
+      ),
+    );
   }
 
   List<TrinaRow> _rowsFor(
@@ -239,11 +351,27 @@ class CollectionView extends StatelessWidget {
   }
 
   TrinaColumnType _columnTypeFor(Field field) {
-    // date/url stay plain text for now - a proper date picker / link
-    // rendering is a later refinement, not needed for read-only display.
-    return field.type == FieldType.number.name
-        ? TrinaColumnType.number()
-        : TrinaColumnType.text();
+    if (field.type == FieldType.number.name) {
+      // applyFormatOnInit off - its default behaviour formats anything
+      // it can't parse (an empty cell, or invalid stored text) as "0",
+      // which _numberRenderer must be able to tell apart from a real 0.
+      return TrinaColumnType.number(applyFormatOnInit: false);
+    }
+    if (field.type == FieldType.date.name) {
+      // format is the sortable yyyy-MM-dd - both stored in properties
+      // and shown in the grid; headerFormat stays the picker's default
+      // (month/year), unrelated to how the cell itself is displayed.
+      // applyFormatOnInit off, same reason as number above - its
+      // default behaviour silently formats an unparseable stored
+      // value as '', which _dateRenderer must be able to flag instead.
+      return TrinaColumnType.date(
+        format: _dateFormat,
+        applyFormatOnInit: false,
+      );
+    }
+    // url stays plain text - it needs its own validator/renderer
+    // (added in _columnsFor) rather than a distinct TrinaColumnType.
+    return TrinaColumnType.text();
   }
 
   String _gridVersion(
@@ -252,7 +380,9 @@ class CollectionView extends StatelessWidget {
     List<Page> entries,
     Map<String, List<Page>> relatedPagesByCollection,
   ) {
-    final fieldPart = fields.map((f) => '${f.id}:${f.name}:${f.type}').join(',');
+    final fieldPart = fields
+        .map((f) => '${f.id}:${f.name}:${f.type}')
+        .join(',');
     final entryPart = entries
         .map((e) => '${e.id}:${e.updatedAt.millisecondsSinceEpoch}')
         .join(',');
@@ -281,7 +411,8 @@ class _RelatedPagesResolver extends StatelessWidget {
   final Widget Function(BuildContext, Map<String, List<Page>>) builder;
 
   @override
-  Widget build(BuildContext context) => _build(context, collectionIds, const {});
+  Widget build(BuildContext context) =>
+      _build(context, collectionIds, const {});
 
   Widget _build(
     BuildContext context,

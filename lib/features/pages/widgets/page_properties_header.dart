@@ -6,6 +6,7 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/pages/widgets/relation_picker_dialog.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/field_validation.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 
 /// The typed-fields area of a collection entry's Page-View, shown above
@@ -57,15 +58,34 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
     final focusNode = FocusNode();
     focusNode.addListener(() {
       if (!focusNode.hasFocus) {
-        scope.pages.setPropertyValue(
-          widget.pageId,
-          field.id,
-          _controllers[field.id]!.text,
-        );
+        _persistIfValid(scope, field, _controllers[field.id]!.text);
       }
     });
     _focusNodes[field.id] = focusNode;
     return focusNode;
+  }
+
+  // Invalid input is never saved - the field keeps showing what the
+  // user typed (and the validator's error) until they fix or clear
+  // it, but the last valid value stays in the database untouched.
+  void _persistIfValid(AppScope scope, Field field, String value) {
+    if (!isValidForType(FieldType.values.byName(field.type), value)) return;
+    scope.pages.setPropertyValue(widget.pageId, field.id, value);
+  }
+
+  String? Function(String)? _validatorFor(Field field) {
+    final type = FieldType.values.byName(field.type);
+    final message = invalidMessageFor(type);
+    if (message == null) return null; // text/relation are never invalid
+    return (value) => isValidForType(type, value) ? null : message;
+  }
+
+  TextInputType? _keyboardTypeFor(Field field) {
+    if (field.type == FieldType.number.name) {
+      return const TextInputType.numberWithOptions(decimal: true);
+    }
+    if (field.type == FieldType.url.name) return TextInputType.url;
+    return null;
   }
 
   @override
@@ -116,17 +136,25 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                                   pageId: widget.pageId,
                                   field: field,
                                   selectedIds: decodeRelationValue(
-                                    decodePageProperties(page.properties)[field.id],
+                                    decodePageProperties(
+                                      page.properties,
+                                    )[field.id],
                                   ),
                                 )
-                              : ShadInput(
+                              : ShadInputFormField(
                                   controller: _controllerFor(field, page),
                                   focusNode: _focusNodeFor(field, scope),
-                                  onSubmitted: (value) => scope.pages.setPropertyValue(
-                                    widget.pageId,
-                                    field.id,
-                                    value,
-                                  ),
+                                  // always, not onUserInteraction - an
+                                  // already-invalid stored value (e.g. a
+                                  // number field typed as "3a" before)
+                                  // should show as an error right when
+                                  // the page opens, not just after the
+                                  // next edit.
+                                  autovalidateMode: AutovalidateMode.always,
+                                  keyboardType: _keyboardTypeFor(field),
+                                  validator: _validatorFor(field),
+                                  onSubmitted: (value) =>
+                                      _persistIfValid(scope, field, value),
                                 ),
                         ),
                       ],
