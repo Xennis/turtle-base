@@ -85,6 +85,36 @@ Same **Clients** tab → Create client:
   Add a second Android OAuth client (or an additional fingerprint) for
   your release signing key once you have one.
 
+  To create a release signing key (one-time, keep it and its passwords
+  outside the repo - never commit them):
+  ```sh
+  keytool -genkey -v -keystore release.keystore -alias <alias> -keyalg RSA -keysize 2048 -validity 10000 -storetype JKS
+  ```
+  Get its SHA-1 the same way as the debug example above:
+  ```sh
+  keytool -list -v -keystore release.keystore -alias <alias>
+  ```
+  Add that fingerprint to the Android OAuth client (or a second Android-type
+  client) so both debug and release builds keep working. The keystore file
+  and its passwords feed the release pipeline
+  ([.github/workflows/release.yml](../../.github/workflows/release.yml)) via
+  the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and
+  `ANDROID_KEY_PASSWORD` repo secrets, plus the `ANDROID_KEY_ALIAS` repo
+  **variable** (not a secret - the alias alone is useless without the
+  keystore file and passwords, so it doesn't need encryption or log
+  masking; add it under Settings → Secrets and variables → Actions →
+  Variables). Locally all four are set via a gitignored
+  `android/key.properties` (see `android/app/build.gradle.kts`).
+
+  `ANDROID_KEYSTORE_BASE64` is the keystore file base64-encoded as a single
+  line (the workflow decodes it back with `base64 -d`):
+  ```sh
+  base64 -w0 release.keystore
+  ```
+  (on macOS, `base64` has no `-w0` flag; use `base64 -i release.keystore`
+  instead.) Copy the output into the `ANDROID_KEYSTORE_BASE64` GitHub
+  secret.
+
 Only the **Client ID** is needed (no secret - `google_sign_in` on
 Android verifies via the signing certificate, not a client secret).
 
