@@ -25,12 +25,12 @@ Skill content itself isn't checked in - only `skills-lock.json` is tracked. Run
 
 ## Platforms
 
-Linux and Android are the supported Flutter platforms (see ARCHITECTURE.md's
-Plattform-Reihenfolge). Don't run `flutter create --platforms=...` for other platforms (e.g. web,
-iOS) and don't add platform folders like `web/` — verify changes via `flutter run -d linux` and,
-for anything responsive/layout-related, also on Android (emulator `vPixel_10`, or
-`flutter run -d android`); fall back to `flutter analyze`/`flutter test` when no display is
-available.
+Linux, macOS and Android are the supported Flutter platforms. Don't run
+`flutter create --platforms=...` for other platforms (e.g. web, iOS) and don't add platform
+folders like `web/` — verify changes via `flutter run -d linux` and, for anything
+responsive/layout-related, also on Android (emulator `vPixel_10`, or `flutter run -d android`)
+and macOS (`flutter run -d macos`, or `mise run run-macos` for Drive sync config); fall back to
+`flutter analyze`/`flutter test` when no display is available.
 
 ## Structure
 

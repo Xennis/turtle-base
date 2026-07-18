@@ -21,3 +21,7 @@ run = "flutter run -d linux --dart-define=DRIVE_DESKTOP_CLIENT_ID=$DRIVE_DESKTOP
 [tasks.run-android]
 description = "flutter run on Android with Google Drive sync config from env"
 run = "flutter run -d android --dart-define=DRIVE_ANDROID_SERVER_CLIENT_ID=$DRIVE_ANDROID_SERVER_CLIENT_ID"
+
+[tasks.run-macos]
+description = "flutter run on macOS with Google Drive sync config from env"
+run = "flutter run -d macos --dart-define=DRIVE_DESKTOP_CLIENT_ID=$DRIVE_DESKTOP_CLIENT_ID --dart-define=DRIVE_DESKTOP_CLIENT_SECRET=$DRIVE_DESKTOP_CLIENT_SECRET"
