@@ -103,9 +103,21 @@ jobs:
       - name: Generate code
         run: mise run generate
 
-      # NOTE: release builds are currently signed with the debug keystore
-      # (see android/app/build.gradle.kts). Real release signing is a
-      # separate, deliberately deferred piece of work.
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/release.keystore
+          cat > android/key.properties <<EOF
+          storeFile=release.keystore
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
       - name: Build Android release APK
         env:
           DRIVE_ANDROID_SERVER_CLIENT_ID: ${{ secrets.DRIVE_ANDROID_SERVER_CLIENT_ID }}
