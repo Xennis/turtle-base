@@ -25,7 +25,7 @@ abstract class DriveAuthenticator {
 /// or returns null if the OAuth client id(s) that platform needs weren't
 /// supplied (see `client_config.dart` - built without `--dart-define`,
 /// they're empty strings). [desktopClientId]/[desktopClientSecret] are only
-/// needed on Linux (see `.local/GOOGLE_DRIVE_SETUP.md` step 3).
+/// needed on Linux/macOS.
 /// [androidServerClientId] is only needed on Android - it's a separate
 /// **Web application**-type OAuth client id that `google_sign_in`'s
 /// Credential Manager-based flow always requires, in addition to the
@@ -42,7 +42,7 @@ DriveAuthenticator? createDriveAuthenticator({
     if (androidServerClientId.isEmpty) return null;
     return AndroidDriveAuthenticator(serverClientId: androidServerClientId, scopes: scopes);
   }
-  if (Platform.isLinux) {
+  if (Platform.isLinux || Platform.isMacOS) {
     if (desktopClientId.isEmpty || desktopClientSecret.isEmpty) return null;
     return DesktopDriveAuthenticator(clientId: ClientId(desktopClientId, desktopClientSecret), scopes: scopes);
   }

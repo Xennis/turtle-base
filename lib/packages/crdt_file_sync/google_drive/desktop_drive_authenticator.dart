@@ -5,12 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'drive_authenticator.dart';
 
-/// Desktop (Linux) OAuth flow: the "installed app" loopback pattern - a
-/// local `127.0.0.1` server on an arbitrary free port catches the redirect
+/// Desktop OAuth flow: the "installed app" loopback pattern -
+/// a local `127.0.0.1` server on an arbitrary free port catches the redirect
 /// after the user approves access in their normal browser. There is no
-/// platform-native `google_sign_in` support for Linux (see
-/// `.local/GOOGLE_DRIVE_SETUP.md`), so `googleapis_auth`'s
-/// `clientViaUserConsent` drives the whole flow directly.
+/// platform-native `google_sign_in` support for Linux/macOS, so
+/// `googleapis_auth`'s `clientViaUserConsent` drives the whole flow directly.
 ///
 /// The resulting refresh token is the only thing persisted (in the
 /// platform keyring via [FlutterSecureStorage], not plain prefs) - it's

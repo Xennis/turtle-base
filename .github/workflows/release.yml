@@ -34,7 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Installs the exact Flutter version pinned in mise.toml.
       - uses: jdx/mise-action@v4
 
       - name: Install Linux build dependencies
@@ -133,8 +132,45 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
+  build-macos:
+    needs: resolve-version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v4
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: mise run generate
+
+      - name: Build macOS release bundle
+        env:
+          DRIVE_DESKTOP_CLIENT_ID: ${{ secrets.DRIVE_DESKTOP_CLIENT_ID }}
+          DRIVE_DESKTOP_CLIENT_SECRET: ${{ secrets.DRIVE_DESKTOP_CLIENT_SECRET }}
+        run: |
+          flutter build macos --release \
+            --build-name="${{ needs.resolve-version.outputs.build_name }}" \
+            --build-number="${{ needs.resolve-version.outputs.build_number }}" \
+            --dart-define=DRIVE_DESKTOP_CLIENT_ID="$DRIVE_DESKTOP_CLIENT_ID" \
+            --dart-define=DRIVE_DESKTOP_CLIENT_SECRET="$DRIVE_DESKTOP_CLIENT_SECRET"
+
+      - name: Zip app bundle
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "build/macos/Build/Products/Release/turtle_base.app" \
+            "turtle-base-${{ needs.resolve-version.outputs.full_version }}-macos.zip"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-app
+          path: turtle-base-*.zip
+          if-no-files-found: error
+
   release:
-    needs: [resolve-version, build-linux, build-android]
+    needs: [resolve-version, build-linux, build-android, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -151,6 +187,11 @@ jobs:
           name: android-apk
           path: artifacts
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: macos-app
+          path: artifacts
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -160,6 +201,7 @@ jobs:
           gh release create "${{ github.ref_name }}" \
             "artifacts/turtle-base-${VERSION}-linux-x86_64.AppImage" \
             "artifacts/turtle-base-${VERSION}-android.apk" \
+            "artifacts/turtle-base-${VERSION}-macos.zip" \
             --title "${{ github.ref_name }}" \
             --generate-notes \
             --prerelease
