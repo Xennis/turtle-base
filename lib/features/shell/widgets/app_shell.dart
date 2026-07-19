@@ -40,7 +40,9 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= AppShell.wideBreakpoint;
-    return isWide ? _WideShell(navigation: _navigation) : _NarrowShell(navigation: _navigation);
+    return isWide
+        ? _WideShell(navigation: _navigation)
+        : _NarrowShell(navigation: _navigation);
   }
 }
 
@@ -141,7 +143,8 @@ class _NarrowShellState extends State<_NarrowShell> {
           return Scaffold(body: _MainContent(navigation: navigation));
         }
         final hasSelection =
-            navigation.selectedCollectionId != null || navigation.selectedPageId != null;
+            navigation.selectedCollectionId != null ||
+            navigation.selectedPageId != null;
         return Scaffold(
           key: _scaffoldKey,
           appBar: AppBar(
@@ -156,7 +159,9 @@ class _NarrowShellState extends State<_NarrowShell> {
                 : null,
             title: const Text('Turtle Base'),
           ),
-          drawer: Drawer(child: SafeArea(child: Sidebar(navigation: navigation))),
+          drawer: Drawer(
+            child: SafeArea(child: Sidebar(navigation: navigation)),
+          ),
           body: _MainContent(navigation: navigation),
         );
       },
@@ -189,7 +194,11 @@ class _MainContent extends StatelessWidget {
       );
     }
     if (navigation.selectedPageId case final id?) {
-      return PageDetailView(pageId: id, onOpenCollection: navigation.selectCollection);
+      return PageDetailView(
+        pageId: id,
+        onOpenCollection: navigation.selectCollection,
+        onDeleted: navigation.clearSelection,
+      );
     }
     return StreamBuilder<List<Space>>(
       stream: AppScope.of(context).spaces.watchAll(),

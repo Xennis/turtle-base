@@ -24,9 +24,20 @@ import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
 /// race against yet (sync is a later phase), so "load once, edit live,
 /// write out" is enough for now.
 class PageDetailView extends StatefulWidget {
-  const PageDetailView({super.key, required this.pageId, this.onOpenCollection});
+  const PageDetailView({
+    super.key,
+    required this.pageId,
+    required this.onDeleted,
+    this.onOpenCollection,
+  });
 
   final String pageId;
+
+  /// Called after a freestanding page is deleted (see [_deleteEntry]) -
+  /// a collection entry goes back to its collection via
+  /// [onOpenCollection] instead, since that's a more specific place to
+  /// land than wherever [onDeleted] would send it.
+  final VoidCallback onDeleted;
 
   /// Called with the entry's collection id when the user taps the back
   /// button - only shown for collection entries, not freestanding
@@ -102,7 +113,9 @@ class _PageDetailViewState extends State<PageDetailView> {
 
     final editorState = EditorState(document: buildDocument(blocks))
       ..editable = true;
-    final transactionSubscription = editorState.transactionStream.listen((event) {
+    final transactionSubscription = editorState.transactionStream.listen((
+      event,
+    ) {
       final (time, _, _) = event;
       if (time == TransactionTime.after) {
         _scheduleSync(scope, editorState);
@@ -137,19 +150,29 @@ class _PageDetailViewState extends State<PageDetailView> {
     );
   }
 
-  Future<void> _deleteEntry(BuildContext context, String collectionId) async {
+  Future<void> _deleteEntry(BuildContext context) async {
     final scope = AppScope.of(context);
-    final confirmed = await confirmDelete(context, title: 'Delete this entry?');
+    final collectionId = _collectionId;
+    final confirmed = await confirmDelete(
+      context,
+      title: collectionId != null ? 'Delete this entry?' : 'Delete this page?',
+    );
     if (!confirmed) return;
     await scope.pages.softDelete(widget.pageId);
     if (!mounted) return;
-    widget.onOpenCollection?.call(collectionId);
+    if (collectionId != null) {
+      widget.onOpenCollection?.call(collectionId);
+    } else {
+      widget.onDeleted();
+    }
   }
 
   void _scheduleSync(AppScope scope, EditorState editorState) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-      final currentBlocks = await scope.blocks.watchAllInPage(widget.pageId).first;
+      final currentBlocks = await scope.blocks
+          .watchAllInPage(widget.pageId)
+          .first;
       await syncBlocksFromDocument(
         blocks: scope.blocks,
         pageId: widget.pageId,
@@ -211,28 +234,36 @@ class _PageDetailViewState extends State<PageDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (collectionId != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-            child: Row(
-              children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+          child: Row(
+            children: [
+              // Only collection entries have somewhere specific to go
+              // "back" to - freestanding pages just leave a gap here
+              // rather than showing a button that goes nowhere.
+              if (collectionId != null)
                 Tooltip(
                   message: 'Back to collection',
                   child: ShadIconButton.ghost(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => widget.onOpenCollection?.call(collectionId),
+                    onPressed: () =>
+                        widget.onOpenCollection?.call(collectionId),
                   ),
                 ),
-                Tooltip(
-                  message: 'Delete entry',
-                  child: ShadIconButton.ghost(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _deleteEntry(context, collectionId),
-                  ),
+              const Spacer(),
+              // Delete is always available and pinned to the far
+              // right - not in the sidebar, so every sidebar row (no
+              // trailing action) stays the same height (see Sidebar).
+              Tooltip(
+                message: collectionId != null ? 'Delete entry' : 'Delete page',
+                child: ShadIconButton.ghost(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _deleteEntry(context),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Row(
@@ -256,7 +287,8 @@ class _PageDetailViewState extends State<PageDetailView> {
                   style: ShadTheme.of(context).textTheme.h3,
                   decoration: ShadDecoration.none,
                   placeholder: const Text('Untitled'),
-                  onSubmitted: (value) => _saveTitle(AppScope.of(context), value),
+                  onSubmitted: (value) =>
+                      _saveTitle(AppScope.of(context), value),
                 ),
               ),
             ],
@@ -265,7 +297,10 @@ class _PageDetailViewState extends State<PageDetailView> {
         if (collectionId != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: PagePropertiesHeader(pageId: widget.pageId, collectionId: collectionId),
+            child: PagePropertiesHeader(
+              pageId: widget.pageId,
+              collectionId: collectionId,
+            ),
           ),
         Expanded(
           child: AppFlowyEditor(

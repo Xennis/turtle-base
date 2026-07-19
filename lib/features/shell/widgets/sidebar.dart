@@ -42,28 +42,31 @@ class Sidebar extends StatelessWidget {
                 builder: (context, _) {
                   final spaceId = navigation.selectedSpaceId;
                   if (spaceId == null) return const SizedBox.shrink();
-                  return _SpaceContent(spaceId: spaceId, navigation: navigation);
+                  return _SpaceContent(
+                    spaceId: spaceId,
+                    navigation: navigation,
+                  );
                 },
               ),
             ),
             // Kept as the only separator in the sidebar: Settings is a
             // fixed entry pinned at the bottom, visually set apart from
-            // the space's own content above it.
+            // the space's own content above it. No extra Padding around
+            // it - it's a plain _SidebarRow like any other, so its
+            // hover/selected highlight matches theirs exactly.
             const ShadSeparator.horizontal(),
             // Fixed entry, not tied to the current space (see UI_UX.md's
             // Sidebar section - Papierkorb follows later as a second one).
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: ListenableBuilder(
-                listenable: navigation,
-                builder: (context, _) => _SidebarRow(
-                  leading: const Icon(Icons.settings_outlined, size: 18),
-                  title: 'Settings',
-                  selected: navigation.isShowingSettings,
-                  onTap: navigation.showSettings,
-                ),
+            ListenableBuilder(
+              listenable: navigation,
+              builder: (context, _) => _SidebarRow(
+                leading: const Icon(Icons.settings_outlined, size: 18),
+                title: 'Settings',
+                selected: navigation.isShowingSettings,
+                onTap: navigation.showSettings,
               ),
             ),
+            const SizedBox(height: 4),
           ],
         );
       },
@@ -96,7 +99,9 @@ class _SpaceSelector extends StatelessWidget {
                   initialValue: selectedSpace?.id,
                   placeholder: const Text('Select a space'),
                   selectedOptionBuilder: (context, value) {
-                    if (value == Sidebar.newSpaceSentinel) return const Text('New space');
+                    if (value == Sidebar.newSpaceSentinel) {
+                      return const Text('New space');
+                    }
                     // The select's own controller can still hold the
                     // just-deleted space's id for a frame after `spaces`
                     // has already gone empty (e.g. right after deleting
@@ -122,7 +127,10 @@ class _SpaceSelector extends StatelessWidget {
                   onChanged: (value) async {
                     if (value == null) return;
                     if (value == Sidebar.newSpaceSentinel) {
-                      final name = await promptForName(context, title: 'New space');
+                      final name = await promptForName(
+                        context,
+                        title: 'New space',
+                      );
                       if (name != null) {
                         final id = await scope.spaces.create(name: name);
                         navigation.selectSpace(id);
@@ -217,7 +225,10 @@ class _SpaceContent extends StatelessWidget {
                 for (final collection in collections)
                   _SidebarRow(
                     leading: collection.icon != null
-                        ? Text(collection.icon!, style: const TextStyle(fontSize: 20))
+                        ? Text(
+                            collection.icon!,
+                            style: const TextStyle(fontSize: 20),
+                          )
                         : const Icon(Icons.table_chart_outlined, size: 18),
                     title: collection.name,
                     selected: navigation.selectedCollectionId == collection.id,
@@ -242,6 +253,10 @@ class _SpaceContent extends StatelessWidget {
             return Column(
               children: [
                 for (final page in pages)
+                  // No delete action here - unlike collections/spaces,
+                  // a page can be deleted from its own header instead
+                  // (see PageDetailView), which also keeps every
+                  // sidebar row the same height.
                   _SidebarRow(
                     leading: page.icon != null
                         ? Text(page.icon!, style: const TextStyle(fontSize: 20))
@@ -249,19 +264,6 @@ class _SpaceContent extends StatelessWidget {
                     title: page.title.isEmpty ? 'Untitled' : page.title,
                     selected: navigation.selectedPageId == page.id,
                     onTap: () => navigation.selectPage(page.id),
-                    trailingTooltip: 'Delete page',
-                    onTrailingTap: () async {
-                      final confirmed = await confirmDelete(
-                        context,
-                        title:
-                            "Delete '${page.title.isEmpty ? 'Untitled' : page.title}'?",
-                      );
-                      if (!confirmed) return;
-                      if (navigation.selectedPageId == page.id) {
-                        navigation.clearSelection();
-                      }
-                      await scope.pages.softDelete(page.id);
-                    },
                   ),
               ],
             );
@@ -317,29 +319,23 @@ class _SidebarHeaderRow extends StatelessWidget {
 }
 
 /// A selectable sidebar entry (collection, page, or a fixed entry like
-/// Settings) with a leading icon/emoji, a title, and an optional
-/// trailing delete action - shadcn_ui has no ListTile equivalent, so
-/// this composes one from theme tokens. Fixed entries (no delete
-/// action) leave [trailingTooltip]/[onTrailingTap] unset.
+/// Settings) with a leading icon/emoji and a title - shadcn_ui has no
+/// ListTile equivalent, so this composes one from theme tokens. No
+/// trailing action of its own (deliberately - a variable-height
+/// trailing icon button would make some rows taller than others), so
+/// every row in the sidebar has the exact same height.
 class _SidebarRow extends StatelessWidget {
   const _SidebarRow({
     required this.leading,
     required this.title,
     required this.selected,
     required this.onTap,
-    this.trailingTooltip,
-    this.onTrailingTap,
-  }) : assert(
-         (trailingTooltip == null) == (onTrailingTap == null),
-         'trailingTooltip and onTrailingTap must be set together',
-       );
+  });
 
   final Widget leading;
   final String title;
   final bool selected;
   final VoidCallback onTap;
-  final String? trailingTooltip;
-  final VoidCallback? onTrailingTap;
 
   @override
   Widget build(BuildContext context) {
@@ -372,14 +368,6 @@ class _SidebarRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (trailingTooltip != null)
-                  Tooltip(
-                    message: trailingTooltip!,
-                    child: ShadIconButton.ghost(
-                      icon: const Icon(Icons.delete_outline, size: 16),
-                      onPressed: onTrailingTap,
-                    ),
-                  ),
               ],
             ),
           ),
