@@ -9,6 +9,7 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/core/database/local_user_id_store.dart';
 import 'package:turtle_base/core/sync/app_sync_controller.dart';
 import 'package:turtle_base/core/sync/sync_scope.dart';
+import 'package:turtle_base/core/theme/app_color_scheme.dart';
 import 'package:turtle_base/core/theme/theme_controller.dart';
 import 'package:turtle_base/core/theme/theme_preset_controller.dart';
 import 'package:turtle_base/core/theme/theme_preset_scope.dart';
@@ -107,15 +108,27 @@ class TurtleBaseApp extends StatelessWidget {
                   final preset = ThemePresetScope.of(context).preset;
                   return ShadApp.custom(
                     themeMode: themeMode,
-                    theme: ShadThemeData(brightness: Brightness.light, colorScheme: preset.light()),
-                    darkTheme: ShadThemeData(brightness: Brightness.dark, colorScheme: preset.dark()),
+                    // The presets' neutral tones are softened app-wide -
+                    // see app_color_scheme.dart for why.
+                    theme: ShadThemeData(
+                      brightness: Brightness.light,
+                      colorScheme: softenedLightScheme(preset.light()),
+                    ),
+                    darkTheme: ShadThemeData(
+                      brightness: Brightness.dark,
+                      colorScheme: softenedDarkScheme(preset.dark()),
+                    ),
                     appBuilder: (context) {
                       return MaterialApp(
                         // ShadApp.custom already resolved light/dark via
                         // its own themeMode above - Theme.of(context)
                         // here reflects whichever ShadThemeData that
-                        // picked.
-                        theme: Theme.of(context),
+                        // picked, extended with the component themes
+                        // ShadApp leaves at (mismatched) M3 defaults.
+                        theme: materialThemeFrom(
+                          Theme.of(context),
+                          ShadTheme.of(context),
+                        ),
                         // AppFlowyEditor requires its own localizations
                         // delegate (plus the standard Flutter ones it
                         // depends on) to be registered here - our own app
