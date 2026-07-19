@@ -7,6 +7,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/core/database/local_user_id_store.dart';
+import 'package:turtle_base/core/platform/window_chrome.dart';
 import 'package:turtle_base/core/sync/app_sync_controller.dart';
 import 'package:turtle_base/core/sync/sync_scope.dart';
 import 'package:turtle_base/core/theme/app_color_scheme.dart';
@@ -141,7 +142,7 @@ class TurtleBaseApp extends StatelessWidget {
                           AppFlowyEditorLocalizations.delegate,
                         ],
                         supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
-                        home: const AppShell(),
+                        home: const WindowChromeSync(child: AppShell()),
                         builder: (context, child) => ShadAppBuilder(child: child!),
                       );
                     },
