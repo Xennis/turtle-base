@@ -33,9 +33,14 @@ class Sidebar extends StatelessWidget {
           });
         }
 
+        // Sorted for display only - `spaces` above (used for the
+        // auto-select fallback) keeps the repository's creation order,
+        // same reasoning as the collections list in _SpaceContent.
+        final sortedSpaces = [...spaces]
+          ..sort((a, b) => a.name.compareTo(b.name));
         return Column(
           children: [
-            _SpaceSelector(spaces: spaces, navigation: navigation),
+            _SpaceSelector(spaces: sortedSpaces, navigation: navigation),
             Expanded(
               child: ListenableBuilder(
                 listenable: navigation,

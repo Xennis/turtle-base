@@ -25,105 +25,112 @@ class SettingsPage extends StatelessWidget {
     // No Scaffold/AppBar of its own (unlike CollectionEditPage) - the
     // slim header row matches PageDetailView, and the background comes
     // from the wide layout's window Scaffold or the narrow layout's
-    // wrapper Scaffold (see AppShell).
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-          child: Row(
-            children: [
-              Tooltip(
-                message: 'Back',
-                child: ShadIconButton.ghost(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: onDone,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text('Settings', style: ShadTheme.of(context).textTheme.h3),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Centered with a max width so the cards don't stretch
-              // across the whole window on desktop.
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ShadCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Appearance',
-                              style: ShadTheme.of(context).textTheme.h4,
-                            ),
-                            const SizedBox(height: 12),
-                            SettingsRow(
-                              label: 'Theme',
-                              // Per-device, not synced - see ThemeController.
-                              control: ShadSelect<ThemeMode>(
-                                initialValue: themeController.mode,
-                                selectedOptionBuilder: (context, value) =>
-                                    Text(value.label),
-                                options: [
-                                  for (final mode in ThemeMode.values)
-                                    ShadOption(
-                                      value: mode,
-                                      child: Text(mode.label),
-                                    ),
-                                ],
-                                onChanged: (mode) {
-                                  if (mode != null) {
-                                    themeController.setMode(mode);
-                                  }
-                                },
-                              ),
-                            ),
-                            SettingsRow(
-                              label: 'Color',
-                              // Per-device, not synced - see
-                              // ThemePresetController.
-                              control: ShadSelect<ThemePreset>(
-                                initialValue: themePresetController.preset,
-                                selectedOptionBuilder: (context, value) =>
-                                    Text(value.label),
-                                options: [
-                                  for (final preset in ThemePreset.values)
-                                    ShadOption(
-                                      value: preset,
-                                      child: Text(preset.label),
-                                    ),
-                                ],
-                                onChanged: (preset) {
-                                  if (preset != null) {
-                                    themePresetController.setPreset(preset);
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const AiSettingsCard(),
-                      const _SyncSection(),
-                    ],
+    // wrapper Scaffold (see AppShell). That wrapper Scaffold has no
+    // AppBar of its own either in this case (see AppShell/_NarrowShell -
+    // Settings and CollectionEditPage share a bare Scaffold), so unlike
+    // pages reached through the shell's main AppBar, nothing else insets
+    // this header from the status bar on mobile - SafeArea has to do it
+    // here instead.
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+            child: Row(
+              children: [
+                Tooltip(
+                  message: 'Back',
+                  child: ShadIconButton.ghost(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: onDone,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                Text('Settings', style: ShadTheme.of(context).textTheme.h3),
+              ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Centered with a max width so the cards don't stretch
+                // across the whole window on desktop.
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ShadCard(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Appearance',
+                                style: ShadTheme.of(context).textTheme.h4,
+                              ),
+                              const SizedBox(height: 12),
+                              SettingsRow(
+                                label: 'Theme',
+                                // Per-device, not synced - see ThemeController.
+                                control: ShadSelect<ThemeMode>(
+                                  initialValue: themeController.mode,
+                                  selectedOptionBuilder: (context, value) =>
+                                      Text(value.label),
+                                  options: [
+                                    for (final mode in ThemeMode.values)
+                                      ShadOption(
+                                        value: mode,
+                                        child: Text(mode.label),
+                                      ),
+                                  ],
+                                  onChanged: (mode) {
+                                    if (mode != null) {
+                                      themeController.setMode(mode);
+                                    }
+                                  },
+                                ),
+                              ),
+                              SettingsRow(
+                                label: 'Color',
+                                // Per-device, not synced - see
+                                // ThemePresetController.
+                                control: ShadSelect<ThemePreset>(
+                                  initialValue: themePresetController.preset,
+                                  selectedOptionBuilder: (context, value) =>
+                                      Text(value.label),
+                                  options: [
+                                    for (final preset in ThemePreset.values)
+                                      ShadOption(
+                                        value: preset,
+                                        child: Text(preset.label),
+                                      ),
+                                  ],
+                                  onChanged: (preset) {
+                                    if (preset != null) {
+                                      themePresetController.setPreset(preset);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const AiSettingsCard(),
+                        const _SyncSection(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
