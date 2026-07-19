@@ -227,7 +227,7 @@ class _SpaceContent extends StatelessWidget {
                     leading: collection.icon != null
                         ? Text(
                             collection.icon!,
-                            style: const TextStyle(fontSize: 20),
+                            style: const TextStyle(fontSize: 18),
                           )
                         : const Icon(Icons.table_chart_outlined, size: 18),
                     title: collection.name,
@@ -259,7 +259,7 @@ class _SpaceContent extends StatelessWidget {
                   // sidebar row the same height.
                   _SidebarRow(
                     leading: page.icon != null
-                        ? Text(page.icon!, style: const TextStyle(fontSize: 20))
+                        ? Text(page.icon!, style: const TextStyle(fontSize: 18))
                         : const Icon(Icons.description_outlined, size: 18),
                     title: page.title.isEmpty ? 'Untitled' : page.title,
                     selected: navigation.selectedPageId == page.id,
