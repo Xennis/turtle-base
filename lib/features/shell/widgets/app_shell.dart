@@ -135,7 +135,10 @@ class _NarrowShellState extends State<_NarrowShell> {
       listenable: navigation,
       builder: (context, _) {
         if (navigation.isEditingCollection || navigation.isShowingSettings) {
-          return _MainContent(navigation: navigation);
+          // Wrapped in a Scaffold for the background only - these pages'
+          // own Scaffolds are transparent so they blend into the wide
+          // layout's floating content panel (see _WideShell).
+          return Scaffold(body: _MainContent(navigation: navigation));
         }
         final hasSelection =
             navigation.selectedCollectionId != null || navigation.selectedPageId != null;

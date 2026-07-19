@@ -60,59 +60,68 @@ class _AiSettingsCardState extends State<AiSettingsCard> {
   Widget build(BuildContext context) {
     final aiSettings = AiSettingsScope.of(context);
     final theme = ShadTheme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('AI', style: theme.textTheme.h4),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.lock_outline, size: 14, color: theme.colorScheme.mutedForeground),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'API keys are stored locally on this device only - never synced or sent anywhere but the chosen provider.',
-                    style: theme.textTheme.small.copyWith(color: theme.colorScheme.mutedForeground),
+    return ShadCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('AI', style: theme.textTheme.h4),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 14,
+                color: theme.colorScheme.mutedForeground,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'API keys are stored locally on this device only - never synced or sent anywhere but the chosen provider.',
+                  style: theme.textTheme.small.copyWith(
+                    color: theme.colorScheme.mutedForeground,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            for (final provider in AiProvider.values) _ApiKeyRow(provider: provider, keyStorage: _keyStorage),
-            SettingsRow(
-              label: 'Default model',
-              control: ShadSelect<AiModel>(
-                initialValue: aiSettings.selectedModel,
-                selectedOptionBuilder: (context, value) => Text(value.label),
-                options: [
-                  for (final model in AiModel.values) ShadOption(value: model, child: Text(model.label)),
-                ],
-                onChanged: (model) {
-                  if (model != null) aiSettings.setModel(model);
-                },
               ),
-            ),
-            const SizedBox(height: 12),
-            ShadButton(
-              onPressed: _testing ? null : _runTest,
-              // Kept short - ShadButton doesn't wrap its child text, and
-              // the available width here is a lot narrower than the
-              // Settings page's own Card padding on narrow screens.
-              child: Text(_testing ? 'Sending...' : 'Send test prompt'),
-            ),
-            if (_testResult != null) ...[
-              const SizedBox(height: 8),
-              Text(_testResult!),
             ],
-            if (_testError != null) ...[
-              const SizedBox(height: 8),
-              Text(_testError!, style: TextStyle(color: theme.colorScheme.destructive)),
-            ],
+          ),
+          const SizedBox(height: 12),
+          for (final provider in AiProvider.values)
+            _ApiKeyRow(provider: provider, keyStorage: _keyStorage),
+          SettingsRow(
+            label: 'Default model',
+            control: ShadSelect<AiModel>(
+              initialValue: aiSettings.selectedModel,
+              selectedOptionBuilder: (context, value) => Text(value.label),
+              options: [
+                for (final model in AiModel.values)
+                  ShadOption(value: model, child: Text(model.label)),
+              ],
+              onChanged: (model) {
+                if (model != null) aiSettings.setModel(model);
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          ShadButton(
+            onPressed: _testing ? null : _runTest,
+            // Kept short - ShadButton doesn't wrap its child text, and
+            // the available width here is a lot narrower than the
+            // Settings page's own Card padding on narrow screens.
+            child: Text(_testing ? 'Sending...' : 'Send test prompt'),
+          ),
+          if (_testResult != null) ...[
+            const SizedBox(height: 8),
+            Text(_testResult!),
           ],
-        ),
+          if (_testError != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _testError!,
+              style: TextStyle(color: theme.colorScheme.destructive),
+            ),
+          ],
+        ],
       ),
     );
   }
