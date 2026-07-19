@@ -55,30 +55,30 @@ class _WideShell extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
+          // The sidebar floats as a rounded card (slightly lighter than
+          // the background, with a border) over the unified window
+          // background - the content shares that background directly,
+          // with no divider or panel of its own.
           SizedBox(
-            // Widened from 260 to fit the space selector's rename +
-            // delete icon buttons alongside the dropdown without
-            // overflowing.
-            width: 300,
-            child: Sidebar(navigation: navigation),
-          ),
-          // The content floats as a rounded card over the shared
-          // background instead of sitting behind a hard divider - the
-          // sidebar is part of the window, the content is the sheet on
-          // top of it.
-          Expanded(
+            // Inner width stays 300 (widened from 260 to fit the space
+            // selector's rename + delete icon buttons alongside the
+            // dropdown without overflowing) plus the floating margin.
+            width: 308,
             child: Container(
-              margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+              margin: const EdgeInsets.fromLTRB(8, 8, 0, 8),
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: colors.card,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: colors.border),
               ),
-              child: ListenableBuilder(
-                listenable: navigation,
-                builder: (context, _) => _MainContent(navigation: navigation),
-              ),
+              child: Sidebar(navigation: navigation),
+            ),
+          ),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: navigation,
+              builder: (context, _) => _MainContent(navigation: navigation),
             ),
           ),
         ],
@@ -136,8 +136,8 @@ class _NarrowShellState extends State<_NarrowShell> {
       builder: (context, _) {
         if (navigation.isEditingCollection || navigation.isShowingSettings) {
           // Wrapped in a Scaffold for the background only - these pages'
-          // own Scaffolds are transparent so they blend into the wide
-          // layout's floating content panel (see _WideShell).
+          // own Scaffolds are transparent so they blend into the unified
+          // window background on the wide layout (see _WideShell).
           return Scaffold(body: _MainContent(navigation: navigation));
         }
         final hasSelection =

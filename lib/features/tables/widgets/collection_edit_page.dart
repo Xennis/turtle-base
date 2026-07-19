@@ -130,9 +130,9 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     return Scaffold(
-      // Transparent so the floating content panel's card color shows
-      // through on the wide layout (see AppShell/_WideShell); on the
-      // narrow layout the ancestor Scaffold provides the background.
+      // Transparent so the unified window background shows through on
+      // the wide layout (see AppShell/_WideShell); on the narrow layout
+      // the ancestor Scaffold provides the background.
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,

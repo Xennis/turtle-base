@@ -217,10 +217,11 @@ class CollectionView extends StatelessWidget {
     final gridBorderRadius = BorderRadius.circular(8);
     final style = theme.brightness == Brightness.dark
         ? TrinaGridStyleConfig.dark(
-            // card, not background: on the wide layout the grid sits on
-            // the floating content panel (see AppShell/_WideShell).
-            gridBackgroundColor: colors.card,
-            rowColor: colors.card,
+            // The grid sits directly on the unified window background
+            // (see AppShell/_WideShell - only the sidebar floats as a
+            // card).
+            gridBackgroundColor: colors.background,
+            rowColor: colors.background,
             activatedColor: colors.accent,
             activatedBorderColor: colors.ring,
             inactivatedBorderColor: colors.border,
@@ -230,14 +231,14 @@ class CollectionView extends StatelessWidget {
             columnTextStyle: columnTextStyle,
             iconColor: colors.mutedForeground,
             menuBackgroundColor: colors.popover,
-            cellColorInEditState: colors.card,
+            cellColorInEditState: colors.background,
             cellColorInReadOnlyState: colors.muted,
             gridBorderRadius: gridBorderRadius,
           )
         : TrinaGridStyleConfig(
-            // card, not background - same reason as the dark branch.
-            gridBackgroundColor: colors.card,
-            rowColor: colors.card,
+            // background, not card - same reason as the dark branch.
+            gridBackgroundColor: colors.background,
+            rowColor: colors.background,
             activatedColor: colors.accent,
             activatedBorderColor: colors.ring,
             inactivatedBorderColor: colors.border,
@@ -247,7 +248,7 @@ class CollectionView extends StatelessWidget {
             columnTextStyle: columnTextStyle,
             iconColor: colors.mutedForeground,
             menuBackgroundColor: colors.popover,
-            cellColorInEditState: colors.card,
+            cellColorInEditState: colors.background,
             cellColorInReadOnlyState: colors.muted,
             gridBorderRadius: gridBorderRadius,
           );

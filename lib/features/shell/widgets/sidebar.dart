@@ -36,7 +36,6 @@ class Sidebar extends StatelessWidget {
         return Column(
           children: [
             _SpaceSelector(spaces: spaces, navigation: navigation),
-            const ShadSeparator.horizontal(),
             Expanded(
               child: ListenableBuilder(
                 listenable: navigation,
@@ -47,6 +46,9 @@ class Sidebar extends StatelessWidget {
                 },
               ),
             ),
+            // Kept as the only separator in the sidebar: Settings is a
+            // fixed entry pinned at the bottom, visually set apart from
+            // the space's own content above it.
             const ShadSeparator.horizontal(),
             // Fixed entry, not tied to the current space (see UI_UX.md's
             // Sidebar section - Papierkorb follows later as a second one).
@@ -225,7 +227,6 @@ class _SpaceContent extends StatelessWidget {
             );
           },
         ),
-        const ShadSeparator.horizontal(),
         _SidebarHeaderRow(
           title: 'Pages',
           tooltip: 'New page',
@@ -291,7 +292,17 @@ class _SidebarHeaderRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: theme.textTheme.small)),
+          Expanded(
+            // Small, muted section label - the entries below carry the
+            // visual weight, not the group header.
+            child: Text(
+              title,
+              style: theme.textTheme.muted.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
           Tooltip(
             message: tooltip,
             child: ShadIconButton.ghost(
@@ -333,6 +344,9 @@ class _SidebarRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
+    // Slightly below textTheme.small's 14 - nav entries are dense
+    // scanning targets, not body text.
+    final rowStyle = theme.textTheme.small.copyWith(fontSize: 13);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       child: Material(
@@ -351,10 +365,10 @@ class _SidebarRow extends StatelessWidget {
                   child: Text(
                     title,
                     style: selected
-                        ? theme.textTheme.small.copyWith(
+                        ? rowStyle.copyWith(
                             color: theme.colorScheme.accentForeground,
                           )
-                        : theme.textTheme.small,
+                        : rowStyle,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

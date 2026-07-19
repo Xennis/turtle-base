@@ -24,8 +24,8 @@ class SettingsPage extends StatelessWidget {
     final themePresetController = ThemePresetScope.of(context);
     // No Scaffold/AppBar of its own (unlike CollectionEditPage) - the
     // slim header row matches PageDetailView, and the background comes
-    // from the wide layout's floating content panel or the narrow
-    // layout's wrapper Scaffold (see AppShell).
+    // from the wide layout's window Scaffold or the narrow layout's
+    // wrapper Scaffold (see AppShell).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
