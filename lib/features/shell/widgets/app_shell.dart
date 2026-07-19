@@ -51,6 +51,7 @@ class _WideShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ShadTheme.of(context).colorScheme;
     return Scaffold(
       body: Row(
         children: [
@@ -61,11 +62,23 @@ class _WideShell extends StatelessWidget {
             width: 300,
             child: Sidebar(navigation: navigation),
           ),
-          const VerticalDivider(width: 1),
+          // The content floats as a rounded card over the shared
+          // background instead of sitting behind a hard divider - the
+          // sidebar is part of the window, the content is the sheet on
+          // top of it.
           Expanded(
-            child: ListenableBuilder(
-              listenable: navigation,
-              builder: (context, _) => _MainContent(navigation: navigation),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.border),
+              ),
+              child: ListenableBuilder(
+                listenable: navigation,
+                builder: (context, _) => _MainContent(navigation: navigation),
+              ),
             ),
           ),
         ],

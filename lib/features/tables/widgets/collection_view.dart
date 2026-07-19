@@ -217,8 +217,10 @@ class CollectionView extends StatelessWidget {
     final gridBorderRadius = BorderRadius.circular(8);
     final style = theme.brightness == Brightness.dark
         ? TrinaGridStyleConfig.dark(
-            gridBackgroundColor: colors.background,
-            rowColor: colors.background,
+            // card, not background: on the wide layout the grid sits on
+            // the floating content panel (see AppShell/_WideShell).
+            gridBackgroundColor: colors.card,
+            rowColor: colors.card,
             activatedColor: colors.accent,
             activatedBorderColor: colors.ring,
             inactivatedBorderColor: colors.border,
@@ -228,13 +230,14 @@ class CollectionView extends StatelessWidget {
             columnTextStyle: columnTextStyle,
             iconColor: colors.mutedForeground,
             menuBackgroundColor: colors.popover,
-            cellColorInEditState: colors.background,
+            cellColorInEditState: colors.card,
             cellColorInReadOnlyState: colors.muted,
             gridBorderRadius: gridBorderRadius,
           )
         : TrinaGridStyleConfig(
-            gridBackgroundColor: colors.background,
-            rowColor: colors.background,
+            // card, not background - same reason as the dark branch.
+            gridBackgroundColor: colors.card,
+            rowColor: colors.card,
             activatedColor: colors.accent,
             activatedBorderColor: colors.ring,
             inactivatedBorderColor: colors.border,
@@ -244,7 +247,7 @@ class CollectionView extends StatelessWidget {
             columnTextStyle: columnTextStyle,
             iconColor: colors.mutedForeground,
             menuBackgroundColor: colors.popover,
-            cellColorInEditState: colors.background,
+            cellColorInEditState: colors.card,
             cellColorInReadOnlyState: colors.muted,
             gridBorderRadius: gridBorderRadius,
           );

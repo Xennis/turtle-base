@@ -23,7 +23,12 @@ class SettingsPage extends StatelessWidget {
     final themeController = ThemeScope.of(context);
     final themePresetController = ThemePresetScope.of(context);
     return Scaffold(
+      // Transparent so the floating content panel's card color shows
+      // through on the wide layout (see AppShell/_WideShell); on the
+      // narrow layout the ancestor Scaffold provides the background.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: onDone,
