@@ -706,7 +706,7 @@ void main() {
 
       expect(find.text('3a'), findsOneWidget);
       final cellText = tester.widget<Text>(find.text('3a'));
-      expect(cellText.style?.color, Colors.red);
+      expect(cellText.style?.color, const ShadZincColorScheme.light().destructive);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
@@ -762,7 +762,7 @@ void main() {
 
       expect(find.text('not a url'), findsOneWidget);
       final cellText = tester.widget<Text>(find.text('not a url'));
-      expect(cellText.style?.color, Colors.red);
+      expect(cellText.style?.color, const ShadZincColorScheme.light().destructive);
       expect(cellText.style?.decoration, isNot(TextDecoration.underline));
     },
     timeout: const Timeout(Duration(seconds: 30)),
@@ -815,7 +815,7 @@ void main() {
 
       expect(find.text('not a date'), findsOneWidget);
       final cellText = tester.widget<Text>(find.text('not a date'));
-      expect(cellText.style?.color, Colors.red);
+      expect(cellText.style?.color, const ShadZincColorScheme.light().destructive);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );

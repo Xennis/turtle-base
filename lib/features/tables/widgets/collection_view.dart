@@ -49,6 +49,7 @@ class CollectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
+    final theme = ShadTheme.of(context);
     return StreamBuilder<Collection>(
       stream: scope.collections.watchById(collectionId),
       builder: (context, collectionSnapshot) {
@@ -138,12 +139,17 @@ class CollectionView extends StatelessWidget {
                                   relatedPagesByCollection,
                                 ),
                               ),
-                              columns: _columnsFor(titleLabel, fields),
+                              columns: _columnsFor(
+                                titleLabel,
+                                fields,
+                                theme.colorScheme,
+                              ),
                               rows: _rowsFor(
                                 fields,
                                 entries,
                                 relatedPagesByCollection,
                               ),
+                              configuration: _gridConfiguration(theme),
                               onChanged: (event) =>
                                   _onCellChanged(scope, event),
                               onRowDoubleTap: (event) =>
@@ -193,7 +199,63 @@ class CollectionView extends StatelessWidget {
     }
   }
 
-  List<TrinaColumn> _columnsFor(String titleLabel, List<Field> fields) {
+  /// TrinaGrid doesn't follow the ambient theme on its own - without a
+  /// configuration it always renders its light default styling, so the
+  /// grid stayed white in dark mode. Map the shadcn tokens onto its
+  /// style config instead; the `.dark` constructor also sets
+  /// `isDarkStyle`, which TrinaGrid's own popups (column menu, date
+  /// picker) use to pick their text colors.
+  TrinaGridConfiguration _gridConfiguration(ShadThemeData theme) {
+    final colors = theme.colorScheme;
+    final cellTextStyle = TextStyle(fontSize: 14, color: colors.foreground);
+    final columnTextStyle = TextStyle(
+      color: colors.foreground,
+      decoration: TextDecoration.none,
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+    );
+    final gridBorderRadius = BorderRadius.circular(8);
+    final style = theme.brightness == Brightness.dark
+        ? TrinaGridStyleConfig.dark(
+            gridBackgroundColor: colors.background,
+            rowColor: colors.background,
+            activatedColor: colors.accent,
+            activatedBorderColor: colors.ring,
+            inactivatedBorderColor: colors.border,
+            gridBorderColor: colors.border,
+            borderColor: colors.border,
+            cellTextStyle: cellTextStyle,
+            columnTextStyle: columnTextStyle,
+            iconColor: colors.mutedForeground,
+            menuBackgroundColor: colors.popover,
+            cellColorInEditState: colors.background,
+            cellColorInReadOnlyState: colors.muted,
+            gridBorderRadius: gridBorderRadius,
+          )
+        : TrinaGridStyleConfig(
+            gridBackgroundColor: colors.background,
+            rowColor: colors.background,
+            activatedColor: colors.accent,
+            activatedBorderColor: colors.ring,
+            inactivatedBorderColor: colors.border,
+            gridBorderColor: colors.border,
+            borderColor: colors.border,
+            cellTextStyle: cellTextStyle,
+            columnTextStyle: columnTextStyle,
+            iconColor: colors.mutedForeground,
+            menuBackgroundColor: colors.popover,
+            cellColorInEditState: colors.background,
+            cellColorInReadOnlyState: colors.muted,
+            gridBorderRadius: gridBorderRadius,
+          );
+    return TrinaGridConfiguration(style: style);
+  }
+
+  List<TrinaColumn> _columnsFor(
+    String titleLabel,
+    List<Field> fields,
+    ShadColorScheme colors,
+  ) {
     return [
       // Not editable via "Manage fields" - it's the built-in title,
       // not a user-defined field. Its label is customizable per
@@ -213,15 +275,23 @@ class CollectionView extends StatelessWidget {
           // (see PagePropertiesHeader), not inline in the grid.
           readOnly: field.type == FieldType.relation.name,
           validator: field.type == FieldType.url.name ? _validateUrl : null,
-          renderer: _rendererFor(field),
+          renderer: _rendererFor(field, colors),
         ),
     ];
   }
 
-  TrinaColumnRenderer? _rendererFor(Field field) {
-    if (field.type == FieldType.url.name) return _urlRenderer;
-    if (field.type == FieldType.number.name) return _numberRenderer;
-    if (field.type == FieldType.date.name) return _dateRenderer;
+  /// [colors] is passed in because [TrinaColumnRendererContext] carries
+  /// no BuildContext to resolve the theme from inside a renderer.
+  TrinaColumnRenderer? _rendererFor(Field field, ShadColorScheme colors) {
+    if (field.type == FieldType.url.name) {
+      return (context) => _urlRenderer(context, colors);
+    }
+    if (field.type == FieldType.number.name) {
+      return (context) => _numberRenderer(context, colors);
+    }
+    if (field.type == FieldType.date.name) {
+      return (context) => _dateRenderer(context, colors);
+    }
     return null;
   }
 
@@ -231,7 +301,10 @@ class CollectionView extends StatelessWidget {
     return 'Enter a valid URL, e.g. example.com';
   }
 
-  Widget _urlRenderer(TrinaColumnRendererContext context) {
+  Widget _urlRenderer(
+    TrinaColumnRendererContext context,
+    ShadColorScheme colors,
+  ) {
     final text = context.cell.value?.toString() ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
     // Not every stored value is still a URL - e.g. a field changed
@@ -239,7 +312,7 @@ class CollectionView extends StatelessWidget {
     // FieldsRepository.changeType) - flag those instead of rendering
     // them as a clickable link they aren't.
     if (!isValidUrl(text)) {
-      return Text(text, style: const TextStyle(color: Colors.red));
+      return Text(text, style: TextStyle(color: colors.destructive));
     }
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -253,16 +326,20 @@ class CollectionView extends StatelessWidget {
         child: Text(
           text,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.blue,
+          style: TextStyle(
+            color: colors.primary,
             decoration: TextDecoration.underline,
+            decorationColor: colors.primary,
           ),
         ),
       ),
     );
   }
 
-  Widget _dateRenderer(TrinaColumnRendererContext context) {
+  Widget _dateRenderer(
+    TrinaColumnRendererContext context,
+    ShadColorScheme colors,
+  ) {
     final text = context.cell.value?.toString() ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
     // TrinaColumnTypeDate.applyFormat silently returns '' for a value
@@ -270,12 +347,21 @@ class CollectionView extends StatelessWidget {
     // matches the field's type (see FieldsRepository.changeType) -
     // flag it instead.
     if (!isValidDate(text)) {
-      return Text(text, style: const TextStyle(color: Colors.red));
+      return Text(text, style: TextStyle(color: colors.destructive));
     }
-    return Text(context.column.type.applyFormat(text));
+    // Custom renderers bypass the grid's cellTextStyle (see
+    // TrinaDefaultCell.build), so the foreground color must be set
+    // explicitly here too.
+    return Text(
+      context.column.type.applyFormat(text),
+      style: TextStyle(color: colors.foreground),
+    );
   }
 
-  Widget _numberRenderer(TrinaColumnRendererContext context) {
+  Widget _numberRenderer(
+    TrinaColumnRendererContext context,
+    ShadColorScheme colors,
+  ) {
     final value = context.cell.value;
     if (value == null || value.toString().isEmpty) {
       return const SizedBox.shrink();
@@ -286,9 +372,13 @@ class CollectionView extends StatelessWidget {
     // see PagePropertiesHeader) - flag it rather than silently showing
     // it as 0 (TrinaColumnTypeNumber's own formatting would do that).
     if (value is num) {
-      return Text(context.column.type.applyFormat(value));
+      // Same as _dateRenderer: custom renderers bypass cellTextStyle.
+      return Text(
+        context.column.type.applyFormat(value),
+        style: TextStyle(color: colors.foreground),
+      );
     }
-    return Text(value.toString(), style: const TextStyle(color: Colors.red));
+    return Text(value.toString(), style: TextStyle(color: colors.destructive));
   }
 
   void _onValidationFailed(
