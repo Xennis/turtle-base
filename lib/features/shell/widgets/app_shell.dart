@@ -200,7 +200,21 @@ class _MainContent extends StatelessWidget {
         if (snapshot.data?.isEmpty ?? false) {
           return _EmptySpacesState(navigation: navigation);
         }
-        return const Center(child: Text('Select a collection or page'));
+        final theme = ShadTheme.of(context);
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.space_dashboard_outlined,
+                size: 40,
+                color: theme.colorScheme.mutedForeground,
+              ),
+              const SizedBox(height: 12),
+              Text('Select a collection or page', style: theme.textTheme.muted),
+            ],
+          ),
+        );
       },
     );
   }
@@ -218,11 +232,18 @@ class _EmptySpacesState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
+    final theme = ShadTheme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('No spaces yet'),
+          Icon(
+            Icons.workspaces_outlined,
+            size: 40,
+            color: theme.colorScheme.mutedForeground,
+          ),
+          const SizedBox(height: 12),
+          Text('No spaces yet', style: theme.textTheme.muted),
           const SizedBox(height: 16),
           ShadButton(
             onPressed: () async {

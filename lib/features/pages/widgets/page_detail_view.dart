@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/foundation.dart';
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
@@ -11,6 +10,7 @@ import 'package:turtle_base/features/pages/widgets/block_document.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
 import 'package:turtle_base/features/pages/widgets/page_properties_header.dart';
 import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
+import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
 
 /// Shows a page's title and its blocks, editable. Works for both
 /// freestanding pages and collection entries - they're the same
@@ -128,18 +128,12 @@ class _PageDetailViewState extends State<PageDetailView> {
   /// changing it.
   Future<void> _pickIcon(BuildContext context) async {
     final scope = AppScope.of(context);
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (context) => SizedBox(
-        height: 320,
-        child: EmojiPicker(
-          onEmojiSelected: (category, emoji) {
-            scope.pages.setIcon(widget.pageId, emoji.emoji);
-            setState(() => _icon = emoji.emoji);
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
+    await showEmojiPickerSheet(
+      context,
+      onSelected: (emoji) {
+        scope.pages.setIcon(widget.pageId, emoji);
+        setState(() => _icon = emoji);
+      },
     );
   }
 

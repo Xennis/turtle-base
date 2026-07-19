@@ -1,9 +1,9 @@
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
+import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
@@ -75,17 +75,9 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
 
   Future<void> _pickIcon(BuildContext context) async {
     final scope = AppScope.of(context);
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (context) => SizedBox(
-        height: 320,
-        child: EmojiPicker(
-          onEmojiSelected: (category, emoji) {
-            scope.collections.setIcon(widget.collectionId, emoji.emoji);
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
+    await showEmojiPickerSheet(
+      context,
+      onSelected: (emoji) => scope.collections.setIcon(widget.collectionId, emoji),
     );
   }
 
