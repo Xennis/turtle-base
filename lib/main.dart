@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -107,6 +108,14 @@ class TurtleBaseApp extends StatelessWidget {
                   // scheme in Settings.
                   final themeMode = ThemeScope.of(context).mode;
                   final preset = ThemePresetScope.of(context).preset;
+                  // Fetched at runtime by google_fonts (cached on disk
+                  // after the first fetch) rather than bundled as
+                  // assets, so updating the font is a pubspec bump, not
+                  // a manual re-download. ShadApp forwards
+                  // textTheme.googleFontBuilder into the Material
+                  // theme's fontFamily too, so Material widgets pick up
+                  // Inter as well.
+                  final textTheme = ShadTextTheme.fromGoogleFont(GoogleFonts.inter);
                   return ShadApp.custom(
                     themeMode: themeMode,
                     // The presets' neutral tones are softened app-wide -
@@ -114,10 +123,12 @@ class TurtleBaseApp extends StatelessWidget {
                     theme: ShadThemeData(
                       brightness: Brightness.light,
                       colorScheme: softenedLightScheme(preset.light()),
+                      textTheme: textTheme,
                     ),
                     darkTheme: ShadThemeData(
                       brightness: Brightness.dark,
                       colorScheme: softenedDarkScheme(preset.dark()),
+                      textTheme: textTheme,
                     ),
                     appBuilder: (context) {
                       return MaterialApp(

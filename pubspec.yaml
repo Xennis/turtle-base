@@ -46,6 +46,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^10.3.1
+  google_fonts: ^6.3.2
   google_sign_in: ^7.2.0
   googleapis: ^16.0.0
   googleapis_auth: ^2.3.3
@@ -108,6 +109,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Inter as the app-wide UI font is fetched at runtime by the
+  # google_fonts package (see main.dart) - no font assets to bundle here.
 
   # To add assets to your application, add an assets section, like this:
   # assets:

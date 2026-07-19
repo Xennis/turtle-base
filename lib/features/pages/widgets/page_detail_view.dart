@@ -170,9 +170,18 @@ class _PageDetailViewState extends State<PageDetailView> {
   /// unreadable in dark mode. Both platform variants get the shadcn
   /// tokens; the mobile one additionally styles the selection handles.
   EditorStyle _editorStyle(BuildContext context) {
-    final colors = ShadTheme.of(context).colorScheme;
+    final theme = ShadTheme.of(context);
+    final colors = theme.colorScheme;
     final textStyleConfiguration = TextStyleConfiguration(
-      text: TextStyle(fontSize: 16, height: 1.5, color: colors.foreground),
+      // The family is set explicitly because AppFlowyEditor builds its
+      // text spans from this configuration, not from the ambient
+      // DefaultTextStyle.
+      text: TextStyle(
+        fontSize: 16,
+        height: 1.5,
+        color: colors.foreground,
+        fontFamily: theme.textTheme.family,
+      ),
     );
     final isMobile =
         defaultTargetPlatform == TargetPlatform.android ||
