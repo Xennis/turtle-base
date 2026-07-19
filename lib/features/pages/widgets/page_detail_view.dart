@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:flutter/foundation.dart';
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -164,11 +165,44 @@ class _PageDetailViewState extends State<PageDetailView> {
     });
   }
 
+  /// AppFlowyEditor doesn't follow the ambient theme on its own - its
+  /// default EditorStyle hardcodes black text, which made the page body
+  /// unreadable in dark mode. Both platform variants get the shadcn
+  /// tokens; the mobile one additionally styles the selection handles.
+  EditorStyle _editorStyle(BuildContext context) {
+    final colors = ShadTheme.of(context).colorScheme;
+    final textStyleConfiguration = TextStyleConfiguration(
+      text: TextStyle(fontSize: 16, height: 1.5, color: colors.foreground),
+    );
+    final isMobile =
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+    if (isMobile) {
+      return EditorStyle.mobile(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        cursorColor: colors.primary,
+        dragHandleColor: colors.primary,
+        selectionColor: colors.selection,
+        textStyleConfiguration: textStyleConfiguration,
+      );
+    }
+    return EditorStyle.desktop(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      cursorColor: colors.primary,
+      selectionColor: colors.selection,
+      textStyleConfiguration: textStyleConfiguration,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final editorState = _editorState;
     if (editorState == null) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(
+          color: ShadTheme.of(context).colorScheme.mutedForeground,
+        ),
+      );
     }
     final collectionId = _collectionId;
     return Column(
@@ -231,7 +265,10 @@ class _PageDetailViewState extends State<PageDetailView> {
             child: PagePropertiesHeader(pageId: widget.pageId, collectionId: collectionId),
           ),
         Expanded(
-          child: AppFlowyEditor(editorState: editorState),
+          child: AppFlowyEditor(
+            editorState: editorState,
+            editorStyle: _editorStyle(context),
+          ),
         ),
       ],
     );
