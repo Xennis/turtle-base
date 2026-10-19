@@ -7,6 +7,8 @@ import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_base/features/tables/widgets/select_options_editor.dart';
 
 /// Shown in the same content area as CollectionView (see
 /// AppShell/_MainContent) rather than pushed via Navigator, so the
@@ -115,9 +117,13 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
       collectionId: widget.collectionId,
       name: name,
       type: _newFieldType,
-      config: _newFieldType == FieldType.relation
-          ? encodeRelationConfig(_newFieldRelationTargetId!)
-          : null,
+      config: switch (_newFieldType) {
+        FieldType.relation => encodeRelationConfig(_newFieldRelationTargetId!),
+        // Usable right away - options are added afterwards, here or
+        // from the option picker.
+        FieldType.select || FieldType.multiSelect => encodeSelectConfig(const []),
+        _ => null,
+      },
     );
     _newFieldNameController.clear();
     setState(() {
@@ -292,7 +298,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                                     padding: EdgeInsets.symmetric(vertical: 8),
                                     child: Text('No fields yet'),
                                   ),
-                                for (final field in fields)
+                                for (final field in fields) ...[
                                   _FieldRow(
                                     field: field,
                                     nameController: _fieldNameControllerFor(field),
@@ -300,6 +306,19 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                                     fields: scope.fields,
                                     collections: collections,
                                   ),
+                                  if (FieldType.values.byName(field.type).isSelect)
+                                    Padding(
+                                      // Indented under its field, so it
+                                      // reads as that field's options
+                                      // rather than another field.
+                                      padding: const EdgeInsets.only(left: 24, bottom: 8),
+                                      child: SelectOptionsEditor(
+                                        key: ValueKey('options-${field.id}'),
+                                        field: field,
+                                        fields: scope.fields,
+                                      ),
+                                    ),
+                                ],
                                 const ShadSeparator.horizontal(),
                                 _AddFieldRow(
                                   nameController: _newFieldNameController,

@@ -8,6 +8,9 @@ import 'package:turtle_base/features/pages/widgets/relation_picker_dialog.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/field_validation.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
+import 'package:turtle_base/features/tables/widgets/select_option_picker_dialog.dart';
 
 /// The typed-fields area of a collection entry's Page-View, shown above
 /// the rich-text body (see UI_UX.md). Not used for freestanding pages.
@@ -131,7 +134,15 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                           ),
                         ),
                         Expanded(
-                          child: field.type == FieldType.relation.name
+                          child: FieldType.values.byName(field.type).isSelect
+                              ? _SelectFieldValue(
+                                  pageId: widget.pageId,
+                                  field: field,
+                                  rawValue: decodePageProperties(
+                                    page.properties,
+                                  )[field.id],
+                                )
+                              : field.type == FieldType.relation.name
                               ? _RelationFieldValue(
                                   pageId: widget.pageId,
                                   field: field,
@@ -237,6 +248,81 @@ class _RelationFieldValue extends StatelessWidget {
 
   Iterable<Page> _findById(List<Page> pages, String id) {
     return pages.where((p) => p.id == id);
+  }
+}
+
+/// A select/multi-select field's value: one chip per selected option
+/// (removable for a multi-select), plus a button opening the option
+/// picker. A select's chip opens the picker too, to switch options.
+class _SelectFieldValue extends StatelessWidget {
+  const _SelectFieldValue({
+    required this.pageId,
+    required this.field,
+    required this.rawValue,
+  });
+
+  final String pageId;
+  final Field field;
+  final Object? rawValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = AppScope.of(context);
+    final multiple = field.type == FieldType.multiSelect.name;
+    final selected = resolveSelectValue(
+      decodeSelectOptions(field.config),
+      rawValue,
+    );
+    final selectedIds = [for (final option in selected) option.id];
+
+    Future<void> openPicker() async {
+      final result = await showSelectOptionPicker(
+        context,
+        scope: scope,
+        field: field,
+        selectedIds: selectedIds,
+      );
+      if (result == null) return;
+      await scope.pages.setPropertyValue(
+        pageId,
+        field.id,
+        encodeSelectValue(result, multiple: multiple),
+      );
+    }
+
+    return Padding(
+      // Lines the chips up with the field label's baseline (see the
+      // label's own top padding in PagePropertiesHeader.build).
+      padding: const EdgeInsets.only(top: 6),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final option in selected)
+            SelectOptionChip(
+              option: option,
+              onPressed: multiple ? null : openPicker,
+              onRemove: multiple
+                  ? () => scope.pages.setPropertyValue(
+                      pageId,
+                      field.id,
+                      selectedIds.where((id) => id != option.id).toList(),
+                    )
+                  : null,
+            ),
+          // A select with a value is changed by tapping its chip - an
+          // extra button would only repeat that.
+          if (multiple || selected.isEmpty)
+            ShadButton.ghost(
+              size: ShadButtonSize.sm,
+              leading: const Icon(Icons.add, size: 16),
+              onPressed: openPicker,
+              child: Text(multiple ? 'Add' : 'Select'),
+            ),
+        ],
+      ),
+    );
   }
 }
 

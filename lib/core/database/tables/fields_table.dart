@@ -10,11 +10,12 @@ class Fields extends Table with AuditColumns {
   TextColumn get collectionId => text().references(Collections, #id)();
   TextColumn get name => text()();
 
-  /// One of: text, number, date, url, relation.
+  /// One of: text, number, date, url, relation, select, multiSelect.
   TextColumn get type => text()();
   IntColumn get position => integer()();
 
-  /// JSON-encoded, type-specific (e.g. targetCollectionId for relation).
+  /// JSON-encoded, type-specific (e.g. targetCollectionId for relation,
+  /// the options list for select/multiSelect).
   TextColumn get config => text().nullable()();
 
   @override

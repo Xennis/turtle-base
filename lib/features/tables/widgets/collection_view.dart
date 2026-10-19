@@ -8,6 +8,9 @@ import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/field_validation.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
+import 'package:turtle_base/features/tables/widgets/select_option_picker_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Storage/display format for date fields - also what TrinaGrid's date
@@ -140,8 +143,10 @@ class CollectionView extends StatelessWidget {
                                 ),
                               ),
                               columns: _columnsFor(
+                                scope,
                                 titleLabel,
                                 fields,
+                                entries,
                                 theme.colorScheme,
                               ),
                               rows: _rowsFor(
@@ -256,10 +261,13 @@ class CollectionView extends StatelessWidget {
   }
 
   List<TrinaColumn> _columnsFor(
+    AppScope scope,
     String titleLabel,
     List<Field> fields,
+    List<Page> entries,
     ShadColorScheme colors,
   ) {
+    final entriesById = {for (final entry in entries) entry.id: entry};
     return [
       // Not editable via "Manage fields" - it's the built-in title,
       // not a user-defined field. Its label is customizable per
@@ -276,17 +284,29 @@ class CollectionView extends StatelessWidget {
           field: field.id,
           type: _columnTypeFor(field),
           // Relations are edited via a picker in the entry's Page-View
-          // (see PagePropertiesHeader), not inline in the grid.
-          readOnly: field.type == FieldType.relation.name,
+          // (see PagePropertiesHeader), not inline in the grid. Select
+          // values via the option picker, opened by tapping the cell
+          // (see _selectRenderer) instead of the grid's text editor.
+          readOnly:
+              field.type == FieldType.relation.name ||
+              FieldType.values.byName(field.type).isSelect,
           validator: field.type == FieldType.url.name ? _validateUrl : null,
-          renderer: _rendererFor(field, colors),
+          renderer: _rendererFor(scope, field, entriesById, colors),
         ),
     ];
   }
 
   /// [colors] is passed in because [TrinaColumnRendererContext] carries
   /// no BuildContext to resolve the theme from inside a renderer.
-  TrinaColumnRenderer? _rendererFor(Field field, ShadColorScheme colors) {
+  TrinaColumnRenderer? _rendererFor(
+    AppScope scope,
+    Field field,
+    Map<String, Page> entriesById,
+    ShadColorScheme colors,
+  ) {
+    if (FieldType.values.byName(field.type).isSelect) {
+      return (context) => _selectRenderer(context, scope, field, entriesById);
+    }
     if (field.type == FieldType.url.name) {
       return (context) => _urlRenderer(context, colors);
     }
@@ -385,6 +405,71 @@ class CollectionView extends StatelessWidget {
     return Text(value.toString(), style: TextStyle(color: colors.destructive));
   }
 
+  /// The cell's value holds the options' names (see _cellValue, for
+  /// sorting/filtering), so the chips are resolved from the entry's raw
+  /// option ids instead - looked up via the row's entry id.
+  Widget _selectRenderer(
+    TrinaColumnRendererContext context,
+    AppScope scope,
+    Field field,
+    Map<String, Page> entriesById,
+  ) {
+    final entryId = context.row.data as String;
+    final entry = entriesById[entryId];
+    final raw = entry == null
+        ? null
+        : decodePageProperties(entry.properties)[field.id];
+    final selectedIds = decodeSelectValue(raw);
+    final selected = resolveSelectValue(decodeSelectOptions(field.config), raw);
+    // Builder for a BuildContext to open the dialog from -
+    // TrinaColumnRendererContext carries none.
+    return Builder(
+      builder: (buildContext) => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        // GestureDetector rather than InkWell, same as _urlRenderer.
+        // Opaque, so an empty cell is tappable too.
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () async {
+            final result = await showSelectOptionPicker(
+              buildContext,
+              scope: scope,
+              field: field,
+              selectedIds: selectedIds,
+            );
+            if (result == null) return;
+            await scope.pages.setPropertyValue(
+              entryId,
+              field.id,
+              encodeSelectValue(
+                result,
+                multiple: field.type == FieldType.multiSelect.name,
+              ),
+            );
+          },
+          // Clipped instead of wrapped - a grid row has a fixed height,
+          // so chips that don't fit are cut off at the cell's edge.
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              maxWidth: double.infinity,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final option in selected)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: SelectOptionChip(option: option),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _onValidationFailed(
     BuildContext context,
     TrinaGridValidationEvent event,
@@ -429,6 +514,10 @@ class CollectionView extends StatelessWidget {
         for (final id in decodeRelationValue(raw)) _titleOf(targetPages, id),
       ];
       return titles.join(', ');
+    }
+    if (FieldType.values.byName(field.type).isSelect) {
+      final options = decodeSelectOptions(field.config);
+      return resolveSelectValue(options, raw).map((o) => o.name).join(', ');
     }
     if (raw == null) return '';
     if (field.type == FieldType.number.name) {
@@ -475,7 +564,9 @@ class CollectionView extends StatelessWidget {
     Map<String, List<Page>> relatedPagesByCollection,
   ) {
     final fieldPart = fields
-        .map((f) => '${f.id}:${f.name}:${f.type}')
+        // config included so renaming/recoloring a select option (or
+        // retargeting a relation) refreshes the grid too.
+        .map((f) => '${f.id}:${f.name}:${f.type}:${f.config}')
         .join(',');
     final entryPart = entries
         .map((e) => '${e.id}:${e.updatedAt.millisecondsSinceEpoch}')

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
@@ -16,6 +17,12 @@ class FieldsRepository {
           ..where((f) => f.collectionId.equals(collectionId) & f.deletedAt.isNull())
           ..orderBy([(f) => OrderingTerm.asc(f.position)]))
         .watch();
+  }
+
+  Stream<Field> watchById(String id) {
+    return (_db.select(
+      _db.fields,
+    )..where((f) => f.id.equals(id))).watchSingle();
   }
 
   Future<String> create({
@@ -60,6 +67,51 @@ class FieldsRepository {
 
   Future<void> updateConfig(String id, String? config) {
     return _update(id, FieldsCompanion(config: Value(config)));
+  }
+
+  /// Appends a new option to a select/multi-select field, with the next
+  /// palette color (see [nextOptionColor]). Like the other option
+  /// methods, it reads the field's current config fresh rather than
+  /// trusting a caller's possibly stale copy.
+  Future<SelectOption> addSelectOption(String fieldId, String name) async {
+    final options = await _selectOptionsOf(fieldId);
+    final option = SelectOption(
+      id: _uuid.v4(),
+      name: name,
+      color: nextOptionColor(options),
+    );
+    await updateConfig(fieldId, encodeSelectConfig([...options, option]));
+    return option;
+  }
+
+  /// Renames and/or recolors an option, matched by its id. Property
+  /// values reference options by id, so no entry needs touching.
+  Future<void> updateSelectOption(String fieldId, SelectOption option) async {
+    final options = await _selectOptionsOf(fieldId);
+    await updateConfig(
+      fieldId,
+      encodeSelectConfig([
+        for (final o in options) o.id == option.id ? option : o,
+      ]),
+    );
+  }
+
+  /// Entries still referencing the option keep its id - it's skipped
+  /// when reading (see resolveSelectValue) instead of rewriting every
+  /// entry.
+  Future<void> removeSelectOption(String fieldId, String optionId) async {
+    final options = await _selectOptionsOf(fieldId);
+    await updateConfig(
+      fieldId,
+      encodeSelectConfig(options.where((o) => o.id != optionId).toList()),
+    );
+  }
+
+  Future<List<SelectOption>> _selectOptionsOf(String fieldId) async {
+    final field = await (_db.select(
+      _db.fields,
+    )..where((f) => f.id.equals(fieldId))).getSingle();
+    return decodeSelectOptions(field.config);
   }
 
   Future<void> reorder(String id, int position) {

@@ -5,7 +5,9 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 
 import '../../../support/pump_app.dart';
@@ -193,6 +195,84 @@ void main() {
         decodeRelationTargetCollectionId(storedFields.single.config),
         targetCollectionId,
       );
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
+
+  testWidgets(
+    'a select field\'s options can be added, renamed, recolored and deleted',
+    (WidgetTester tester) async {
+      final database = newTestDatabase();
+      addTearDown(database.close);
+
+      late String collectionId;
+      late String fieldId;
+      await tester.runAsync(() async {
+        final spaceId = await SpacesRepository(database).create(name: 'Space');
+        collectionId = await CollectionsRepository(
+          database,
+        ).create(spaceId: spaceId, name: 'Tasks');
+        final fields = FieldsRepository(database);
+        fieldId = await fields.create(
+          collectionId: collectionId,
+          name: 'Status',
+          type: FieldType.select,
+          config: encodeSelectConfig(const []),
+        );
+        await fields.addSelectOption(fieldId, 'To do');
+      });
+
+      Future<List<SelectOption>> storedOptions() async {
+        final field = await database.select(database.fields).getSingle();
+        return decodeSelectOptions(field.config);
+      }
+
+      await tester.pumpWidget(
+        AppScope(
+          database: database,
+          child: wrapWithAppLocalizations(
+            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Add one via the field's own "Add option" input.
+      final addOption = find.widgetWithText(ShadInput, 'Add option');
+      await tester.ensureVisible(addOption);
+      await tester.enterText(addOption, 'Done');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect((await storedOptions()).map((o) => o.name), ['To do', 'Done']);
+
+      // Rename the first one inline.
+      await tester.enterText(find.widgetWithText(ShadInput, 'To do'), 'Open');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      var options = await storedOptions();
+      expect(options.first.name, 'Open');
+
+      // Recolor it via the palette popover.
+      await tester.tap(find.byTooltip('Change color').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Red'));
+      await tester.pumpAndSettle();
+
+      options = await storedOptions();
+      expect(options.first.color, OptionColor.red);
+
+      // Delete the second one, after confirming.
+      await tester.tap(find.byTooltip('Delete option').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ShadButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect((await storedOptions()).map((o) => o.name), ['Open']);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
