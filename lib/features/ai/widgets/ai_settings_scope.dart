@@ -6,11 +6,8 @@ import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 /// (see AiSettingsController for why the default model is a per-device
 /// setting, not synced domain content).
 class AiSettingsScope extends InheritedNotifier<AiSettingsController> {
-  const AiSettingsScope({
-    super.key,
-    required AiSettingsController controller,
-    required super.child,
-  }) : super(notifier: controller);
+  const AiSettingsScope({super.key, required AiSettingsController controller, required super.child})
+    : super(notifier: controller);
 
   static AiSettingsController of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AiSettingsScope>();

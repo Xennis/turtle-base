@@ -10,9 +10,7 @@ class FakeDriveAuthenticator implements DriveAuthenticator {
 
   @override
   Future<AuthClient> signIn() {
-    throw UnimplementedError(
-      'FakeDriveAuthenticator does not support signIn()',
-    );
+    throw UnimplementedError('FakeDriveAuthenticator does not support signIn()');
   }
 
   @override

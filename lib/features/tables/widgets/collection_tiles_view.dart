@@ -8,12 +8,7 @@ import 'package:turtle_base/core/database/app_database.dart';
 /// first field - see CollectionView). The tiles are read-only; tapping
 /// one opens the entry.
 class CollectionTilesView extends StatelessWidget {
-  const CollectionTilesView({
-    super.key,
-    required this.entries,
-    required this.secondaryFor,
-    required this.onOpenEntry,
-  });
+  const CollectionTilesView({super.key, required this.entries, required this.secondaryFor, required this.onOpenEntry});
 
   final List<Page> entries;
 
@@ -60,10 +55,7 @@ class CollectionTilesView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.large,
                   ),
-                  if (secondary != null) ...[
-                    const SizedBox(height: 8),
-                    ClipRect(child: secondary),
-                  ],
+                  if (secondary != null) ...[const SizedBox(height: 8), ClipRect(child: secondary)],
                 ],
               ),
             ),

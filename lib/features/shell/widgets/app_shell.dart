@@ -40,9 +40,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= AppShell.wideBreakpoint;
-    return isWide
-        ? _WideShell(navigation: _navigation)
-        : _NarrowShell(navigation: _navigation);
+    return isWide ? _WideShell(navigation: _navigation) : _NarrowShell(navigation: _navigation);
   }
 }
 
@@ -123,9 +121,7 @@ class _NarrowShellState extends State<_NarrowShell> {
 
   void _closeDrawerOnSelection() {
     final navigation = widget.navigation;
-    if (navigation.selectedCollectionId != null ||
-        navigation.selectedPageId != null ||
-        navigation.isShowingSettings) {
+    if (navigation.selectedCollectionId != null || navigation.selectedPageId != null || navigation.isShowingSettings) {
       _scaffoldKey.currentState?.closeDrawer();
     }
   }
@@ -142,18 +138,12 @@ class _NarrowShellState extends State<_NarrowShell> {
           // window background on the wide layout (see _WideShell).
           return Scaffold(body: _MainContent(navigation: navigation));
         }
-        final hasSelection =
-            navigation.selectedCollectionId != null ||
-            navigation.selectedPageId != null;
+        final hasSelection = navigation.selectedCollectionId != null || navigation.selectedPageId != null;
         return Scaffold(
           key: _scaffoldKey,
           appBar: AppBar(
             leading: hasSelection
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    tooltip: 'Back',
-                    onPressed: navigation.clearSelection,
-                  )
+                ? IconButton(icon: const Icon(Icons.arrow_back), tooltip: 'Back', onPressed: navigation.clearSelection)
                 // Left null (rather than removed) so Scaffold still
                 // auto-shows the drawer's hamburger button here.
                 : null,
@@ -214,11 +204,7 @@ class _MainContent extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.space_dashboard_outlined,
-                size: 40,
-                color: theme.colorScheme.mutedForeground,
-              ),
+              Icon(Icons.space_dashboard_outlined, size: 40, color: theme.colorScheme.mutedForeground),
               const SizedBox(height: 12),
               Text('Select a collection or page', style: theme.textTheme.muted),
             ],
@@ -246,11 +232,7 @@ class _EmptySpacesState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.workspaces_outlined,
-            size: 40,
-            color: theme.colorScheme.mutedForeground,
-          ),
+          Icon(Icons.workspaces_outlined, size: 40, color: theme.colorScheme.mutedForeground),
           const SizedBox(height: 12),
           Text('No spaces yet', style: theme.textTheme.muted),
           const SizedBox(height: 16),
@@ -267,10 +249,7 @@ class _EmptySpacesState extends StatelessWidget {
           // MVP: just navigates to Settings, where the user connects
           // Google Drive and triggers a sync themselves - no dedicated
           // "connect and sync now" one-tap flow yet.
-          ShadButton.outline(
-            onPressed: navigation.showSettings,
-            child: const Text('Go to Settings to sync'),
-          ),
+          ShadButton.outline(onPressed: navigation.showSettings, child: const Text('Go to Settings to sync')),
         ],
       ),
     );

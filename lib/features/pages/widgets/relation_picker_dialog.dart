@@ -14,11 +14,8 @@ Future<List<String>?> showRelationPicker(
 }) {
   return showShadDialog<List<String>>(
     context: context,
-    builder: (context) => _RelationPickerDialog(
-      scope: scope,
-      targetCollectionId: targetCollectionId,
-      initialSelectedIds: selectedIds,
-    ),
+    builder: (context) =>
+        _RelationPickerDialog(scope: scope, targetCollectionId: targetCollectionId, initialSelectedIds: selectedIds),
   );
 }
 
@@ -46,14 +43,8 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
     return ShadDialog(
       title: const Text('Select related entries'),
       actions: [
-        ShadButton.outline(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ShadButton(
-          onPressed: () => Navigator.of(context).pop(_selectedIds.toList()),
-          child: const Text('Done'),
-        ),
+        ShadButton.outline(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ShadButton(onPressed: () => Navigator.of(context).pop(_selectedIds.toList()), child: const Text('Done')),
       ],
       child: SizedBox(
         width: 400,
@@ -67,9 +58,7 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
             ),
             Expanded(
               child: StreamBuilder<List<Page>>(
-                stream: widget.scope.pages.watchAllInCollection(
-                  widget.targetCollectionId,
-                ),
+                stream: widget.scope.pages.watchAllInCollection(widget.targetCollectionId),
                 builder: (context, snapshot) {
                   final query = _query.toLowerCase();
                   final entries = (snapshot.data ?? const <Page>[])
@@ -92,9 +81,7 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
                                 _selectedIds.remove(entry.id);
                               }
                             }),
-                            label: Text(
-                              entry.title.isEmpty ? 'Untitled' : entry.title,
-                            ),
+                            label: Text(entry.title.isEmpty ? 'Untitled' : entry.title),
                           ),
                         ),
                     ],

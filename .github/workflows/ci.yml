@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  format:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -20,4 +20,4 @@ jobs:
       # Generated files (*.g.dart) are gitignored and not present here, so
       # only hand-written code is checked.
       - name: Check Dart formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: mise run format-check

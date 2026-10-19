@@ -6,12 +6,7 @@ import 'package:turtle_base/features/pages/data/blocks_repository.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
 
 Node _paragraph(String id, String text, {Iterable<Node> children = const []}) {
-  return Node(
-    id: id,
-    type: 'paragraph',
-    attributes: {'delta': (Delta()..insert(text)).toJson()},
-    children: children,
-  );
+  return Node(id: id, type: 'paragraph', attributes: {'delta': (Delta()..insert(text)).toJson()}, children: children);
 }
 
 void main() {
@@ -31,12 +26,7 @@ void main() {
     final document = Document(
       root: Node(type: 'page', children: [_paragraph('n1', 'hello')]),
     );
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: const [],
-    );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: const []);
 
     final stored = await database.select(database.blocks).get();
     expect(stored, hasLength(1));
@@ -46,23 +36,13 @@ void main() {
 
   test('an existing block is updated in place, not recreated', () async {
     blocks = BlocksRepository(database);
-    await blocks.create(
-      id: 'n1',
-      pageId: pageId,
-      type: 'paragraph',
-      content: '{"delta":[]}',
-    );
+    await blocks.create(id: 'n1', pageId: pageId, type: 'paragraph', content: '{"delta":[]}');
     final before = await database.select(database.blocks).get();
 
     final document = Document(
       root: Node(type: 'page', children: [_paragraph('n1', 'edited')]),
     );
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: before,
-    );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: before);
 
     final stored = await database.select(database.blocks).get();
     expect(stored, hasLength(1));
@@ -76,48 +56,31 @@ void main() {
     final before = await database.select(database.blocks).get();
 
     final document = Document.blank(withInitialText: false);
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: before,
-    );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: before);
 
-    final stored = await (database.select(
-      database.blocks,
-    )..where((b) => b.id.equals('n1'))).getSingle();
+    final stored = await (database.select(database.blocks)..where((b) => b.id.equals('n1'))).getSingle();
     expect(stored.deletedAt, isNotNull);
   });
 
-  test(
-    'moving a node to a new parent updates parentBlockId and position',
-    () async {
-      blocks = BlocksRepository(database);
-      await blocks.create(id: 'parent', pageId: pageId, type: 'paragraph');
-      await blocks.create(id: 'child', pageId: pageId, type: 'paragraph');
-      final before = await database.select(database.blocks).get();
+  test('moving a node to a new parent updates parentBlockId and position', () async {
+    blocks = BlocksRepository(database);
+    await blocks.create(id: 'parent', pageId: pageId, type: 'paragraph');
+    await blocks.create(id: 'child', pageId: pageId, type: 'paragraph');
+    final before = await database.select(database.blocks).get();
 
-      // "child" is now nested under "parent" instead of being a sibling.
-      final document = Document(
-        root: Node(
-          type: 'page',
-          children: [
-            _paragraph('parent', 'p', children: [_paragraph('child', 'c')]),
-          ],
-        ),
-      );
-      await syncBlocksFromDocument(
-        blocks: blocks,
-        pageId: pageId,
-        document: document,
-        currentBlocks: before,
-      );
+    // "child" is now nested under "parent" instead of being a sibling.
+    final document = Document(
+      root: Node(
+        type: 'page',
+        children: [
+          _paragraph('parent', 'p', children: [_paragraph('child', 'c')]),
+        ],
+      ),
+    );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: before);
 
-      final child = await (database.select(
-        database.blocks,
-      )..where((b) => b.id.equals('child'))).getSingle();
-      expect(child.parentBlockId, 'parent');
-      expect(child.position, 0);
-    },
-  );
+    final child = await (database.select(database.blocks)..where((b) => b.id.equals('child'))).getSingle();
+    expect(child.parentBlockId, 'parent');
+    expect(child.position, 0);
+  });
 }

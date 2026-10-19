@@ -27,10 +27,7 @@ bool isValidForType(FieldType type, String value) {
     FieldType.number => isValidNumber(value),
     FieldType.date => isValidDate(value),
     FieldType.url => isValidUrl(value),
-    FieldType.text ||
-    FieldType.relation ||
-    FieldType.select ||
-    FieldType.multiSelect => true,
+    FieldType.text || FieldType.relation || FieldType.select || FieldType.multiSelect => true,
   };
 }
 
@@ -40,8 +37,5 @@ String? invalidMessageFor(FieldType type) => switch (type) {
   FieldType.number => 'Enter a valid number',
   FieldType.date => 'Enter a valid date, e.g. 2026-07-18',
   FieldType.url => 'Enter a valid URL, e.g. example.com',
-  FieldType.text ||
-  FieldType.relation ||
-  FieldType.select ||
-  FieldType.multiSelect => null,
+  FieldType.text || FieldType.relation || FieldType.select || FieldType.multiSelect => null,
 };

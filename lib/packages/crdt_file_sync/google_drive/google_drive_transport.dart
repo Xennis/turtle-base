@@ -19,10 +19,8 @@ const _folderMimeType = 'application/vnd.google-apps.folder';
 /// `<nodeId>/<file>` name convention `SyncController` already encodes
 /// into the flat [SyncTransport] names.
 class GoogleDriveTransport implements SyncTransport {
-  GoogleDriveTransport({
-    required http.Client authClient,
-    this.appFolderName = 'turtle-base-sync',
-  }) : _drive = drive.DriveApi(authClient);
+  GoogleDriveTransport({required http.Client authClient, this.appFolderName = 'turtle-base-sync'})
+    : _drive = drive.DriveApi(authClient);
 
   final drive.DriveApi _drive;
   final String appFolderName;
@@ -66,9 +64,7 @@ class GoogleDriveTransport implements SyncTransport {
         spaces: 'drive',
         $fields: 'files(id,name)',
       );
-      debugPrint(
-        '[sync] drive: device folder $nodeId has ${files.files?.length ?? 0} file(s)',
-      );
+      debugPrint('[sync] drive: device folder $nodeId has ${files.files?.length ?? 0} file(s)');
       for (final file in files.files ?? const <drive.File>[]) {
         final name = '$nodeId/${file.name}';
         _fileIds[name] = file.id!;
@@ -81,12 +77,7 @@ class GoogleDriveTransport implements SyncTransport {
   @override
   Future<Uint8List> download(String name) async {
     final fileId = _fileIds[name] ?? await _findFileId(name);
-    final media =
-        await _drive.files.get(
-              fileId,
-              downloadOptions: drive.DownloadOptions.fullMedia,
-            )
-            as drive.Media;
+    final media = await _drive.files.get(fileId, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
 
     final bytes = BytesBuilder();
     await for (final chunk in media.stream) {
@@ -130,10 +121,7 @@ class GoogleDriveTransport implements SyncTransport {
     return id;
   }
 
-  Future<String> _findOrCreateFolder({
-    required String name,
-    required String? parentId,
-  }) async {
+  Future<String> _findOrCreateFolder({required String name, required String? parentId}) async {
     final parentClause = parentId == null ? '' : " and '$parentId' in parents";
     final existing = await _drive.files.list(
       q: "name='$name' and mimeType='$_folderMimeType' and trashed=false$parentClause",
@@ -147,11 +135,7 @@ class GoogleDriveTransport implements SyncTransport {
     }
 
     final created = await _drive.files.create(
-      drive.File(
-        name: name,
-        mimeType: _folderMimeType,
-        parents: parentId == null ? null : [parentId],
-      ),
+      drive.File(name: name, mimeType: _folderMimeType, parents: parentId == null ? null : [parentId]),
     );
     debugPrint('[sync] drive: created new folder "$name" (${created.id})');
     return created.id!;

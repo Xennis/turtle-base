@@ -20,9 +20,7 @@ class PagesRepository {
   /// Active entries of a collection, in grid row order.
   Stream<List<Page>> watchAllInCollection(String collectionId) {
     return (_db.select(_db.pages)
-          ..where(
-            (p) => p.collectionId.equals(collectionId) & p.deletedAt.isNull(),
-          )
+          ..where((p) => p.collectionId.equals(collectionId) & p.deletedAt.isNull())
           ..orderBy([(p) => OrderingTerm.asc(p.position)]))
         .watch();
   }
@@ -31,11 +29,7 @@ class PagesRepository {
   /// entry, no parent) - what the sidebar shows.
   Stream<List<Page>> watchTopLevelInSpace(String spaceId) {
     return (_db.select(_db.pages)..where(
-          (p) =>
-              p.spaceId.equals(spaceId) &
-              p.collectionId.isNull() &
-              p.parentPageId.isNull() &
-              p.deletedAt.isNull(),
+          (p) => p.spaceId.equals(spaceId) & p.collectionId.isNull() & p.parentPageId.isNull() & p.deletedAt.isNull(),
         ))
         .watch();
   }
@@ -69,9 +63,7 @@ class PagesRepository {
             parentPageId: Value(parentPageId),
             title: title,
             icon: Value(icon),
-            properties: properties == null
-                ? const Value.absent()
-                : Value(jsonEncode(properties)),
+            properties: properties == null ? const Value.absent() : Value(jsonEncode(properties)),
             position: position,
             createdAt: now,
             updatedAt: now,
@@ -92,20 +84,11 @@ class PagesRepository {
 
   /// Reads-modifies-writes the single field's value, leaving the rest
   /// of `properties` untouched.
-  Future<void> setPropertyValue(
-    String id,
-    String fieldId,
-    Object? value,
-  ) async {
-    final page = await (_db.select(
-      _db.pages,
-    )..where((p) => p.id.equals(id))).getSingle();
+  Future<void> setPropertyValue(String id, String fieldId, Object? value) async {
+    final page = await (_db.select(_db.pages)..where((p) => p.id.equals(id))).getSingle();
     final properties = decodePageProperties(page.properties);
     properties[fieldId] = value;
-    await _update(
-      id,
-      PagesCompanion(properties: Value(jsonEncode(properties))),
-    );
+    await _update(id, PagesCompanion(properties: Value(jsonEncode(properties))));
   }
 
   Future<void> move(String id, String newSpaceId) {
@@ -127,10 +110,7 @@ class PagesRepository {
   Future<void> _update(String id, PagesCompanion changes) async {
     final userId = await _db.currentUserId();
     await (_db.update(_db.pages)..where((p) => p.id.equals(id))).write(
-      changes.copyWith(
-        updatedAt: Value(DateTime.now()),
-        updatedBy: Value(userId),
-      ),
+      changes.copyWith(updatedAt: Value(DateTime.now()), updatedBy: Value(userId)),
     );
   }
 
@@ -147,14 +127,8 @@ class PagesRepository {
     final maxPosition = _db.pages.position.max();
     final query = _db.selectOnly(_db.pages)
       ..addColumns([maxPosition])
-      ..where(
-        _db.pages.spaceId.equals(spaceId) & _db.pages.collectionId.isNull(),
-      )
-      ..where(
-        parentPageId == null
-            ? _db.pages.parentPageId.isNull()
-            : _db.pages.parentPageId.equals(parentPageId),
-      );
+      ..where(_db.pages.spaceId.equals(spaceId) & _db.pages.collectionId.isNull())
+      ..where(parentPageId == null ? _db.pages.parentPageId.isNull() : _db.pages.parentPageId.equals(parentPageId));
     final result = await query.map((row) => row.read(maxPosition)).getSingle();
     return (result ?? -1) + 1;
   }

@@ -33,10 +33,7 @@ void main() {
   });
 
   test('top-level blocks become siblings in position order', () {
-    final blocks = [
-      _block(id: 'b2', position: 1, text: 'second'),
-      _block(id: 'b1', position: 0, text: 'first'),
-    ];
+    final blocks = [_block(id: 'b2', position: 1, text: 'second'), _block(id: 'b1', position: 0, text: 'first')];
 
     final document = buildDocument(blocks);
 

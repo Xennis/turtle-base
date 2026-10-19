@@ -27,8 +27,7 @@ class CrdtDatabaseDelegate extends DatabaseDelegate {
   SqliteCrdt? _crdt;
 
   /// The underlying CRDT connection - only valid once [open] has run.
-  SqliteCrdt get crdt =>
-      _crdt ?? (throw StateError('CrdtDatabaseDelegate used before open()'));
+  SqliteCrdt get crdt => _crdt ?? (throw StateError('CrdtDatabaseDelegate used before open()'));
 
   bool _isOpen = false;
 
@@ -37,9 +36,7 @@ class CrdtDatabaseDelegate extends DatabaseDelegate {
 
   @override
   Future<void> open(QueryExecutorUser db) async {
-    _crdt = path == null
-        ? await SqliteCrdt.openInMemory()
-        : await SqliteCrdt.open(path!);
+    _crdt = path == null ? await SqliteCrdt.openInMemory() : await SqliteCrdt.open(path!);
     _isOpen = true;
   }
 
@@ -53,13 +50,10 @@ class CrdtDatabaseDelegate extends DatabaseDelegate {
   late final DbVersionDelegate versionDelegate = _CrdtVersionDelegate(this);
 
   @override
-  late final TransactionDelegate transactionDelegate = _CrdtTransactionDelegate(
-    this,
-  );
+  late final TransactionDelegate transactionDelegate = _CrdtTransactionDelegate(this);
 
   @override
-  Future<void> runCustom(String statement, List<Object?> args) =>
-      crdt.execute(statement, args);
+  Future<void> runCustom(String statement, List<Object?> args) => crdt.execute(statement, args);
 
   @override
   Future<int> runInsert(String statement, List<Object?> args) async {
@@ -94,8 +88,7 @@ class _CrdtVersionDelegate extends DynamicVersionDelegate {
   }
 
   @override
-  Future<void> setSchemaVersion(int version) =>
-      _delegate.crdt.execute('PRAGMA user_version = $version');
+  Future<void> setSchemaVersion(int version) => _delegate.crdt.execute('PRAGMA user_version = $version');
 }
 
 /// [CrdtApi] covers both the top-level [SqliteCrdt] and a transaction's
@@ -106,8 +99,7 @@ class _CrdtQueryDelegate extends QueryDelegate {
   final CrdtApi _api;
 
   @override
-  Future<void> runCustom(String statement, List<Object?> args) =>
-      _api.execute(statement, args);
+  Future<void> runCustom(String statement, List<Object?> args) => _api.execute(statement, args);
 
   @override
   Future<int> runInsert(String statement, List<Object?> args) async {

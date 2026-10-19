@@ -41,10 +41,7 @@ class SettingsPage extends StatelessWidget {
               children: [
                 Tooltip(
                   message: 'Back',
-                  child: ShadIconButton.ghost(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: onDone,
-                  ),
+                  child: ShadIconButton.ghost(icon: const Icon(Icons.arrow_back), onPressed: onDone),
                 ),
                 const SizedBox(width: 4),
                 Text('Settings', style: ShadTheme.of(context).textTheme.h3),
@@ -68,24 +65,17 @@ class SettingsPage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Appearance',
-                                style: ShadTheme.of(context).textTheme.h4,
-                              ),
+                              Text('Appearance', style: ShadTheme.of(context).textTheme.h4),
                               const SizedBox(height: 12),
                               SettingsRow(
                                 label: 'Theme',
                                 // Per-device, not synced - see ThemeController.
                                 control: ShadSelect<ThemeMode>(
                                   initialValue: themeController.mode,
-                                  selectedOptionBuilder: (context, value) =>
-                                      Text(value.label),
+                                  selectedOptionBuilder: (context, value) => Text(value.label),
                                   options: [
                                     for (final mode in ThemeMode.values)
-                                      ShadOption(
-                                        value: mode,
-                                        child: Text(mode.label),
-                                      ),
+                                      ShadOption(value: mode, child: Text(mode.label)),
                                   ],
                                   onChanged: (mode) {
                                     if (mode != null) {
@@ -100,14 +90,10 @@ class SettingsPage extends StatelessWidget {
                                 // ThemePresetController.
                                 control: ShadSelect<ThemePreset>(
                                   initialValue: themePresetController.preset,
-                                  selectedOptionBuilder: (context, value) =>
-                                      Text(value.label),
+                                  selectedOptionBuilder: (context, value) => Text(value.label),
                                   options: [
                                     for (final preset in ThemePreset.values)
-                                      ShadOption(
-                                        value: preset,
-                                        child: Text(preset.label),
-                                      ),
+                                      ShadOption(value: preset, child: Text(preset.label)),
                                   ],
                                   onChanged: (preset) {
                                     if (preset != null) {
@@ -162,23 +148,14 @@ class _SyncSection extends StatelessWidget {
                 SettingsRow(
                   label: 'Google Drive',
                   control: sync.isConnected
-                      ? ShadButton.outline(
-                          onPressed: () => sync.disconnect(),
-                          child: const Text('Disconnect'),
-                        )
-                      : ShadButton(
-                          onPressed: () => sync.connect(),
-                          child: const Text('Connect'),
-                        ),
+                      ? ShadButton.outline(onPressed: () => sync.disconnect(), child: const Text('Disconnect'))
+                      : ShadButton(onPressed: () => sync.connect(), child: const Text('Connect')),
                 ),
                 SettingsRow(label: 'Status', control: Text(_statusLabel(sync))),
                 SettingsRow(
                   label: '',
                   control: ShadButton.outline(
-                    onPressed:
-                        sync.isConnected && sync.status != SyncStatus.syncing
-                        ? () => sync.syncNow()
-                        : null,
+                    onPressed: sync.isConnected && sync.status != SyncStatus.syncing ? () => sync.syncNow() : null,
                     child: const Text('Sync now'),
                   ),
                 ),
@@ -195,10 +172,7 @@ class _SyncSection extends StatelessWidget {
     return switch (sync.status) {
       SyncStatus.syncing => 'Syncing…',
       SyncStatus.error => 'Error: ${sync.lastError}',
-      SyncStatus.idle =>
-        sync.lastSyncedAt == null
-            ? 'Connected'
-            : 'Last synced ${sync.lastSyncedAt}',
+      SyncStatus.idle => sync.lastSyncedAt == null ? 'Connected' : 'Last synced ${sync.lastSyncedAt}',
     };
   }
 }

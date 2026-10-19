@@ -34,16 +34,11 @@ Document buildDocument(List<Block> blocks) {
       id: block.id,
       type: block.type,
       attributes: Map<String, dynamic>.from(jsonDecode(block.content) as Map),
-      children: [
-        for (final child in byParent[block.id] ?? []) buildNode(child),
-      ],
+      children: [for (final child in byParent[block.id] ?? []) buildNode(child)],
     );
   }
 
   return Document(
-    root: Node(
-      type: 'page',
-      children: [for (final block in byParent[null] ?? []) buildNode(block)],
-    ),
+    root: Node(type: 'page', children: [for (final block in byParent[null] ?? []) buildNode(block)]),
   );
 }

@@ -10,41 +10,23 @@ import 'package:turtle_base/features/tables/data/select_field.dart';
   final dark = brightness == Brightness.dark;
   return switch (color) {
     OptionColor.gray =>
-      dark
-          ? (const Color(0xFF3F3E3B), const Color(0xFFCFCCC6))
-          : (const Color(0xFFE9E8E4), const Color(0xFF55534E)),
+      dark ? (const Color(0xFF3F3E3B), const Color(0xFFCFCCC6)) : (const Color(0xFFE9E8E4), const Color(0xFF55534E)),
     OptionColor.brown =>
-      dark
-          ? (const Color(0xFF4A3A30), const Color(0xFFE0C2AE))
-          : (const Color(0xFFF0E4DC), const Color(0xFF6B4A36)),
+      dark ? (const Color(0xFF4A3A30), const Color(0xFFE0C2AE)) : (const Color(0xFFF0E4DC), const Color(0xFF6B4A36)),
     OptionColor.orange =>
-      dark
-          ? (const Color(0xFF553A22), const Color(0xFFF2BF8C))
-          : (const Color(0xFFFBE6D4), const Color(0xFF8A4B14)),
+      dark ? (const Color(0xFF553A22), const Color(0xFFF2BF8C)) : (const Color(0xFFFBE6D4), const Color(0xFF8A4B14)),
     OptionColor.yellow =>
-      dark
-          ? (const Color(0xFF4F4422), const Color(0xFFEBD48A))
-          : (const Color(0xFFF8EECB), const Color(0xFF7A5D0C)),
+      dark ? (const Color(0xFF4F4422), const Color(0xFFEBD48A)) : (const Color(0xFFF8EECB), const Color(0xFF7A5D0C)),
     OptionColor.green =>
-      dark
-          ? (const Color(0xFF2A4434), const Color(0xFF9DD3AE))
-          : (const Color(0xFFDDEFE3), const Color(0xFF2B6B43)),
+      dark ? (const Color(0xFF2A4434), const Color(0xFF9DD3AE)) : (const Color(0xFFDDEFE3), const Color(0xFF2B6B43)),
     OptionColor.blue =>
-      dark
-          ? (const Color(0xFF22384D), const Color(0xFF9CC7EE))
-          : (const Color(0xFFDCEBF7), const Color(0xFF1F5F99)),
+      dark ? (const Color(0xFF22384D), const Color(0xFF9CC7EE)) : (const Color(0xFFDCEBF7), const Color(0xFF1F5F99)),
     OptionColor.purple =>
-      dark
-          ? (const Color(0xFF3D3150), const Color(0xFFCDB6EC))
-          : (const Color(0xFFECE3F5), const Color(0xFF5E3E8A)),
+      dark ? (const Color(0xFF3D3150), const Color(0xFFCDB6EC)) : (const Color(0xFFECE3F5), const Color(0xFF5E3E8A)),
     OptionColor.pink =>
-      dark
-          ? (const Color(0xFF4D2C3E), const Color(0xFFEDB0CF))
-          : (const Color(0xFFF6E1EC), const Color(0xFF8A3463)),
+      dark ? (const Color(0xFF4D2C3E), const Color(0xFFEDB0CF)) : (const Color(0xFFF6E1EC), const Color(0xFF8A3463)),
     OptionColor.red =>
-      dark
-          ? (const Color(0xFF542C28), const Color(0xFFF2AAA2))
-          : (const Color(0xFFFBE0DD), const Color(0xFF9A2F25)),
+      dark ? (const Color(0xFF542C28), const Color(0xFFF2AAA2)) : (const Color(0xFFFBE0DD), const Color(0xFF9A2F25)),
   };
 }
 
@@ -66,12 +48,7 @@ extension OptionColorLabel on OptionColor {
 /// adds a small × (e.g. for a multi-select's values), [onPressed] makes
 /// the whole badge tappable.
 class SelectOptionChip extends StatelessWidget {
-  const SelectOptionChip({
-    super.key,
-    required this.option,
-    this.onPressed,
-    this.onRemove,
-  });
+  const SelectOptionChip({super.key, required this.option, this.onPressed, this.onRemove});
 
   final SelectOption option;
   final VoidCallback? onPressed;
@@ -80,10 +57,7 @@ class SelectOptionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
-    final (background, foreground) = optionColors(
-      option.color,
-      theme.brightness,
-    );
+    final (background, foreground) = optionColors(option.color, theme.brightness);
     final label = Text(
       option.name,
       overflow: TextOverflow.ellipsis,
@@ -136,10 +110,7 @@ class OptionColorDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (_, foreground) = optionColors(
-      color,
-      ShadTheme.of(context).brightness,
-    );
+    final (_, foreground) = optionColors(color, ShadTheme.of(context).brightness);
     return Container(
       width: size,
       height: size,

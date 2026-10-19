@@ -10,11 +10,7 @@ import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
 /// [DriveAuthenticator] and [SqliteCrdt] instance (see
 /// ARCHITECTURE.md's "Sync zwischen Geräten").
 class AppSyncController extends ChangeNotifier {
-  AppSyncController({
-    required this._crdt,
-    required this._authenticator,
-    this.appFolderName = 'turtle-base-sync',
-  });
+  AppSyncController({required this._crdt, required this._authenticator, this.appFolderName = 'turtle-base-sync'});
 
   final SqliteCrdt _crdt;
   final DriveAuthenticator? _authenticator;
@@ -40,9 +36,7 @@ class AppSyncController extends ChangeNotifier {
     if (authenticator == null) return;
     final client = await authenticator.signInSilently();
     if (client != null) {
-      _attach(
-        GoogleDriveTransport(authClient: client, appFolderName: appFolderName),
-      );
+      _attach(GoogleDriveTransport(authClient: client, appFolderName: appFolderName));
     }
   }
 
@@ -50,9 +44,7 @@ class AppSyncController extends ChangeNotifier {
   /// [isAvailable] - the Settings UI hides the "Connect" button otherwise.
   Future<void> connect() async {
     final client = await _authenticator!.signIn();
-    _attach(
-      GoogleDriveTransport(authClient: client, appFolderName: appFolderName),
-    );
+    _attach(GoogleDriveTransport(authClient: client, appFolderName: appFolderName));
   }
 
   Future<void> disconnect() async {

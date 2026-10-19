@@ -27,12 +27,7 @@ import 'fake_drive_authenticator.dart';
 /// last subscriber unsubscribes, which flutter_test flags as a leaked
 /// timer at teardown. See drift.simonbinder.eu/testing.
 AppDatabase newTestDatabase() {
-  return AppDatabase.withExecutor(
-    DatabaseConnection(
-      NativeDatabase.memory(),
-      closeStreamsSynchronously: true,
-    ),
-  );
+  return AppDatabase.withExecutor(DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true));
 }
 
 /// Mirrors the real app's ShadApp.custom + MaterialApp setup (see
@@ -41,10 +36,7 @@ AppDatabase newTestDatabase() {
 /// or AppFlowyEditor (which needs its own localizations delegate).
 Widget wrapWithAppLocalizations(Widget home) {
   return ShadApp.custom(
-    theme: ShadThemeData(
-      brightness: Brightness.light,
-      colorScheme: const ShadZincColorScheme.light(),
-    ),
+    theme: ShadThemeData(brightness: Brightness.light, colorScheme: const ShadZincColorScheme.light()),
     appBuilder: (context) {
       return MaterialApp(
         theme: Theme.of(context),
@@ -72,16 +64,11 @@ Widget wrapWithAppLocalizations(Widget home) {
 /// space to select/populate - even though AppDatabase itself no longer
 /// seeds one (see its _seedDefaults doc comment). Tests covering the
 /// "no spaces yet" empty state pass false.
-Future<AppDatabase> pumpApp(
-  WidgetTester tester, {
-  bool seedDefaultSpace = true,
-}) async {
+Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true}) async {
   final database = newTestDatabase();
   await tester.runAsync(() => database.currentUserId());
   if (seedDefaultSpace) {
-    await tester.runAsync(
-      () => SpacesRepository(database).create(name: 'Default'),
-    );
+    await tester.runAsync(() => SpacesRepository(database).create(name: 'Default'));
   }
   // Mocked (no real platform channel), so unlike the database above,
   // this doesn't need runAsync().
@@ -92,10 +79,7 @@ Future<AppDatabase> pumpApp(
   // construct AppSyncController; no widget test exercises sync itself
   // (FakeDriveAuthenticator never reaches Google).
   final syncCrdt = await tester.runAsync(SqliteCrdt.openInMemory);
-  final syncController = AppSyncController(
-    crdt: syncCrdt!,
-    authenticator: FakeDriveAuthenticator(),
-  );
+  final syncController = AppSyncController(crdt: syncCrdt!, authenticator: FakeDriveAuthenticator());
   await tester.pumpWidget(
     ThemeScope(
       controller: themeController,
@@ -105,10 +89,7 @@ Future<AppDatabase> pumpApp(
           controller: themeController,
           child: SyncScope(
             controller: syncController,
-            child: AppScope(
-              database: database,
-              child: wrapWithAppLocalizations(const AppShell()),
-            ),
+            child: AppScope(database: database, child: wrapWithAppLocalizations(const AppShell())),
           ),
         ),
       ),

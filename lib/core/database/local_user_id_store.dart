@@ -22,9 +22,7 @@ class SharedPreferencesLocalUserIdStore implements LocalUserIdStore {
   final SharedPreferences _prefs;
 
   static Future<SharedPreferencesLocalUserIdStore> load() async {
-    return SharedPreferencesLocalUserIdStore(
-      await SharedPreferences.getInstance(),
-    );
+    return SharedPreferencesLocalUserIdStore(await SharedPreferences.getInstance());
   }
 
   @override

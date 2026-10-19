@@ -9,8 +9,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 Future<bool> confirmDelete(
   BuildContext context, {
   required String title,
-  String message =
-      "This can't be undone from the app yet - there's no Trash UI to restore it from.",
+  String message = "This can't be undone from the app yet - there's no Trash UI to restore it from.",
 }) async {
   final result = await showShadDialog<bool>(
     context: context,
@@ -19,14 +18,8 @@ Future<bool> confirmDelete(
         title: Text(title),
         description: Text(message),
         actions: [
-          ShadButton.outline(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ShadButton.destructive(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
+          ShadButton.outline(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          ShadButton.destructive(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
         ],
       );
     },

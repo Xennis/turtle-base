@@ -12,13 +12,7 @@ import 'package:turtle_base/packages/crdt_file_sync/google_drive/google_drive_tr
 /// same fixed multipart boundary `package:_discoveryapis_commons` always
 /// uses for media uploads (see its `MultipartMediaUploader`).
 class _FakeDriveFile {
-  _FakeDriveFile({
-    required this.id,
-    required this.name,
-    required this.mimeType,
-    required this.parents,
-    this.bytes,
-  });
+  _FakeDriveFile({required this.id, required this.name, required this.mimeType, required this.parents, this.bytes});
 
   final String id;
   final String name;
@@ -40,16 +34,13 @@ class _FakeDrive {
     if (request.method == 'GET' && segments.join('/') == 'drive/v3/files') {
       return _handleList(uri);
     }
-    if (request.method == 'GET' &&
-        segments.length == 4 &&
-        segments.sublist(0, 3).join('/') == 'drive/v3/files') {
+    if (request.method == 'GET' && segments.length == 4 && segments.sublist(0, 3).join('/') == 'drive/v3/files') {
       return _handleDownload(segments[3]);
     }
     if (request.method == 'POST' && segments.join('/') == 'drive/v3/files') {
       return _handleCreate(request, metadataOnly: true);
     }
-    if (request.method == 'POST' &&
-        segments.join('/') == 'upload/drive/v3/files') {
+    if (request.method == 'POST' && segments.join('/') == 'upload/drive/v3/files') {
       return _handleCreate(request, metadataOnly: false);
     }
     return http.Response('unhandled ${request.method} $uri', 404);
@@ -57,9 +48,7 @@ class _FakeDrive {
 
   http.Response _handleList(Uri uri) {
     final query = uri.queryParameters['q'] ?? '';
-    final matches = _files.values
-        .where((f) => _matchesQuery(f, query))
-        .toList();
+    final matches = _files.values.where((f) => _matchesQuery(f, query)).toList();
     return _json({
       'files': [
         for (final f in matches) {'id': f.id, 'name': f.name},
@@ -88,33 +77,20 @@ class _FakeDrive {
   http.Response _handleDownload(String fileId) {
     final file = _files[fileId];
     if (file == null) return http.Response('not found', 404);
-    return http.Response.bytes(
-      file.bytes ?? Uint8List(0),
-      200,
-      headers: {'content-type': 'application/octet-stream'},
-    );
+    return http.Response.bytes(file.bytes ?? Uint8List(0), 200, headers: {'content-type': 'application/octet-stream'});
   }
 
-  http.Response _handleCreate(
-    http.Request request, {
-    required bool metadataOnly,
-  }) {
+  http.Response _handleCreate(http.Request request, {required bool metadataOnly}) {
     final id = 'file-${_nextId++}';
     Map<String, dynamic> metadata;
     Uint8List? bytes;
 
     if (metadataOnly) {
-      metadata =
-          jsonDecode(utf8.decode(request.bodyBytes)) as Map<String, dynamic>;
+      metadata = jsonDecode(utf8.decode(request.bodyBytes)) as Map<String, dynamic>;
     } else {
       final contentType = request.headers['content-type']!;
-      final boundary = RegExp(
-        'boundary="([^"]*)"',
-      ).firstMatch(contentType)!.group(1)!;
-      final (parsedMetadata, parsedBytes) = _parseMultipartRelated(
-        request.bodyBytes,
-        boundary,
-      );
+      final boundary = RegExp('boundary="([^"]*)"').firstMatch(contentType)!.group(1)!;
+      final (parsedMetadata, parsedBytes) = _parseMultipartRelated(request.bodyBytes, boundary);
       metadata = parsedMetadata;
       bytes = parsedBytes;
     }
@@ -130,32 +106,19 @@ class _FakeDrive {
     return _json({'id': id, 'name': file.name});
   }
 
-  http.Response _json(Map<String, dynamic> body) => http.Response(
-    jsonEncode(body),
-    200,
-    headers: {'content-type': 'application/json'},
-  );
+  http.Response _json(Map<String, dynamic> body) =>
+      http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
 
-  (Map<String, dynamic>, Uint8List) _parseMultipartRelated(
-    Uint8List bodyBytes,
-    String boundary,
-  ) {
+  (Map<String, dynamic>, Uint8List) _parseMultipartRelated(Uint8List bodyBytes, String boundary) {
     final body = ascii.decode(bodyBytes);
-    final parts = body
-        .split('--$boundary')
-        .where((p) => p.trim().isNotEmpty && p.trim() != '--')
-        .toList();
+    final parts = body.split('--$boundary').where((p) => p.trim().isNotEmpty && p.trim() != '--').toList();
 
     final metadataPart = parts[0];
-    final metadataJson = metadataPart
-        .substring(metadataPart.indexOf('\r\n\r\n') + 4)
-        .trim();
+    final metadataJson = metadataPart.substring(metadataPart.indexOf('\r\n\r\n') + 4).trim();
     final metadata = jsonDecode(metadataJson) as Map<String, dynamic>;
 
     final mediaPart = parts[1];
-    final base64Body = mediaPart
-        .substring(mediaPart.indexOf('\r\n\r\n') + 4)
-        .trim();
+    final base64Body = mediaPart.substring(mediaPart.indexOf('\r\n\r\n') + 4).trim();
     final bytes = base64Decode(base64Body);
 
     return (metadata, bytes);
@@ -163,45 +126,31 @@ class _FakeDrive {
 }
 
 void main() {
-  test(
-    'upload() creates the app folder and a per-device subfolder lazily',
-    () async {
-      final drive = _FakeDrive();
-      final transport = GoogleDriveTransport(authClient: drive.client);
+  test('upload() creates the app folder and a per-device subfolder lazily', () async {
+    final drive = _FakeDrive();
+    final transport = GoogleDriveTransport(authClient: drive.client);
 
-      await transport.upload(
-        'node-a/1.json',
-        Uint8List.fromList(utf8.encode('hello')),
-      );
+    await transport.upload('node-a/1.json', Uint8List.fromList(utf8.encode('hello')));
 
-      final folders = drive._files.values.where(
-        (f) => f.mimeType == 'application/vnd.google-apps.folder',
-      );
-      expect(
-        folders.map((f) => f.name),
-        containsAll(['turtle-base-sync', 'node-a']),
-      );
-    },
-  );
+    final folders = drive._files.values.where((f) => f.mimeType == 'application/vnd.google-apps.folder');
+    expect(folders.map((f) => f.name), containsAll(['turtle-base-sync', 'node-a']));
+  });
 
-  test(
-    'list() returns names for every device folder under the app folder',
-    () async {
-      final drive = _FakeDrive();
-      final transportA = GoogleDriveTransport(authClient: drive.client);
-      final transportB = GoogleDriveTransport(authClient: drive.client);
+  test('list() returns names for every device folder under the app folder', () async {
+    final drive = _FakeDrive();
+    final transportA = GoogleDriveTransport(authClient: drive.client);
+    final transportB = GoogleDriveTransport(authClient: drive.client);
 
-      await transportA.upload('node-a/1.json', Uint8List.fromList([1]));
-      await transportB.upload('node-b/1.json', Uint8List.fromList([2]));
+    await transportA.upload('node-a/1.json', Uint8List.fromList([1]));
+    await transportB.upload('node-b/1.json', Uint8List.fromList([2]));
 
-      // A fresh transport instance (no locally cached folder ids) must still
-      // discover both devices' folders/files by listing through Drive.
-      final freshTransport = GoogleDriveTransport(authClient: drive.client);
-      final names = await freshTransport.list();
+    // A fresh transport instance (no locally cached folder ids) must still
+    // discover both devices' folders/files by listing through Drive.
+    final freshTransport = GoogleDriveTransport(authClient: drive.client);
+    final names = await freshTransport.list();
 
-      expect(names, containsAll(['node-a/1.json', 'node-b/1.json']));
-    },
-  );
+    expect(names, containsAll(['node-a/1.json', 'node-b/1.json']));
+  });
 
   test('upload() then download() round-trips the bytes', () async {
     final drive = _FakeDrive();
@@ -215,21 +164,16 @@ void main() {
     expect(downloaded, bytes);
   });
 
-  test(
-    'two uploads from the same device reuse the same device folder',
-    () async {
-      final drive = _FakeDrive();
-      final transport = GoogleDriveTransport(authClient: drive.client);
+  test('two uploads from the same device reuse the same device folder', () async {
+    final drive = _FakeDrive();
+    final transport = GoogleDriveTransport(authClient: drive.client);
 
-      await transport.upload('node-a/1.json', Uint8List.fromList([1]));
-      await transport.upload('node-a/2.json', Uint8List.fromList([2]));
+    await transport.upload('node-a/1.json', Uint8List.fromList([1]));
+    await transport.upload('node-a/2.json', Uint8List.fromList([2]));
 
-      final deviceFolders = drive._files.values.where(
-        (f) =>
-            f.mimeType == 'application/vnd.google-apps.folder' &&
-            f.name == 'node-a',
-      );
-      expect(deviceFolders, hasLength(1));
-    },
-  );
+    final deviceFolders = drive._files.values.where(
+      (f) => f.mimeType == 'application/vnd.google-apps.folder' && f.name == 'node-a',
+    );
+    expect(deviceFolders, hasLength(1));
+  });
 }

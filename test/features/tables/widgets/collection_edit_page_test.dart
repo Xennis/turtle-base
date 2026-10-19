@@ -22,20 +22,14 @@ void main() {
       late String collectionId;
       await tester.runAsync(() async {
         final spaceId = await SpacesRepository(database).create(name: 'Space');
-        collectionId = await CollectionsRepository(
-          database,
-        ).create(spaceId: spaceId, name: 'Tasks');
+        collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
       });
 
       await tester.pumpWidget(
         AppScope(
           database: database,
           child: wrapWithAppLocalizations(
-            CollectionEditPage(
-              collectionId: collectionId,
-              onDone: () {},
-              onDeleted: () {},
-            ),
+            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
           ),
         ),
       );
@@ -50,9 +44,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      var storedCollection = await database
-          .select(database.collections)
-          .getSingle();
+      var storedCollection = await database.select(database.collections).getSingle();
       expect(storedCollection.name, 'To-dos');
 
       // Add a field via the "new field" row, defaulting to text.
@@ -68,10 +60,7 @@ void main() {
 
       // Rename it inline (the field row's TextField, identified by its
       // current value).
-      await tester.enterText(
-        find.widgetWithText(ShadInput, 'Priority'),
-        'Urgency',
-      );
+      await tester.enterText(find.widgetWithText(ShadInput, 'Priority'), 'Urgency');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -104,209 +93,166 @@ void main() {
     timeout: const Timeout(Duration(seconds: 30)),
   );
 
-  testWidgets(
-    'Edit collection page: customize the Name column label',
-    (WidgetTester tester) async {
-      final database = newTestDatabase();
-      addTearDown(database.close);
+  testWidgets('Edit collection page: customize the Name column label', (WidgetTester tester) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
 
-      late String collectionId;
-      await tester.runAsync(() async {
-        final spaceId = await SpacesRepository(database).create(name: 'Space');
-        collectionId = await CollectionsRepository(
-          database,
-        ).create(spaceId: spaceId, name: 'Tasks');
-      });
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
+    });
 
-      await tester.pumpWidget(
-        AppScope(
-          database: database,
-          child: wrapWithAppLocalizations(
-            CollectionEditPage(
-              collectionId: collectionId,
-              onDone: () {},
-              onDeleted: () {},
-            ),
-          ),
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
         ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      // Second TextField in the Collection card - the title-column
-      // label, empty by default (shows "Name" only as a hint).
-      await tester.enterText(find.byType(ShadInput).at(1), 'Task');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Second TextField in the Collection card - the title-column
+    // label, empty by default (shows "Name" only as a hint).
+    await tester.enterText(find.byType(ShadInput).at(1), 'Task');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      var storedCollection = await database
-          .select(database.collections)
-          .getSingle();
-      expect(storedCollection.titleFieldLabel, 'Task');
+    var storedCollection = await database.select(database.collections).getSingle();
+    expect(storedCollection.titleFieldLabel, 'Task');
 
-      // Clearing it resets to the "Name" default rather than being
-      // ignored (unlike the collection's own name field).
-      await tester.enterText(find.byType(ShadInput).at(1), '');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Clearing it resets to the "Name" default rather than being
+    // ignored (unlike the collection's own name field).
+    await tester.enterText(find.byType(ShadInput).at(1), '');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      storedCollection = await database
-          .select(database.collections)
-          .getSingle();
-      expect(storedCollection.titleFieldLabel, isNull);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    storedCollection = await database.select(database.collections).getSingle();
+    expect(storedCollection.titleFieldLabel, isNull);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets(
-    'a relation field requires and stores a target collection',
-    (WidgetTester tester) async {
-      final database = newTestDatabase();
-      addTearDown(database.close);
+  testWidgets('a relation field requires and stores a target collection', (WidgetTester tester) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
 
-      late String collectionId;
-      late String targetCollectionId;
-      await tester.runAsync(() async {
-        final spaceId = await SpacesRepository(database).create(name: 'Space');
-        final collections = CollectionsRepository(database);
-        collectionId = await collections.create(
-          spaceId: spaceId,
-          name: 'Tasks',
-        );
-        targetCollectionId = await collections.create(
-          spaceId: spaceId,
-          name: 'Projects',
-        );
-      });
+    late String collectionId;
+    late String targetCollectionId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      final collections = CollectionsRepository(database);
+      collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
+      targetCollectionId = await collections.create(spaceId: spaceId, name: 'Projects');
+    });
 
-      await tester.pumpWidget(
-        AppScope(
-          database: database,
-          child: wrapWithAppLocalizations(
-            CollectionEditPage(
-              collectionId: collectionId,
-              onDone: () {},
-              onDeleted: () {},
-            ),
-          ),
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
         ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.enterText(find.byType(ShadInput).last, 'Project');
+    await tester.tap(find.byType(ShadSelect<FieldType>).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Relation').last);
+    await tester.pumpAndSettle();
+
+    // Blocked until a target collection is picked - a relation field
+    // without one is useless.
+    final addButton = tester.widget<ShadIconButton>(find.widgetWithIcon(ShadIconButton, Icons.add));
+    expect(addButton.onPressed, isNull);
+
+    await tester.tap(find.byType(ShadSelect<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Projects').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final storedFields = await database.select(database.fields).get();
+    expect(storedFields.single.type, 'relation');
+    expect(decodeRelationTargetCollectionId(storedFields.single.config), targetCollectionId);
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('a select field\'s options can be added, renamed, recolored and deleted', (WidgetTester tester) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    late String fieldId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
+      final fields = FieldsRepository(database);
+      fieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Status',
+        type: FieldType.select,
+        config: encodeSelectConfig(const []),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await fields.addSelectOption(fieldId, 'To do');
+    });
 
-      await tester.enterText(find.byType(ShadInput).last, 'Project');
-      await tester.tap(find.byType(ShadSelect<FieldType>).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Relation').last);
-      await tester.pumpAndSettle();
+    Future<List<SelectOption>> storedOptions() async {
+      final field = await database.select(database.fields).getSingle();
+      return decodeSelectOptions(field.config);
+    }
 
-      // Blocked until a target collection is picked - a relation field
-      // without one is useless.
-      final addButton = tester.widget<ShadIconButton>(
-        find.widgetWithIcon(ShadIconButton, Icons.add),
-      );
-      expect(addButton.onPressed, isNull);
-
-      await tester.tap(find.byType(ShadSelect<String>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Projects').last);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-
-      final storedFields = await database.select(database.fields).get();
-      expect(storedFields.single.type, 'relation');
-      expect(
-        decodeRelationTargetCollectionId(storedFields.single.config),
-        targetCollectionId,
-      );
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
-
-  testWidgets(
-    'a select field\'s options can be added, renamed, recolored and deleted',
-    (WidgetTester tester) async {
-      final database = newTestDatabase();
-      addTearDown(database.close);
-
-      late String collectionId;
-      late String fieldId;
-      await tester.runAsync(() async {
-        final spaceId = await SpacesRepository(database).create(name: 'Space');
-        collectionId = await CollectionsRepository(
-          database,
-        ).create(spaceId: spaceId, name: 'Tasks');
-        final fields = FieldsRepository(database);
-        fieldId = await fields.create(
-          collectionId: collectionId,
-          name: 'Status',
-          type: FieldType.select,
-          config: encodeSelectConfig(const []),
-        );
-        await fields.addSelectOption(fieldId, 'To do');
-      });
-
-      Future<List<SelectOption>> storedOptions() async {
-        final field = await database.select(database.fields).getSingle();
-        return decodeSelectOptions(field.config);
-      }
-
-      await tester.pumpWidget(
-        AppScope(
-          database: database,
-          child: wrapWithAppLocalizations(
-            CollectionEditPage(
-              collectionId: collectionId,
-              onDone: () {},
-              onDeleted: () {},
-            ),
-          ),
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
         ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      // Add one via the field's own "Add option" input.
-      final addOption = find.widgetWithText(ShadInput, 'Add option');
-      await tester.ensureVisible(addOption);
-      await tester.enterText(addOption, 'Done');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Add one via the field's own "Add option" input.
+    final addOption = find.widgetWithText(ShadInput, 'Add option');
+    await tester.ensureVisible(addOption);
+    await tester.enterText(addOption, 'Done');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      expect((await storedOptions()).map((o) => o.name), ['To do', 'Done']);
+    expect((await storedOptions()).map((o) => o.name), ['To do', 'Done']);
 
-      // Rename the first one inline.
-      await tester.enterText(find.widgetWithText(ShadInput, 'To do'), 'Open');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Rename the first one inline.
+    await tester.enterText(find.widgetWithText(ShadInput, 'To do'), 'Open');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      var options = await storedOptions();
-      expect(options.first.name, 'Open');
+    var options = await storedOptions();
+    expect(options.first.name, 'Open');
 
-      // Recolor it via the palette popover.
-      await tester.tap(find.byTooltip('Change color').first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Red'));
-      await tester.pumpAndSettle();
+    // Recolor it via the palette popover.
+    await tester.tap(find.byTooltip('Change color').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Red'));
+    await tester.pumpAndSettle();
 
-      options = await storedOptions();
-      expect(options.first.color, OptionColor.red);
+    options = await storedOptions();
+    expect(options.first.color, OptionColor.red);
 
-      // Delete the second one, after confirming.
-      await tester.tap(find.byTooltip('Delete option').last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ShadButton, 'Delete'));
-      await tester.pumpAndSettle();
+    // Delete the second one, after confirming.
+    await tester.tap(find.byTooltip('Delete option').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ShadButton, 'Delete'));
+    await tester.pumpAndSettle();
 
-      expect((await storedOptions()).map((o) => o.name), ['Open']);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    expect((await storedOptions()).map((o) => o.name), ['Open']);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

@@ -77,23 +77,13 @@ ThemeData materialThemeFrom(ThemeData base, ShadThemeData shadTheme) {
         side: BorderSide(color: colors.border),
       ),
     ),
-    drawerTheme: DrawerThemeData(
-      backgroundColor: colors.background,
-      surfaceTintColor: Colors.transparent,
-    ),
-    dialogTheme: DialogThemeData(
-      backgroundColor: colors.popover,
-      surfaceTintColor: Colors.transparent,
-    ),
+    drawerTheme: DrawerThemeData(backgroundColor: colors.background, surfaceTintColor: Colors.transparent),
+    dialogTheme: DialogThemeData(backgroundColor: colors.popover, surfaceTintColor: Colors.transparent),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: colors.popover,
       surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
     ),
-    progressIndicatorTheme: ProgressIndicatorThemeData(
-      color: colors.mutedForeground,
-    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: colors.mutedForeground),
   );
 }
