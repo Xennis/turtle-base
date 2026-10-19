@@ -11,6 +11,8 @@ import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
 import 'package:turtle_base/features/tables/widgets/collection_view.dart';
 
 import '../../../support/pump_app.dart';
@@ -816,6 +818,81 @@ void main() {
       expect(find.text('not a date'), findsOneWidget);
       final cellText = tester.widget<Text>(find.text('not a date'));
       expect(cellText.style?.color, const ShadZincColorScheme.light().destructive);
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
+
+  testWidgets(
+    'select cells show option chips and tapping one picks a new value',
+    (WidgetTester tester) async {
+      final database = newTestDatabase();
+      addTearDown(database.close);
+
+      late String collectionId;
+      late String fieldId;
+      late String entryId;
+      late SelectOption done;
+      await tester.runAsync(() async {
+        final spaceId = await SpacesRepository(database).create(name: 'Space');
+        final fields = FieldsRepository(database);
+        final pages = PagesRepository(database);
+
+        collectionId = await CollectionsRepository(
+          database,
+        ).create(spaceId: spaceId, name: 'Tasks');
+        fieldId = await fields.create(
+          collectionId: collectionId,
+          name: 'Status',
+          type: FieldType.select,
+          config: encodeSelectConfig(const []),
+        );
+        final todo = await fields.addSelectOption(fieldId, 'To do');
+        done = await fields.addSelectOption(fieldId, 'Done');
+        entryId = await pages.create(
+          spaceId: spaceId,
+          collectionId: collectionId,
+          title: 'Buy milk',
+        );
+        await pages.setPropertyValue(entryId, fieldId, todo.id);
+      });
+
+      await tester.pumpWidget(
+        AppScope(
+          database: database,
+          child: wrapWithAppLocalizations(
+            CollectionView(
+              collectionId: collectionId,
+              onEdit: () {},
+              onOpenEntry: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.widgetWithText(SelectOptionChip, 'To do'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(SelectOptionChip, 'To do'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.widgetWithText(SelectOptionChip, 'Done'));
+      // Bounded pumps for the dialog's exit animation, same as the
+      // relation picker test in page_properties_header_test.dart.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final entry = await (database.select(
+        database.pages,
+      )..where((p) => p.id.equals(entryId))).getSingle();
+      expect(decodePageProperties(entry.properties)[fieldId], done.id);
+      expect(find.widgetWithText(SelectOptionChip, 'Done'), findsOneWidget);
+      expect(find.widgetWithText(SelectOptionChip, 'To do'), findsNothing);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
