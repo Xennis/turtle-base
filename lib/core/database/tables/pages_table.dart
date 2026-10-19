@@ -9,8 +9,7 @@ import 'package:turtle_base/core/database/tables/spaces_table.dart';
 class Pages extends Table with AuditColumns {
   TextColumn get id => text()();
   TextColumn get spaceId => text().references(Spaces, #id)();
-  TextColumn get collectionId =>
-      text().nullable().references(Collections, #id)();
+  TextColumn get collectionId => text().nullable().references(Collections, #id)();
 
   /// Nested pages are supported by the schema but not yet by the UI.
   TextColumn get parentPageId => text().nullable().references(Pages, #id)();

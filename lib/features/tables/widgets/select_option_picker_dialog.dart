@@ -21,28 +21,19 @@ Future<List<String>?> showSelectOptionPicker(
 }) {
   return showShadDialog<List<String>>(
     context: context,
-    builder: (context) => _SelectOptionPickerDialog(
-      scope: scope,
-      field: field,
-      initialSelectedIds: selectedIds,
-    ),
+    builder: (context) => _SelectOptionPickerDialog(scope: scope, field: field, initialSelectedIds: selectedIds),
   );
 }
 
 class _SelectOptionPickerDialog extends StatefulWidget {
-  const _SelectOptionPickerDialog({
-    required this.scope,
-    required this.field,
-    required this.initialSelectedIds,
-  });
+  const _SelectOptionPickerDialog({required this.scope, required this.field, required this.initialSelectedIds});
 
   final AppScope scope;
   final Field field;
   final List<String> initialSelectedIds;
 
   @override
-  State<_SelectOptionPickerDialog> createState() =>
-      _SelectOptionPickerDialogState();
+  State<_SelectOptionPickerDialog> createState() => _SelectOptionPickerDialogState();
 }
 
 class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
@@ -60,8 +51,7 @@ class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
 
   void _toggle(String optionId) {
     if (!_multiple) {
-      final isCurrent =
-          _selectedIds.length == 1 && _selectedIds.first == optionId;
+      final isCurrent = _selectedIds.length == 1 && _selectedIds.first == optionId;
       Navigator.of(context).pop(isCurrent ? <String>[] : [optionId]);
       return;
     }
@@ -71,10 +61,7 @@ class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
   }
 
   Future<void> _create(String name) async {
-    final option = await widget.scope.fields.addSelectOption(
-      widget.field.id,
-      name,
-    );
+    final option = await widget.scope.fields.addSelectOption(widget.field.id, name);
     if (!mounted) return;
     _searchController.clear();
     setState(() => _query = '');
@@ -104,20 +91,13 @@ class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
         final options = decodeSelectOptions(snapshot.data!.config);
         final name = _query.trim();
         final query = name.toLowerCase();
-        final matches = options
-            .where((o) => o.name.toLowerCase().contains(query))
-            .toList();
-        final canCreate =
-            name.isNotEmpty &&
-            !options.any((o) => o.name.toLowerCase() == query);
+        final matches = options.where((o) => o.name.toLowerCase().contains(query)).toList();
+        final canCreate = name.isNotEmpty && !options.any((o) => o.name.toLowerCase() == query);
         final selected = resolveSelectValue(options, _selectedIds);
         return ShadDialog(
           title: Text(widget.field.name),
           actions: [
-            ShadButton.outline(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
+            ShadButton.outline(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
             if (_multiple)
               ShadButton(
                 onPressed: () => Navigator.of(context).pop(
@@ -144,9 +124,7 @@ class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
                         for (final option in selected)
                           SelectOptionChip(
                             option: option,
-                            onRemove: () => _multiple
-                                ? _toggle(option.id)
-                                : Navigator.of(context).pop(<String>[]),
+                            onRemove: () => _multiple ? _toggle(option.id) : Navigator.of(context).pop(<String>[]),
                           ),
                       ],
                     ),
@@ -166,19 +144,14 @@ class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Center(
-                            child: Text(
-                              'No options yet - type to create one',
-                              style: theme.textTheme.muted,
-                            ),
+                            child: Text('No options yet - type to create one', style: theme.textTheme.muted),
                           ),
                         ),
                       for (final option in matches)
                         ShadButton.ghost(
                           width: double.infinity,
                           onPressed: () => _toggle(option.id),
-                          trailing: _selectedIds.contains(option.id)
-                              ? const Icon(Icons.check, size: 16)
-                              : null,
+                          trailing: _selectedIds.contains(option.id) ? const Icon(Icons.check, size: 16) : null,
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: SelectOptionChip(option: option),
@@ -199,11 +172,7 @@ class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
                                 Flexible(
                                   // Previews the color it'll get.
                                   child: SelectOptionChip(
-                                    option: SelectOption(
-                                      id: '',
-                                      name: name,
-                                      color: nextOptionColor(options),
-                                    ),
+                                    option: SelectOption(id: '', name: name, color: nextOptionColor(options)),
                                   ),
                                 ),
                               ],

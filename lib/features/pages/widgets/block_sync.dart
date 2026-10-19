@@ -30,13 +30,7 @@ Future<void> syncBlocksFromDocument({
       final existing = currentById[node.id];
 
       if (existing == null) {
-        await blocks.create(
-          id: node.id,
-          pageId: pageId,
-          parentBlockId: parentId,
-          type: node.type,
-          content: content,
-        );
+        await blocks.create(id: node.id, pageId: pageId, parentBlockId: parentId, type: node.type, content: content);
         await blocks.move(node.id, parentBlockId: parentId, position: position);
       } else {
         if (existing.type != node.type) {

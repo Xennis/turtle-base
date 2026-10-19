@@ -48,8 +48,7 @@ class _WindowChromeSyncState extends State<WindowChromeSync> {
   }
 
   String _cssHex(Color color) {
-    String part(double channel) =>
-        (channel * 255).round().toRadixString(16).padLeft(2, '0');
+    String part(double channel) => (channel * 255).round().toRadixString(16).padLeft(2, '0');
     return '#${part(color.r)}${part(color.g)}${part(color.b)}';
   }
 

@@ -18,14 +18,8 @@ Future<bool> confirmDelete(
         title: Text(title),
         description: Text(message),
         actions: [
-          ShadButton.outline(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ShadButton.destructive(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
+          ShadButton.outline(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          ShadButton.destructive(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
         ],
       );
     },

@@ -15,11 +15,7 @@ import 'package:turtle_base/features/tables/widgets/select_option_picker_dialog.
 /// The typed-fields area of a collection entry's Page-View, shown above
 /// the rich-text body (see UI_UX.md). Not used for freestanding pages.
 class PagePropertiesHeader extends StatefulWidget {
-  const PagePropertiesHeader({
-    super.key,
-    required this.pageId,
-    required this.collectionId,
-  });
+  const PagePropertiesHeader({super.key, required this.pageId, required this.collectionId});
 
   final String pageId;
   final String collectionId;
@@ -127,10 +123,7 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                           padding: const EdgeInsets.only(top: 12),
                           child: SizedBox(
                             width: 120,
-                            child: Text(
-                              field.name,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
+                            child: Text(field.name, style: Theme.of(context).textTheme.bodyMedium),
                           ),
                         ),
                         Expanded(
@@ -138,19 +131,13 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                               ? _SelectFieldValue(
                                   pageId: widget.pageId,
                                   field: field,
-                                  rawValue: decodePageProperties(
-                                    page.properties,
-                                  )[field.id],
+                                  rawValue: decodePageProperties(page.properties)[field.id],
                                 )
                               : field.type == FieldType.relation.name
                               ? _RelationFieldValue(
                                   pageId: widget.pageId,
                                   field: field,
-                                  selectedIds: decodeRelationValue(
-                                    decodePageProperties(
-                                      page.properties,
-                                    )[field.id],
-                                  ),
+                                  selectedIds: decodeRelationValue(decodePageProperties(page.properties)[field.id]),
                                 )
                               : ShadInputFormField(
                                   controller: _controllerFor(field, page),
@@ -164,8 +151,7 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                                   autovalidateMode: AutovalidateMode.always,
                                   keyboardType: _keyboardTypeFor(field),
                                   validator: _validatorFor(field),
-                                  onSubmitted: (value) =>
-                                      _persistIfValid(scope, field, value),
+                                  onSubmitted: (value) => _persistIfValid(scope, field, value),
                                 ),
                         ),
                       ],
@@ -183,11 +169,7 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
 /// A relation field's value: chips for the currently related entries
 /// (each removable), plus an "Add" chip opening the picker dialog.
 class _RelationFieldValue extends StatelessWidget {
-  const _RelationFieldValue({
-    required this.pageId,
-    required this.field,
-    required this.selectedIds,
-  });
+  const _RelationFieldValue({required this.pageId, required this.field, required this.selectedIds});
 
   final String pageId;
   final Field field;
@@ -207,9 +189,7 @@ class _RelationFieldValue extends StatelessWidget {
       stream: scope.pages.watchAllInCollection(targetCollectionId),
       builder: (context, snapshot) {
         final targetPages = snapshot.data ?? const <Page>[];
-        final selected = [
-          for (final id in selectedIds) ..._findById(targetPages, id),
-        ];
+        final selected = [for (final id in selectedIds) ..._findById(targetPages, id)];
         return Wrap(
           spacing: 4,
           runSpacing: 4,
@@ -218,11 +198,8 @@ class _RelationFieldValue extends StatelessWidget {
             for (final page in selected)
               _RelationChip(
                 label: page.title.isEmpty ? 'Untitled' : page.title,
-                onRemove: () => scope.pages.setPropertyValue(
-                  pageId,
-                  field.id,
-                  selectedIds.where((id) => id != page.id).toList(),
-                ),
+                onRemove: () =>
+                    scope.pages.setPropertyValue(pageId, field.id, selectedIds.where((id) => id != page.id).toList()),
               ),
             ShadButton.ghost(
               size: ShadButtonSize.sm,
@@ -255,11 +232,7 @@ class _RelationFieldValue extends StatelessWidget {
 /// (removable for a multi-select), plus a button opening the option
 /// picker. A select's chip opens the picker too, to switch options.
 class _SelectFieldValue extends StatelessWidget {
-  const _SelectFieldValue({
-    required this.pageId,
-    required this.field,
-    required this.rawValue,
-  });
+  const _SelectFieldValue({required this.pageId, required this.field, required this.rawValue});
 
   final String pageId;
   final Field field;
@@ -269,25 +242,13 @@ class _SelectFieldValue extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     final multiple = field.type == FieldType.multiSelect.name;
-    final selected = resolveSelectValue(
-      decodeSelectOptions(field.config),
-      rawValue,
-    );
+    final selected = resolveSelectValue(decodeSelectOptions(field.config), rawValue);
     final selectedIds = [for (final option in selected) option.id];
 
     Future<void> openPicker() async {
-      final result = await showSelectOptionPicker(
-        context,
-        scope: scope,
-        field: field,
-        selectedIds: selectedIds,
-      );
+      final result = await showSelectOptionPicker(context, scope: scope, field: field, selectedIds: selectedIds);
       if (result == null) return;
-      await scope.pages.setPropertyValue(
-        pageId,
-        field.id,
-        encodeSelectValue(result, multiple: multiple),
-      );
+      await scope.pages.setPropertyValue(pageId, field.id, encodeSelectValue(result, multiple: multiple));
     }
 
     return Padding(
@@ -339,30 +300,18 @@ class _RelationChip extends StatelessWidget {
     final theme = ShadTheme.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondary,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: theme.colorScheme.secondary, borderRadius: BorderRadius.circular(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.small.copyWith(
-              color: theme.colorScheme.secondaryForeground,
-            ),
-          ),
+          Text(label, style: theme.textTheme.small.copyWith(color: theme.colorScheme.secondaryForeground)),
           const SizedBox(width: 2),
           InkWell(
             onTap: onRemove,
             borderRadius: BorderRadius.circular(999),
             child: Padding(
               padding: const EdgeInsets.all(2),
-              child: Icon(
-                Icons.close,
-                size: 14,
-                color: theme.colorScheme.secondaryForeground,
-              ),
+              child: Icon(Icons.close, size: 14, color: theme.colorScheme.secondaryForeground),
             ),
           ),
         ],

@@ -6,9 +6,7 @@ import 'package:trina_grid/trina_grid.dart';
 import '../../../support/pump_app.dart';
 
 void main() {
-  testWidgets('shows the seeded default space in the sidebar', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('shows the seeded default space in the sidebar', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -16,9 +14,7 @@ void main() {
     expect(find.text('Select a collection or page'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('creates a space via the dropdown and renames the selection', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('creates a space via the dropdown and renames the selection', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -56,9 +52,7 @@ void main() {
     expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('creates a collection with no user-defined fields yet', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('creates a collection with no user-defined fields yet', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -82,9 +76,7 @@ void main() {
     expect(fields, isEmpty);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('sidebar stays visible while editing a collection', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('sidebar stays visible while editing a collection', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -118,9 +110,7 @@ void main() {
     expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('deletes a collection from the sidebar, clearing the selection', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('deletes a collection from the sidebar, clearing the selection', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -148,41 +138,35 @@ void main() {
     expect(collections.single.deletedAt, isNotNull);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets(
-    "deleting a collection from its own Edit page also clears the selection",
-    (WidgetTester tester) async {
-      final database = await pumpApp(tester);
-      addTearDown(database.close);
+  testWidgets("deleting a collection from its own Edit page also clears the selection", (WidgetTester tester) async {
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
 
-      await tester.tap(find.byTooltip('New collection'));
-      await tester.pump();
-      await tester.enterText(find.byType(ShadInput), 'Tasks');
-      await tester.tap(find.text('Save'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byTooltip('New collection'));
+    await tester.pump();
+    await tester.enterText(find.byType(ShadInput), 'Tasks');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      await tester.tap(find.text('Tasks'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.text('Tasks'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      await tester.tap(find.byTooltip('Delete this collection'));
-      await tester.pump();
-      await tester.tap(find.text('Delete'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byTooltip('Delete this collection'));
+    await tester.pump();
+    await tester.tap(find.text('Delete'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('Fields'), findsNothing);
-      expect(find.text('Select a collection or page'), findsOneWidget);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    expect(find.text('Fields'), findsNothing);
+    expect(find.text('Select a collection or page'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('deletes a page from the sidebar, clearing the selection', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('deletes a page from the sidebar, clearing the selection', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -204,33 +188,25 @@ void main() {
     expect(pages.single.deletedAt, isNotNull);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets(
-    'deleting the only space is allowed and shows the empty-spaces state',
-    (WidgetTester tester) async {
-      final database = await pumpApp(tester);
-      addTearDown(database.close);
+  testWidgets('deleting the only space is allowed and shows the empty-spaces state', (WidgetTester tester) async {
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
 
-      final deleteButton = tester.widget<ShadIconButton>(
-        find.widgetWithIcon(ShadIconButton, Icons.delete_outline).first,
-      );
-      expect(deleteButton.onPressed, isNotNull);
+    final deleteButton = tester.widget<ShadIconButton>(find.widgetWithIcon(ShadIconButton, Icons.delete_outline).first);
+    expect(deleteButton.onPressed, isNotNull);
 
-      await tester.tap(find.byIcon(Icons.delete_outline).first);
-      await tester.pump();
-      await tester.tap(find.text('Delete'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byIcon(Icons.delete_outline).first);
+    await tester.pump();
+    await tester.tap(find.text('Delete'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('No spaces yet'), findsOneWidget);
-      expect(find.widgetWithText(ShadButton, 'Create your first space'), findsOneWidget);
-      expect(find.widgetWithText(ShadButton, 'Go to Settings to sync'), findsOneWidget);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    expect(find.text('No spaces yet'), findsOneWidget);
+    expect(find.widgetWithText(ShadButton, 'Create your first space'), findsOneWidget);
+    expect(find.widgetWithText(ShadButton, 'Go to Settings to sync'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('creates a page via the sidebar and opens it', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('creates a page via the sidebar and opens it', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 

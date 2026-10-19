@@ -24,12 +24,7 @@ import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
 /// race against yet (sync is a later phase), so "load once, edit live,
 /// write out" is enough for now.
 class PageDetailView extends StatefulWidget {
-  const PageDetailView({
-    super.key,
-    required this.pageId,
-    required this.onDeleted,
-    this.onOpenCollection,
-  });
+  const PageDetailView({super.key, required this.pageId, required this.onDeleted, this.onOpenCollection});
 
   final String pageId;
 
@@ -111,11 +106,8 @@ class _PageDetailViewState extends State<PageDetailView> {
       }
     });
 
-    final editorState = EditorState(document: buildDocument(blocks))
-      ..editable = true;
-    final transactionSubscription = editorState.transactionStream.listen((
-      event,
-    ) {
+    final editorState = EditorState(document: buildDocument(blocks))..editable = true;
+    final transactionSubscription = editorState.transactionStream.listen((event) {
       final (time, _, _) = event;
       if (time == TransactionTime.after) {
         _scheduleSync(scope, editorState);
@@ -170,9 +162,7 @@ class _PageDetailViewState extends State<PageDetailView> {
   void _scheduleSync(AppScope scope, EditorState editorState) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-      final currentBlocks = await scope.blocks
-          .watchAllInPage(widget.pageId)
-          .first;
+      final currentBlocks = await scope.blocks.watchAllInPage(widget.pageId).first;
       await syncBlocksFromDocument(
         blocks: scope.blocks,
         pageId: widget.pageId,
@@ -193,16 +183,9 @@ class _PageDetailViewState extends State<PageDetailView> {
       // The family is set explicitly because AppFlowyEditor builds its
       // text spans from this configuration, not from the ambient
       // DefaultTextStyle.
-      text: TextStyle(
-        fontSize: 16,
-        height: 1.5,
-        color: colors.foreground,
-        fontFamily: theme.textTheme.family,
-      ),
+      text: TextStyle(fontSize: 16, height: 1.5, color: colors.foreground, fontFamily: theme.textTheme.family),
     );
-    final isMobile =
-        defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
+    final isMobile = defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
     if (isMobile) {
       return EditorStyle.mobile(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -224,11 +207,7 @@ class _PageDetailViewState extends State<PageDetailView> {
   Widget build(BuildContext context) {
     final editorState = _editorState;
     if (editorState == null) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: ShadTheme.of(context).colorScheme.mutedForeground,
-        ),
-      );
+      return Center(child: CircularProgressIndicator(color: ShadTheme.of(context).colorScheme.mutedForeground));
     }
     final collectionId = _collectionId;
     return Column(
@@ -246,8 +225,7 @@ class _PageDetailViewState extends State<PageDetailView> {
                   message: 'Back to collection',
                   child: ShadIconButton.ghost(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () =>
-                        widget.onOpenCollection?.call(collectionId),
+                    onPressed: () => widget.onOpenCollection?.call(collectionId),
                   ),
                 ),
               const Spacer(),
@@ -287,8 +265,7 @@ class _PageDetailViewState extends State<PageDetailView> {
                   style: ShadTheme.of(context).textTheme.h3,
                   decoration: ShadDecoration.none,
                   placeholder: const Text('Untitled'),
-                  onSubmitted: (value) =>
-                      _saveTitle(AppScope.of(context), value),
+                  onSubmitted: (value) => _saveTitle(AppScope.of(context), value),
                 ),
               ),
             ],
@@ -297,16 +274,10 @@ class _PageDetailViewState extends State<PageDetailView> {
         if (collectionId != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: PagePropertiesHeader(
-              pageId: widget.pageId,
-              collectionId: collectionId,
-            ),
+            child: PagePropertiesHeader(pageId: widget.pageId, collectionId: collectionId),
           ),
         Expanded(
-          child: AppFlowyEditor(
-            editorState: editorState,
-            editorStyle: _editorStyle(context),
-          ),
+          child: AppFlowyEditor(editorState: editorState, editorStyle: _editorStyle(context)),
         ),
       ],
     );

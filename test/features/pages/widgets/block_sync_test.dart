@@ -6,12 +6,7 @@ import 'package:turtle_base/features/pages/data/blocks_repository.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
 
 Node _paragraph(String id, String text, {Iterable<Node> children = const []}) {
-  return Node(
-    id: id,
-    type: 'paragraph',
-    attributes: {'delta': (Delta()..insert(text)).toJson()},
-    children: children,
-  );
+  return Node(id: id, type: 'paragraph', attributes: {'delta': (Delta()..insert(text)).toJson()}, children: children);
 }
 
 void main() {
@@ -28,13 +23,10 @@ void main() {
   test('a node with no matching block id creates a new block', () async {
     blocks = BlocksRepository(database);
 
-    final document = Document(root: Node(type: 'page', children: [_paragraph('n1', 'hello')]));
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: const [],
+    final document = Document(
+      root: Node(type: 'page', children: [_paragraph('n1', 'hello')]),
     );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: const []);
 
     final stored = await database.select(database.blocks).get();
     expect(stored, hasLength(1));
@@ -47,13 +39,10 @@ void main() {
     await blocks.create(id: 'n1', pageId: pageId, type: 'paragraph', content: '{"delta":[]}');
     final before = await database.select(database.blocks).get();
 
-    final document = Document(root: Node(type: 'page', children: [_paragraph('n1', 'edited')]));
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: before,
+    final document = Document(
+      root: Node(type: 'page', children: [_paragraph('n1', 'edited')]),
     );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: before);
 
     final stored = await database.select(database.blocks).get();
     expect(stored, hasLength(1));
@@ -67,16 +56,9 @@ void main() {
     final before = await database.select(database.blocks).get();
 
     final document = Document.blank(withInitialText: false);
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: before,
-    );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: before);
 
-    final stored = await (database.select(
-      database.blocks,
-    )..where((b) => b.id.equals('n1'))).getSingle();
+    final stored = await (database.select(database.blocks)..where((b) => b.id.equals('n1'))).getSingle();
     expect(stored.deletedAt, isNotNull);
   });
 
@@ -90,19 +72,14 @@ void main() {
     final document = Document(
       root: Node(
         type: 'page',
-        children: [_paragraph('parent', 'p', children: [_paragraph('child', 'c')])],
+        children: [
+          _paragraph('parent', 'p', children: [_paragraph('child', 'c')]),
+        ],
       ),
     );
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: before,
-    );
+    await syncBlocksFromDocument(blocks: blocks, pageId: pageId, document: document, currentBlocks: before);
 
-    final child = await (database.select(
-      database.blocks,
-    )..where((b) => b.id.equals('child'))).getSingle();
+    final child = await (database.select(database.blocks)..where((b) => b.id.equals('child'))).getSingle();
     expect(child.parentBlockId, 'parent');
     expect(child.position, 0);
   });

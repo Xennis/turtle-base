@@ -137,10 +137,7 @@ class TurtleBaseApp extends StatelessWidget {
                         // here reflects whichever ShadThemeData that
                         // picked, extended with the component themes
                         // ShadApp leaves at (mismatched) M3 defaults.
-                        theme: materialThemeFrom(
-                          Theme.of(context),
-                          ShadTheme.of(context),
-                        ),
+                        theme: materialThemeFrom(Theme.of(context), ShadTheme.of(context)),
                         // AppFlowyEditor requires its own localizations
                         // delegate (plus the standard Flutter ones it
                         // depends on) to be registered here - our own app

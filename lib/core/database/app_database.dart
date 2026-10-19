@@ -31,12 +31,9 @@ class AppDatabase extends _$AppDatabase {
   /// [currentUserId] to persist across restarts, just to stay consistent
   /// within that device's own [AppDatabase] instance (see
   /// [LocalUserIdStore]'s doc comment).
-  AppDatabase.withExecutor(
-    super.executor, [
-    Future<CrdtDatabaseDelegate>? delegate,
-    LocalUserIdStore? localUserIdStore,
-  ]) : _delegate = delegate,
-       _localUserIdStore = localUserIdStore;
+  AppDatabase.withExecutor(super.executor, [Future<CrdtDatabaseDelegate>? delegate, LocalUserIdStore? localUserIdStore])
+    : _delegate = delegate,
+      _localUserIdStore = localUserIdStore;
 
   final Future<CrdtDatabaseDelegate>? _delegate;
   final LocalUserIdStore? _localUserIdStore;
@@ -89,9 +86,7 @@ class AppDatabase extends _$AppDatabase {
     final now = DateTime.now();
     final userId = uuid.v4();
 
-    await into(users).insert(
-      UsersCompanion.insert(id: userId, name: 'You', createdAt: now),
-    );
+    await into(users).insert(UsersCompanion.insert(id: userId, name: 'You', createdAt: now));
   }
 
   /// Routes every statement through [CrdtDatabaseDelegate] instead of

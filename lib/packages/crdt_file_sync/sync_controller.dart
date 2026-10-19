@@ -65,10 +65,7 @@ class SyncController extends ChangeNotifier {
     // wouldn't advance) it would keep re-generating the *same* filename
     // and silently overwrite our own previous upload with a payload
     // that's missing our own data.
-    final changeset = await _crdt.getChangeset(
-      onlyNodeId: _crdt.nodeId,
-      modifiedAfter: _lastPushedAt,
-    );
+    final changeset = await _crdt.getChangeset(onlyNodeId: _crdt.nodeId, modifiedAfter: _lastPushedAt);
     if (changeset.recordCount == 0) {
       debugPrint('[sync] push: nothing new since $_lastPushedAt');
       return;
@@ -105,6 +102,5 @@ class SyncController extends ChangeNotifier {
   /// Encodes [hlc] into a filename-safe, lexically sortable string - not
   /// `Hlc.toString()`, whose `:`-separated ISO date wouldn't be a safe
   /// file/object name on every transport.
-  static String _fileNameFor(Hlc hlc) =>
-      '${hlc.dateTime.microsecondsSinceEpoch}-${hlc.counter}.json';
+  static String _fileNameFor(Hlc hlc) => '${hlc.dateTime.microsecondsSinceEpoch}-${hlc.counter}.json';
 }

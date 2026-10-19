@@ -19,10 +19,7 @@ import 'drive_authenticator.dart';
 /// `google_sign_in` (not `googleapis_auth`) owns session persistence and
 /// token refresh on this platform - nothing extra to store.
 class AndroidDriveAuthenticator implements DriveAuthenticator {
-  AndroidDriveAuthenticator({
-    required this.serverClientId,
-    this.scopes = const [DriveApi.driveFileScope],
-  });
+  AndroidDriveAuthenticator({required this.serverClientId, this.scopes = const [DriveApi.driveFileScope]});
 
   final String serverClientId;
   final List<String> scopes;

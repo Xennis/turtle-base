@@ -62,10 +62,7 @@ class SpacesRepository {
   Future<void> _update(String id, SpacesCompanion changes) async {
     final userId = await _db.currentUserId();
     await (_db.update(_db.spaces)..where((s) => s.id.equals(id))).write(
-      changes.copyWith(
-        updatedAt: Value(DateTime.now()),
-        updatedBy: Value(userId),
-      ),
+      changes.copyWith(updatedAt: Value(DateTime.now()), updatedBy: Value(userId)),
     );
   }
 

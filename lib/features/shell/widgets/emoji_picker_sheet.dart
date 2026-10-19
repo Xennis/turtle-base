@@ -10,10 +10,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 /// (see materialThemeFrom's bottomSheetTheme) shows through; only the
 /// accents are mapped to shadcn tokens. Calls [onSelected] with the
 /// picked emoji, then closes the sheet.
-Future<void> showEmojiPickerSheet(
-  BuildContext context, {
-  required ValueChanged<String> onSelected,
-}) async {
+Future<void> showEmojiPickerSheet(BuildContext context, {required ValueChanged<String> onSelected}) async {
   final colors = ShadTheme.of(context).colorScheme;
   await showModalBottomSheet<void>(
     context: context,
@@ -21,9 +18,7 @@ Future<void> showEmojiPickerSheet(
       height: 320,
       child: EmojiPicker(
         config: Config(
-          emojiViewConfig: const EmojiViewConfig(
-            backgroundColor: Colors.transparent,
-          ),
+          emojiViewConfig: const EmojiViewConfig(backgroundColor: Colors.transparent),
           categoryViewConfig: CategoryViewConfig(
             backgroundColor: Colors.transparent,
             indicatorColor: colors.primary,
@@ -36,10 +31,7 @@ Future<void> showEmojiPickerSheet(
             buttonColor: colors.muted,
             buttonIconColor: colors.mutedForeground,
           ),
-          searchViewConfig: SearchViewConfig(
-            backgroundColor: colors.popover,
-            buttonIconColor: colors.mutedForeground,
-          ),
+          searchViewConfig: SearchViewConfig(backgroundColor: colors.popover, buttonIconColor: colors.mutedForeground),
         ),
         onEmojiSelected: (category, emoji) {
           onSelected(emoji.emoji);

@@ -14,12 +14,7 @@ import 'package:turtle_base/features/tables/widgets/select_options_editor.dart';
 /// AppShell/_MainContent) rather than pushed via Navigator, so the
 /// sidebar stays visible. [onDone] goes back to the grid.
 class CollectionEditPage extends StatefulWidget {
-  const CollectionEditPage({
-    super.key,
-    required this.collectionId,
-    required this.onDone,
-    required this.onDeleted,
-  });
+  const CollectionEditPage({super.key, required this.collectionId, required this.onDone, required this.onDeleted});
 
   final String collectionId;
   final VoidCallback onDone;
@@ -69,24 +64,16 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   void _saveTitleFieldLabel(String value) {
     final scope = AppScope.of(context);
     final trimmed = value.trim();
-    scope.collections.setTitleFieldLabel(
-      widget.collectionId,
-      trimmed.isEmpty ? null : trimmed,
-    );
+    scope.collections.setTitleFieldLabel(widget.collectionId, trimmed.isEmpty ? null : trimmed);
   }
 
   Future<void> _pickIcon(BuildContext context) async {
     final scope = AppScope.of(context);
-    await showEmojiPickerSheet(
-      context,
-      onSelected: (emoji) => scope.collections.setIcon(widget.collectionId, emoji),
-    );
+    await showEmojiPickerSheet(context, onSelected: (emoji) => scope.collections.setIcon(widget.collectionId, emoji));
   }
 
   TextEditingController _fieldNameControllerFor(Field field) {
-    return _fieldNameControllers[field.id] ??= TextEditingController(
-      text: field.name,
-    );
+    return _fieldNameControllers[field.id] ??= TextEditingController(text: field.name);
   }
 
   FocusNode _fieldFocusNodeFor(Field field, FieldsRepository fields) {
@@ -95,10 +82,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
     final focusNode = FocusNode();
     focusNode.addListener(() {
       if (!focusNode.hasFocus) {
-        _saveName(
-          _fieldNameControllerFor(field).text,
-          (name) => fields.rename(field.id, name),
-        );
+        _saveName(_fieldNameControllerFor(field).text, (name) => fields.rename(field.id, name));
       }
     });
     _fieldFocusNodes[field.id] = focusNode;
@@ -142,10 +126,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        leading: ShadIconButton.ghost(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: widget.onDone,
-        ),
+        leading: ShadIconButton.ghost(icon: const Icon(Icons.arrow_back), onPressed: widget.onDone),
         title: const Text('Edit collection'),
         actions: [
           Tooltip(
@@ -156,10 +137,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
             child: ShadIconButton.ghost(
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
-                final confirmed = await confirmDelete(
-                  context,
-                  title: 'Delete this collection?',
-                );
+                final confirmed = await confirmDelete(context, title: 'Delete this collection?');
                 if (!confirmed) return;
                 await scope.collections.softDelete(widget.collectionId);
                 widget.onDeleted();
@@ -179,15 +157,10 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
           _nameFocusNode ??= FocusNode()
             ..addListener(() {
               if (!_nameFocusNode!.hasFocus) {
-                _saveName(
-                  _nameController!.text,
-                  (name) => scope.collections.rename(widget.collectionId, name),
-                );
+                _saveName(_nameController!.text, (name) => scope.collections.rename(widget.collectionId, name));
               }
             });
-          _titleFieldLabelController ??= TextEditingController(
-            text: collection.titleFieldLabel ?? '',
-          );
+          _titleFieldLabelController ??= TextEditingController(text: collection.titleFieldLabel ?? '');
           _titleFieldLabelFocusNode ??= FocusNode()
             ..addListener(() {
               if (!_titleFieldLabelFocusNode!.hasFocus) {
@@ -213,10 +186,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                         ShadButton.outline(
                           onPressed: () => _pickIcon(context),
                           child: collection.icon != null
-                              ? Text(
-                                  collection.icon!,
-                                  style: const TextStyle(fontSize: 20),
-                                )
+                              ? Text(collection.icon!, style: const TextStyle(fontSize: 20))
                               : const Text('Pick emoji'),
                         ),
                         if (collection.icon != null) ...[
@@ -225,10 +195,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                             message: 'Remove icon',
                             child: ShadIconButton.ghost(
                               icon: const Icon(Icons.clear),
-                              onPressed: () => scope.collections.setIcon(
-                                widget.collectionId,
-                                null,
-                              ),
+                              onPressed: () => scope.collections.setIcon(widget.collectionId, null),
                             ),
                           ),
                         ],
@@ -240,10 +207,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                     ShadInput(
                       controller: _nameController,
                       focusNode: _nameFocusNode,
-                      onSubmitted: (value) => _saveName(
-                        value,
-                        (name) => scope.collections.rename(widget.collectionId, name),
-                      ),
+                      onSubmitted: (value) =>
+                          _saveName(value, (name) => scope.collections.rename(widget.collectionId, name)),
                     ),
                     const SizedBox(height: 16),
                     Text('Name column label', style: theme.textTheme.small),
@@ -270,12 +235,9 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                     StreamBuilder<List<Collection>>(
                       stream: scope.collections.watchAllInSpace(collection.spaceId),
                       builder: (context, collectionsSnapshot) {
-                        final collections =
-                            collectionsSnapshot.data ?? const <Collection>[];
+                        final collections = collectionsSnapshot.data ?? const <Collection>[];
                         return StreamBuilder<List<Field>>(
-                          stream: scope.fields.watchAllInCollection(
-                            widget.collectionId,
-                          ),
+                          stream: scope.fields.watchAllInCollection(widget.collectionId),
                           builder: (context, fieldsSnapshot) {
                             final fields = fieldsSnapshot.data ?? const <Field>[];
                             // Drop controllers/focus nodes of fields
@@ -389,10 +351,7 @@ class _FieldRow extends StatelessWidget {
           ShadSelect<FieldType>(
             initialValue: FieldType.values.byName(field.type),
             selectedOptionBuilder: (context, value) => Text(value.label),
-            options: [
-              for (final type in FieldType.values)
-                ShadOption(value: type, child: Text(type.label)),
-            ],
+            options: [for (final type in FieldType.values) ShadOption(value: type, child: Text(type.label))],
             onChanged: (type) {
               if (type != null) fields.changeType(field.id, type);
             },
@@ -402,11 +361,9 @@ class _FieldRow extends StatelessWidget {
             ShadSelect<String>(
               initialValue: decodeRelationTargetCollectionId(field.config),
               placeholder: const Text('Relates to...'),
-              selectedOptionBuilder: (context, value) =>
-                  Text(collections.firstWhere((c) => c.id == value).name),
+              selectedOptionBuilder: (context, value) => Text(collections.firstWhere((c) => c.id == value).name),
               options: [
-                for (final collection in collections)
-                  ShadOption(value: collection.id, child: Text(collection.name)),
+                for (final collection in collections) ShadOption(value: collection.id, child: Text(collection.name)),
               ],
               onChanged: (targetId) {
                 if (targetId != null) {
@@ -466,10 +423,7 @@ class _AddFieldRow extends StatelessWidget {
         ShadSelect<FieldType>(
           initialValue: type,
           selectedOptionBuilder: (context, value) => Text(value.label),
-          options: [
-            for (final t in FieldType.values)
-              ShadOption(value: t, child: Text(t.label)),
-          ],
+          options: [for (final t in FieldType.values) ShadOption(value: t, child: Text(t.label))],
           onChanged: (t) {
             if (t != null) onTypeChanged(t);
           },
@@ -479,21 +433,16 @@ class _AddFieldRow extends StatelessWidget {
           ShadSelect<String>(
             initialValue: relationTargetId,
             placeholder: const Text('Relates to...'),
-            selectedOptionBuilder: (context, value) =>
-                Text(collections.firstWhere((c) => c.id == value).name),
+            selectedOptionBuilder: (context, value) => Text(collections.firstWhere((c) => c.id == value).name),
             options: [
-              for (final collection in collections)
-                ShadOption(value: collection.id, child: Text(collection.name)),
+              for (final collection in collections) ShadOption(value: collection.id, child: Text(collection.name)),
             ],
             onChanged: onRelationTargetChanged,
           ),
         ],
         Tooltip(
           message: 'Add field',
-          child: ShadIconButton.ghost(
-            icon: const Icon(Icons.add),
-            onPressed: canAdd ? onAdd : null,
-          ),
+          child: ShadIconButton.ghost(icon: const Icon(Icons.add), onPressed: canAdd ? onAdd : null),
         ),
       ],
     );

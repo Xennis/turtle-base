@@ -109,16 +109,10 @@ class _CollectionViewState extends State<CollectionView> {
                               child: Row(
                                 children: [
                                   if (collection.icon != null) ...[
-                                    Text(
-                                      collection.icon!,
-                                      style: const TextStyle(fontSize: 24),
-                                    ),
+                                    Text(collection.icon!, style: const TextStyle(fontSize: 24)),
                                     const SizedBox(width: 8),
                                   ],
-                                  Text(
-                                    collection.name,
-                                    style: ShadTheme.of(context).textTheme.h3,
-                                  ),
+                                  Text(collection.name, style: ShadTheme.of(context).textTheme.h3),
                                 ],
                               ),
                             ),
@@ -137,25 +131,17 @@ class _CollectionViewState extends State<CollectionView> {
                                   child: const Text('Add row'),
                                 ),
                                 ShadButton.outline(
-                                  leading: const Icon(
-                                    Icons.edit_outlined,
-                                    size: 16,
-                                  ),
+                                  leading: const Icon(Icons.edit_outlined, size: 16),
                                   onPressed: widget.onEdit,
                                   child: const Text('Edit collection'),
                                 ),
                                 ShadSelect<_CollectionLayout>(
                                   minWidth: 120,
                                   initialValue: _layout,
-                                  selectedOptionBuilder: (context, value) =>
-                                      Text(value.label),
+                                  selectedOptionBuilder: (context, value) => Text(value.label),
                                   options: [
-                                    for (final layout
-                                        in _CollectionLayout.values)
-                                      ShadOption(
-                                        value: layout,
-                                        child: Text(layout.label),
-                                      ),
+                                    for (final layout in _CollectionLayout.values)
+                                      ShadOption(value: layout, child: Text(layout.label)),
                                   ],
                                   onChanged: (layout) {
                                     if (layout != null) {
@@ -170,11 +156,8 @@ class _CollectionViewState extends State<CollectionView> {
                             child: _layout == _CollectionLayout.tiles
                                 ? CollectionTilesView(
                                     entries: _sortedByTitle(entries),
-                                    secondaryFor: (entry) => _secondaryFor(
-                                      fields.firstOrNull,
-                                      entry,
-                                      relatedPagesByCollection,
-                                    ),
+                                    secondaryFor: (entry) =>
+                                        _secondaryFor(fields.firstOrNull, entry, relatedPagesByCollection),
                                     onOpenEntry: widget.onOpenEntry,
                                   )
                                 // TrinaGrid only reads columns/rows once (see
@@ -182,33 +165,13 @@ class _CollectionViewState extends State<CollectionView> {
                                 // with the data forces a fresh grid instead
                                 // of stale rows.
                                 : TrinaGrid(
-                                    key: ValueKey(
-                                      _gridVersion(
-                                        titleLabel,
-                                        fields,
-                                        entries,
-                                        relatedPagesByCollection,
-                                      ),
-                                    ),
-                                    columns: _columnsFor(
-                                      scope,
-                                      titleLabel,
-                                      fields,
-                                      entries,
-                                      theme.colorScheme,
-                                    ),
-                                    rows: _rowsFor(
-                                      fields,
-                                      entries,
-                                      relatedPagesByCollection,
-                                    ),
+                                    key: ValueKey(_gridVersion(titleLabel, fields, entries, relatedPagesByCollection)),
+                                    columns: _columnsFor(scope, titleLabel, fields, entries, theme.colorScheme),
+                                    rows: _rowsFor(fields, entries, relatedPagesByCollection),
                                     configuration: _gridConfiguration(theme),
-                                    onChanged: (event) =>
-                                        _onCellChanged(scope, event),
-                                    onRowDoubleTap: (event) => widget
-                                        .onOpenEntry(event.row.data as String),
-                                    onValidationFailed: (event) =>
-                                        _onValidationFailed(context, event),
+                                    onChanged: (event) => _onCellChanged(scope, event),
+                                    onRowDoubleTap: (event) => widget.onOpenEntry(event.row.data as String),
+                                    onValidationFailed: (event) => _onValidationFailed(context, event),
                                     onLoaded: widget.onLoaded,
                                   ),
                           ),
@@ -226,17 +189,13 @@ class _CollectionViewState extends State<CollectionView> {
   }
 
   /// Tiles are shown alphabetically by title (case-insensitive).
-  List<Page> _sortedByTitle(List<Page> entries) => [...entries]
-    ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+  List<Page> _sortedByTitle(List<Page> entries) =>
+      [...entries]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
   /// The tile's line below the title: the collection's first field
   /// ([field], null if it has none) - select values as chips, the rest
   /// as text via [_cellValue]. Null when the entry has no value for it.
-  Widget? _secondaryFor(
-    Field? field,
-    Page entry,
-    Map<String, List<Page>> relatedPagesByCollection,
-  ) {
+  Widget? _secondaryFor(Field? field, Page entry, Map<String, List<Page>> relatedPagesByCollection) {
     if (field == null) return null;
     if (FieldType.values.byName(field.type).isSelect) {
       final selected = resolveSelectValue(
@@ -247,9 +206,7 @@ class _CollectionViewState extends State<CollectionView> {
       return Wrap(
         spacing: 4,
         runSpacing: 4,
-        children: [
-          for (final option in selected) SelectOptionChip(option: option),
-        ],
+        children: [for (final option in selected) SelectOptionChip(option: option)],
       );
     }
     final text = _cellValue(field, entry, relatedPagesByCollection).toString();
@@ -258,9 +215,7 @@ class _CollectionViewState extends State<CollectionView> {
       text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        color: ShadTheme.of(context).colorScheme.mutedForeground,
-      ),
+      style: TextStyle(color: ShadTheme.of(context).colorScheme.mutedForeground),
     );
   }
 
@@ -268,28 +223,16 @@ class _CollectionViewState extends State<CollectionView> {
   /// separate creation page, matching the inline-editing style already
   /// used for cells and fields.
   Future<void> _addRow(AppScope scope) async {
-    final collection = await scope.collections
-        .watchById(widget.collectionId)
-        .first;
-    await scope.pages.create(
-      spaceId: collection.spaceId,
-      collectionId: widget.collectionId,
-    );
+    final collection = await scope.collections.watchById(widget.collectionId).first;
+    await scope.pages.create(spaceId: collection.spaceId, collectionId: widget.collectionId);
   }
 
-  Future<void> _onCellChanged(
-    AppScope scope,
-    TrinaGridOnChangedEvent event,
-  ) async {
+  Future<void> _onCellChanged(AppScope scope, TrinaGridOnChangedEvent event) async {
     final entryId = event.row.data as String;
     if (event.column.field == 'title') {
       await scope.pages.rename(entryId, event.value.toString());
     } else {
-      await scope.pages.setPropertyValue(
-        entryId,
-        event.column.field,
-        event.value.toString(),
-      );
+      await scope.pages.setPropertyValue(entryId, event.column.field, event.value.toString());
     }
   }
 
@@ -362,11 +305,7 @@ class _CollectionViewState extends State<CollectionView> {
       // not a user-defined field. Its label is customizable per
       // collection (CollectionEditPage) though, unlike the column
       // itself.
-      TrinaColumn(
-        title: titleLabel,
-        field: 'title',
-        type: TrinaColumnType.text(),
-      ),
+      TrinaColumn(title: titleLabel, field: 'title', type: TrinaColumnType.text()),
       for (final field in fields)
         TrinaColumn(
           title: field.name,
@@ -376,9 +315,7 @@ class _CollectionViewState extends State<CollectionView> {
           // (see PagePropertiesHeader), not inline in the grid. Select
           // values via the option picker, opened by tapping the cell
           // (see _selectRenderer) instead of the grid's text editor.
-          readOnly:
-              field.type == FieldType.relation.name ||
-              FieldType.values.byName(field.type).isSelect,
+          readOnly: field.type == FieldType.relation.name || FieldType.values.byName(field.type).isSelect,
           validator: field.type == FieldType.url.name ? _validateUrl : null,
           renderer: _rendererFor(scope, field, entriesById, colors),
         ),
@@ -414,10 +351,7 @@ class _CollectionViewState extends State<CollectionView> {
     return 'Enter a valid URL, e.g. example.com';
   }
 
-  Widget _urlRenderer(
-    TrinaColumnRendererContext context,
-    ShadColorScheme colors,
-  ) {
+  Widget _urlRenderer(TrinaColumnRendererContext context, ShadColorScheme colors) {
     final text = context.cell.value?.toString() ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
     // Not every stored value is still a URL - e.g. a field changed
@@ -432,10 +366,8 @@ class _CollectionViewState extends State<CollectionView> {
       // GestureDetector rather than InkWell - no Material ancestor is
       // guaranteed inside a TrinaGrid cell.
       child: GestureDetector(
-        onTap: () => launchUrl(
-          Uri.parse(text.contains('://') ? text : 'https://$text'),
-          mode: LaunchMode.externalApplication,
-        ),
+        onTap: () =>
+            launchUrl(Uri.parse(text.contains('://') ? text : 'https://$text'), mode: LaunchMode.externalApplication),
         child: Text(
           text,
           overflow: TextOverflow.ellipsis,
@@ -449,10 +381,7 @@ class _CollectionViewState extends State<CollectionView> {
     );
   }
 
-  Widget _dateRenderer(
-    TrinaColumnRendererContext context,
-    ShadColorScheme colors,
-  ) {
+  Widget _dateRenderer(TrinaColumnRendererContext context, ShadColorScheme colors) {
     final text = context.cell.value?.toString() ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
     // TrinaColumnTypeDate.applyFormat silently returns '' for a value
@@ -465,16 +394,10 @@ class _CollectionViewState extends State<CollectionView> {
     // Custom renderers bypass the grid's cellTextStyle (see
     // TrinaDefaultCell.build), so the foreground color must be set
     // explicitly here too.
-    return Text(
-      context.column.type.applyFormat(text),
-      style: TextStyle(color: colors.foreground),
-    );
+    return Text(context.column.type.applyFormat(text), style: TextStyle(color: colors.foreground));
   }
 
-  Widget _numberRenderer(
-    TrinaColumnRendererContext context,
-    ShadColorScheme colors,
-  ) {
+  Widget _numberRenderer(TrinaColumnRendererContext context, ShadColorScheme colors) {
     final value = context.cell.value;
     if (value == null || value.toString().isEmpty) {
       return const SizedBox.shrink();
@@ -486,10 +409,7 @@ class _CollectionViewState extends State<CollectionView> {
     // it as 0 (TrinaColumnTypeNumber's own formatting would do that).
     if (value is num) {
       // Same as _dateRenderer: custom renderers bypass cellTextStyle.
-      return Text(
-        context.column.type.applyFormat(value),
-        style: TextStyle(color: colors.foreground),
-      );
+      return Text(context.column.type.applyFormat(value), style: TextStyle(color: colors.foreground));
     }
     return Text(value.toString(), style: TextStyle(color: colors.destructive));
   }
@@ -505,9 +425,7 @@ class _CollectionViewState extends State<CollectionView> {
   ) {
     final entryId = context.row.data as String;
     final entry = entriesById[entryId];
-    final raw = entry == null
-        ? null
-        : decodePageProperties(entry.properties)[field.id];
+    final raw = entry == null ? null : decodePageProperties(entry.properties)[field.id];
     final selectedIds = decodeSelectValue(raw);
     final selected = resolveSelectValue(decodeSelectOptions(field.config), raw);
     // Builder for a BuildContext to open the dialog from -
@@ -530,10 +448,7 @@ class _CollectionViewState extends State<CollectionView> {
             await scope.pages.setPropertyValue(
               entryId,
               field.id,
-              encodeSelectValue(
-                result,
-                multiple: field.type == FieldType.multiSelect.name,
-              ),
+              encodeSelectValue(result, multiple: field.type == FieldType.multiSelect.name),
             );
           },
           // Clipped instead of wrapped - a grid row has a fixed height,
@@ -559,49 +474,29 @@ class _CollectionViewState extends State<CollectionView> {
     );
   }
 
-  void _onValidationFailed(
-    BuildContext context,
-    TrinaGridValidationEvent event,
-  ) {
-    ShadToaster.of(context).show(
-      ShadToast.destructive(
-        title: Text('${event.column.title}: ${event.errorMessage}'),
-      ),
-    );
+  void _onValidationFailed(BuildContext context, TrinaGridValidationEvent event) {
+    ShadToaster.of(context).show(ShadToast.destructive(title: Text('${event.column.title}: ${event.errorMessage}')));
   }
 
-  List<TrinaRow> _rowsFor(
-    List<Field> fields,
-    List<Page> entries,
-    Map<String, List<Page>> relatedPagesByCollection,
-  ) {
+  List<TrinaRow> _rowsFor(List<Field> fields, List<Page> entries, Map<String, List<Page>> relatedPagesByCollection) {
     return [
       for (final entry in entries)
         TrinaRow(
           data: entry.id,
           cells: {
             'title': TrinaCell(value: entry.title),
-            for (final field in fields)
-              field.id: TrinaCell(
-                value: _cellValue(field, entry, relatedPagesByCollection),
-              ),
+            for (final field in fields) field.id: TrinaCell(value: _cellValue(field, entry, relatedPagesByCollection)),
           },
         ),
     ];
   }
 
-  Object _cellValue(
-    Field field,
-    Page entry,
-    Map<String, List<Page>> relatedPagesByCollection,
-  ) {
+  Object _cellValue(Field field, Page entry, Map<String, List<Page>> relatedPagesByCollection) {
     final raw = decodePageProperties(entry.properties)[field.id];
     if (field.type == FieldType.relation.name) {
       final targetId = decodeRelationTargetCollectionId(field.config);
       final targetPages = relatedPagesByCollection[targetId] ?? const <Page>[];
-      final titles = [
-        for (final id in decodeRelationValue(raw)) _titleOf(targetPages, id),
-      ];
+      final titles = [for (final id in decodeRelationValue(raw)) _titleOf(targetPages, id)];
       return titles.join(', ');
     }
     if (FieldType.values.byName(field.type).isSelect) {
@@ -636,10 +531,7 @@ class _CollectionViewState extends State<CollectionView> {
       // applyFormatOnInit off, same reason as number above - its
       // default behaviour silently formats an unparseable stored
       // value as '', which _dateRenderer must be able to flag instead.
-      return TrinaColumnType.date(
-        format: _dateFormat,
-        applyFormatOnInit: false,
-      );
+      return TrinaColumnType.date(format: _dateFormat, applyFormatOnInit: false);
     }
     // url stays plain text - it needs its own validator/renderer
     // (added in _columnsFor) rather than a distinct TrinaColumnType.
@@ -657,9 +549,7 @@ class _CollectionViewState extends State<CollectionView> {
         // retargeting a relation) refreshes the grid too.
         .map((f) => '${f.id}:${f.name}:${f.type}:${f.config}')
         .join(',');
-    final entryPart = entries
-        .map((e) => '${e.id}:${e.updatedAt.millisecondsSinceEpoch}')
-        .join(',');
+    final entryPart = entries.map((e) => '${e.id}:${e.updatedAt.millisecondsSinceEpoch}').join(',');
     // Included so renaming a related entry elsewhere refreshes the
     // resolved titles shown here too (TrinaGrid only reads rows once).
     final relatedPart = relatedPagesByCollection.values
@@ -674,34 +564,22 @@ class _CollectionViewState extends State<CollectionView> {
 /// per id - not meant for large numbers of collections, but a
 /// collection's relation fields are expected to target only a few.
 class _RelatedPagesResolver extends StatelessWidget {
-  const _RelatedPagesResolver({
-    required this.scope,
-    required this.collectionIds,
-    required this.builder,
-  });
+  const _RelatedPagesResolver({required this.scope, required this.collectionIds, required this.builder});
 
   final AppScope scope;
   final List<String> collectionIds;
   final Widget Function(BuildContext, Map<String, List<Page>>) builder;
 
   @override
-  Widget build(BuildContext context) =>
-      _build(context, collectionIds, const {});
+  Widget build(BuildContext context) => _build(context, collectionIds, const {});
 
-  Widget _build(
-    BuildContext context,
-    List<String> remaining,
-    Map<String, List<Page>> resolved,
-  ) {
+  Widget _build(BuildContext context, List<String> remaining, Map<String, List<Page>> resolved) {
     if (remaining.isEmpty) return builder(context, resolved);
     final collectionId = remaining.first;
     return StreamBuilder<List<Page>>(
       stream: scope.pages.watchAllInCollection(collectionId),
       builder: (context, snapshot) {
-        return _build(context, remaining.sublist(1), {
-          ...resolved,
-          collectionId: snapshot.data ?? const <Page>[],
-        });
+        return _build(context, remaining.sublist(1), {...resolved, collectionId: snapshot.data ?? const <Page>[]});
       },
     );
   }

@@ -72,13 +72,7 @@ class BlocksRepository {
   /// Changes both parent and position together (e.g. indenting a block
   /// into a list, or the editor otherwise restructuring the tree).
   Future<void> move(String id, {String? parentBlockId, required int position}) {
-    return _update(
-      id,
-      BlocksCompanion(
-        parentBlockId: Value(parentBlockId),
-        position: Value(position),
-      ),
-    );
+    return _update(id, BlocksCompanion(parentBlockId: Value(parentBlockId), position: Value(position)));
   }
 
   /// Does not cascade to nested blocks - not needed by any feature yet.
@@ -93,10 +87,7 @@ class BlocksRepository {
   Future<void> _update(String id, BlocksCompanion changes) async {
     final userId = await _db.currentUserId();
     await (_db.update(_db.blocks)..where((b) => b.id.equals(id))).write(
-      changes.copyWith(
-        updatedAt: Value(DateTime.now()),
-        updatedBy: Value(userId),
-      ),
+      changes.copyWith(updatedAt: Value(DateTime.now()), updatedBy: Value(userId)),
     );
   }
 
@@ -106,13 +97,9 @@ class BlocksRepository {
       ..addColumns([maxPosition])
       ..where(_db.blocks.pageId.equals(pageId))
       ..where(
-        parentBlockId == null
-            ? _db.blocks.parentBlockId.isNull()
-            : _db.blocks.parentBlockId.equals(parentBlockId),
+        parentBlockId == null ? _db.blocks.parentBlockId.isNull() : _db.blocks.parentBlockId.equals(parentBlockId),
       );
-    final result = await query
-        .map((row) => row.read(maxPosition))
-        .getSingle();
+    final result = await query.map((row) => row.read(maxPosition)).getSingle();
     return (result ?? -1) + 1;
   }
 }

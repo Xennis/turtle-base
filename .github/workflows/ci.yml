@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v4
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      # Generated files (*.g.dart) are gitignored and not present here, so
+      # only hand-written code is checked.
+      - name: Check Dart formatting
+        run: mise run format-check

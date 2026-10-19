@@ -26,8 +26,7 @@ class Sidebar extends StatelessWidget {
         final spaces = snapshot.data ?? const <Space>[];
         // Select the first space once spaces are loaded, if none is
         // selected yet (or the previously selected one is gone).
-        if (spaces.isNotEmpty &&
-            !spaces.any((s) => s.id == navigation.selectedSpaceId)) {
+        if (spaces.isNotEmpty && !spaces.any((s) => s.id == navigation.selectedSpaceId)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             navigation.selectSpace(spaces.first.id);
           });
@@ -36,8 +35,7 @@ class Sidebar extends StatelessWidget {
         // Sorted for display only - `spaces` above (used for the
         // auto-select fallback) keeps the repository's creation order,
         // same reasoning as the collections list in _SpaceContent.
-        final sortedSpaces = [...spaces]
-          ..sort((a, b) => a.name.compareTo(b.name));
+        final sortedSpaces = [...spaces]..sort((a, b) => a.name.compareTo(b.name));
         return Column(
           children: [
             _SpaceSelector(spaces: sortedSpaces, navigation: navigation),
@@ -47,10 +45,7 @@ class Sidebar extends StatelessWidget {
                 builder: (context, _) {
                   final spaceId = navigation.selectedSpaceId;
                   if (spaceId == null) return const SizedBox.shrink();
-                  return _SpaceContent(
-                    spaceId: spaceId,
-                    navigation: navigation,
-                  );
+                  return _SpaceContent(spaceId: spaceId, navigation: navigation);
                 },
               ),
             ),
@@ -116,26 +111,16 @@ class _SpaceSelector extends StatelessWidget {
                     return Text(matches.isEmpty ? '' : matches.first.name);
                   },
                   options: [
-                    for (final space in spaces)
-                      ShadOption(value: space.id, child: Text(space.name)),
+                    for (final space in spaces) ShadOption(value: space.id, child: Text(space.name)),
                     const ShadOption(
                       value: Sidebar.newSpaceSentinel,
-                      child: Row(
-                        children: [
-                          Icon(Icons.add, size: 18),
-                          SizedBox(width: 8),
-                          Text('New space'),
-                        ],
-                      ),
+                      child: Row(children: [Icon(Icons.add, size: 18), SizedBox(width: 8), Text('New space')]),
                     ),
                   ],
                   onChanged: (value) async {
                     if (value == null) return;
                     if (value == Sidebar.newSpaceSentinel) {
-                      final name = await promptForName(
-                        context,
-                        title: 'New space',
-                      );
+                      final name = await promptForName(context, title: 'New space');
                       if (name != null) {
                         final id = await scope.spaces.create(name: name);
                         navigation.selectSpace(id);
@@ -223,17 +208,13 @@ class _SpaceContent extends StatelessWidget {
             // Sorted for display only - the repository keeps creation
             // order for other consumers (e.g. the relation-field target
             // picker in CollectionEditPage).
-            final collections = [...snapshot.data ?? const <Collection>[]]
-              ..sort((a, b) => a.name.compareTo(b.name));
+            final collections = [...snapshot.data ?? const <Collection>[]]..sort((a, b) => a.name.compareTo(b.name));
             return Column(
               children: [
                 for (final collection in collections)
                   _SidebarRow(
                     leading: collection.icon != null
-                        ? Text(
-                            collection.icon!,
-                            style: const TextStyle(fontSize: 18),
-                          )
+                        ? Text(collection.icon!, style: const TextStyle(fontSize: 18))
                         : const Icon(Icons.table_chart_outlined, size: 18),
                     title: collection.name,
                     selected: navigation.selectedCollectionId == collection.id,
@@ -282,11 +263,7 @@ class _SpaceContent extends StatelessWidget {
 /// The "Collections"/"Pages" section header, with its "+" action - not
 /// a list entry itself, so it's kept separate from [_SidebarRow].
 class _SidebarHeaderRow extends StatelessWidget {
-  const _SidebarHeaderRow({
-    required this.title,
-    required this.tooltip,
-    required this.onAdd,
-  });
+  const _SidebarHeaderRow({required this.title, required this.tooltip, required this.onAdd});
 
   final String title;
   final String tooltip;
@@ -302,20 +279,11 @@ class _SidebarHeaderRow extends StatelessWidget {
           Expanded(
             // Small, muted section label - the entries below carry the
             // visual weight, not the group header.
-            child: Text(
-              title,
-              style: theme.textTheme.muted.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(title, style: theme.textTheme.muted.copyWith(fontSize: 12, fontWeight: FontWeight.w500)),
           ),
           Tooltip(
             message: tooltip,
-            child: ShadIconButton.ghost(
-              icon: const Icon(Icons.add, size: 18),
-              onPressed: onAdd,
-            ),
+            child: ShadIconButton.ghost(icon: const Icon(Icons.add, size: 18), onPressed: onAdd),
           ),
         ],
       ),
@@ -330,12 +298,7 @@ class _SidebarHeaderRow extends StatelessWidget {
 /// trailing icon button would make some rows taller than others), so
 /// every row in the sidebar has the exact same height.
 class _SidebarRow extends StatelessWidget {
-  const _SidebarRow({
-    required this.leading,
-    required this.title,
-    required this.selected,
-    required this.onTap,
-  });
+  const _SidebarRow({required this.leading, required this.title, required this.selected, required this.onTap});
 
   final Widget leading;
   final String title;
@@ -365,11 +328,7 @@ class _SidebarRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: selected
-                        ? rowStyle.copyWith(
-                            color: theme.colorScheme.accentForeground,
-                          )
-                        : rowStyle,
+                    style: selected ? rowStyle.copyWith(color: theme.colorScheme.accentForeground) : rowStyle,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

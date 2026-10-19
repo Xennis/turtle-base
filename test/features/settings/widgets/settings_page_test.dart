@@ -6,9 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../support/pump_app.dart';
 
 void main() {
-  testWidgets('opens Settings from the sidebar and shows the theme dropdown', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('opens Settings from the sidebar and shows the theme dropdown', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -25,9 +23,7 @@ void main() {
     expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('choosing Dark from the dropdown persists it for the next app start', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('choosing Dark from the dropdown persists it for the next app start', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -48,9 +44,7 @@ void main() {
     expect(prefs.getString('theme_mode'), 'dark');
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('shows the Sync card, not connected by default', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('shows the Sync card, not connected by default', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 
@@ -70,15 +64,11 @@ void main() {
     expect(find.text('Not connected'), findsOneWidget);
     expect(find.widgetWithText(ShadButton, 'Connect'), findsOneWidget);
     // Nothing to sync yet - the button is disabled while disconnected.
-    final syncNowButton = tester.widget<ShadButton>(
-      find.widgetWithText(ShadButton, 'Sync now'),
-    );
+    final syncNowButton = tester.widget<ShadButton>(find.widgetWithText(ShadButton, 'Sync now'));
     expect(syncNowButton.onPressed, isNull);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('back returns to whatever was showing before Settings', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('back returns to whatever was showing before Settings', (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
 

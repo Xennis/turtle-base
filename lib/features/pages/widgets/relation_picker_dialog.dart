@@ -14,11 +14,8 @@ Future<List<String>?> showRelationPicker(
 }) {
   return showShadDialog<List<String>>(
     context: context,
-    builder: (context) => _RelationPickerDialog(
-      scope: scope,
-      targetCollectionId: targetCollectionId,
-      initialSelectedIds: selectedIds,
-    ),
+    builder: (context) =>
+        _RelationPickerDialog(scope: scope, targetCollectionId: targetCollectionId, initialSelectedIds: selectedIds),
   );
 }
 
@@ -46,14 +43,8 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
     return ShadDialog(
       title: const Text('Select related entries'),
       actions: [
-        ShadButton.outline(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ShadButton(
-          onPressed: () => Navigator.of(context).pop(_selectedIds.toList()),
-          child: const Text('Done'),
-        ),
+        ShadButton.outline(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ShadButton(onPressed: () => Navigator.of(context).pop(_selectedIds.toList()), child: const Text('Done')),
       ],
       child: SizedBox(
         width: 400,

@@ -13,9 +13,7 @@ import 'package:turtle_base/packages/drift_crdt/crdt_database_delegate.dart';
 /// in-memory database plus direct access to its `SqliteCrdt`.
 (AppDatabase, CrdtDatabaseDelegate) _openCrdtDatabase() {
   final delegate = CrdtDatabaseDelegate(path: null);
-  final db = AppDatabase.withExecutor(
-    DatabaseConnection(DelegatedDatabase(delegate)),
-  );
+  final db = AppDatabase.withExecutor(DatabaseConnection(DelegatedDatabase(delegate)));
   return (db, delegate);
 }
 
@@ -50,9 +48,9 @@ void main() {
     final controllerA = SyncController(crdtA.crdt, transport);
     final controllerB = SyncController(crdtB.crdt, transport);
 
-    await (dbA.update(dbA.spaces)..where((s) => s.id.equals(spaceAId))).write(
-      const SpacesCompanion(name: Value('Renamed on A')),
-    );
+    await (dbA.update(
+      dbA.spaces,
+    )..where((s) => s.id.equals(spaceAId))).write(const SpacesCompanion(name: Value('Renamed on A')));
 
     await controllerA.syncNow();
     await controllerB.syncNow();

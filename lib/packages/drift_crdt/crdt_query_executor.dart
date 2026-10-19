@@ -9,9 +9,7 @@ import 'crdt_database_delegate.dart';
 /// [resolvePath] is only invoked once the connection is actually used,
 /// so callers can resolve async platform paths (e.g.
 /// `getApplicationDocumentsDirectory()`) lazily.
-(QueryExecutor, Future<CrdtDatabaseDelegate>) openCrdtDatabaseConnection(
-  FutureOr<String?> Function() resolvePath,
-) {
+(QueryExecutor, Future<CrdtDatabaseDelegate>) openCrdtDatabaseConnection(FutureOr<String?> Function() resolvePath) {
   final delegateCompleter = Completer<CrdtDatabaseDelegate>();
   final executor = DatabaseConnection.delayed(
     Future(() async {

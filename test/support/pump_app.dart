@@ -27,12 +27,7 @@ import 'fake_drive_authenticator.dart';
 /// last subscriber unsubscribes, which flutter_test flags as a leaked
 /// timer at teardown. See drift.simonbinder.eu/testing.
 AppDatabase newTestDatabase() {
-  return AppDatabase.withExecutor(
-    DatabaseConnection(
-      NativeDatabase.memory(),
-      closeStreamsSynchronously: true,
-    ),
-  );
+  return AppDatabase.withExecutor(DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true));
 }
 
 /// Mirrors the real app's ShadApp.custom + MaterialApp setup (see
@@ -41,10 +36,7 @@ AppDatabase newTestDatabase() {
 /// or AppFlowyEditor (which needs its own localizations delegate).
 Widget wrapWithAppLocalizations(Widget home) {
   return ShadApp.custom(
-    theme: ShadThemeData(
-      brightness: Brightness.light,
-      colorScheme: const ShadZincColorScheme.light(),
-    ),
+    theme: ShadThemeData(brightness: Brightness.light, colorScheme: const ShadZincColorScheme.light()),
     appBuilder: (context) {
       return MaterialApp(
         theme: Theme.of(context),
@@ -87,10 +79,7 @@ Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true})
   // construct AppSyncController; no widget test exercises sync itself
   // (FakeDriveAuthenticator never reaches Google).
   final syncCrdt = await tester.runAsync(SqliteCrdt.openInMemory);
-  final syncController = AppSyncController(
-    crdt: syncCrdt!,
-    authenticator: FakeDriveAuthenticator(),
-  );
+  final syncController = AppSyncController(crdt: syncCrdt!, authenticator: FakeDriveAuthenticator());
   await tester.pumpWidget(
     ThemeScope(
       controller: themeController,
@@ -100,10 +89,7 @@ Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true})
           controller: themeController,
           child: SyncScope(
             controller: syncController,
-            child: AppScope(
-              database: database,
-              child: wrapWithAppLocalizations(const AppShell()),
-            ),
+            child: AppScope(database: database, child: wrapWithAppLocalizations(const AppShell())),
           ),
         ),
       ),

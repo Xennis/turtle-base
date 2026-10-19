@@ -12,6 +12,5 @@ extension FieldTypeLabel on FieldType {
     FieldType.multiSelect => 'Multi-select',
   };
 
-  bool get isSelect =>
-      this == FieldType.select || this == FieldType.multiSelect;
+  bool get isSelect => this == FieldType.select || this == FieldType.multiSelect;
 }

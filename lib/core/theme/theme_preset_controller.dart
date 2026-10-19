@@ -22,10 +22,7 @@ class ThemePresetController extends ChangeNotifier {
   static Future<ThemePresetController> load() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_prefsKey);
-    final preset = ThemePreset.values.firstWhere(
-      (p) => p.name == stored,
-      orElse: () => ThemePreset.green,
-    );
+    final preset = ThemePreset.values.firstWhere((p) => p.name == stored, orElse: () => ThemePreset.green);
     return ThemePresetController._(prefs, preset);
   }
 

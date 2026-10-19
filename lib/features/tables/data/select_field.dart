@@ -9,29 +9,17 @@ enum OptionColor { gray, brown, orange, yellow, green, blue, purple, pink, red }
 /// it by [id], never by [name], so renaming or recoloring an option
 /// only touches `fields.config`, not every entry using it.
 class SelectOption {
-  const SelectOption({
-    required this.id,
-    required this.name,
-    required this.color,
-  });
+  const SelectOption({required this.id, required this.name, required this.color});
 
   final String id;
   final String name;
   final OptionColor color;
 
   SelectOption copyWith({String? name, OptionColor? color}) {
-    return SelectOption(
-      id: id,
-      name: name ?? this.name,
-      color: color ?? this.color,
-    );
+    return SelectOption(id: id, name: name ?? this.name, color: color ?? this.color);
   }
 
-  Map<String, Object?> toJson() => {
-    'id': id,
-    'name': name,
-    'color': color.name,
-  };
+  Map<String, Object?> toJson() => {'id': id, 'name': name, 'color': color.name};
 
   static SelectOption fromJson(Map<String, dynamic> json) {
     return SelectOption(
@@ -43,10 +31,7 @@ class SelectOption {
 
   @override
   bool operator ==(Object other) =>
-      other is SelectOption &&
-      other.id == id &&
-      other.name == name &&
-      other.color == color;
+      other is SelectOption && other.id == id && other.name == name && other.color == color;
 
   @override
   int get hashCode => Object.hash(id, name, color);
@@ -64,10 +49,7 @@ List<SelectOption> decodeSelectOptions(String? config) {
   if (config == null) return const [];
   final options = (jsonDecode(config) as Map<String, dynamic>)['options'];
   if (options is! List) return const [];
-  return [
-    for (final option in options)
-      SelectOption.fromJson(option as Map<String, dynamic>),
-  ];
+  return [for (final option in options) SelectOption.fromJson(option as Map<String, dynamic>)];
 }
 
 /// The color a newly created option gets - rotating through the

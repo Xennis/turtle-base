@@ -22,9 +22,7 @@ void main() {
   });
 
   test('an unknown stored color falls back to gray', () {
-    final options = decodeSelectOptions(
-      '{"options": [{"id": "o1", "name": "A", "color": "teal"}]}',
-    );
+    final options = decodeSelectOptions('{"options": [{"id": "o1", "name": "A", "color": "teal"}]}');
     expect(options.single.color, OptionColor.gray);
   });
 
@@ -49,19 +47,14 @@ void main() {
   test('nextOptionColor rotates through the palette', () {
     expect(nextOptionColor([]), OptionColor.values.first);
     expect(nextOptionColor([todo]), OptionColor.values[1]);
-    expect(
-      nextOptionColor(List.filled(OptionColor.values.length, todo)),
-      OptionColor.values.first,
-    );
+    expect(nextOptionColor(List.filled(OptionColor.values.length, todo)), OptionColor.values.first);
   });
 
   test('FieldsRepository adds, updates and removes options', () async {
     final database = newTestDatabase();
     addTearDown(database.close);
     final spaceId = await SpacesRepository(database).create(name: 'Space');
-    final collectionId = await CollectionsRepository(
-      database,
-    ).create(spaceId: spaceId, name: 'Tasks');
+    final collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
     final fields = FieldsRepository(database);
     final fieldId = await fields.create(
       collectionId: collectionId,
@@ -75,10 +68,7 @@ void main() {
     expect(first.color, OptionColor.values[0]);
     expect(second.color, OptionColor.values[1]);
 
-    await fields.updateSelectOption(
-      fieldId,
-      first.copyWith(name: 'Open', color: OptionColor.red),
-    );
+    await fields.updateSelectOption(fieldId, first.copyWith(name: 'Open', color: OptionColor.red));
     await fields.removeSelectOption(fieldId, second.id);
 
     final field = await fields.watchById(fieldId).first;

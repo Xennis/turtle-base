@@ -6,6 +6,14 @@ opentofu = "1.12.0"
 description = "Run code generation (build_runner) - requires `flutter pub get` to have run first"
 run = "dart run build_runner build"
 
+[tasks.format]
+description = "Format the Dart code (line length is set in analysis_options.yaml)"
+run = "dart format lib test"
+
+[tasks.format-check]
+description = "Fail if the Dart code isn't formatted - used by CI"
+run = "dart format --output=none --set-exit-if-changed lib test"
+
 [tasks.skills-install]
 description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
 run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --agent claude-code -y"

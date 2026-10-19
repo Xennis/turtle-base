@@ -21,9 +21,7 @@ Future<void> openDrawer(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('narrow layout hides the sidebar behind a drawer', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('narrow layout hides the sidebar behind a drawer', (WidgetTester tester) async {
     setNarrowSize(tester);
     final database = await pumpApp(tester);
     addTearDown(database.close);
@@ -39,9 +37,7 @@ void main() {
     expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('wide layout keeps the sidebar permanently visible', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('wide layout keeps the sidebar permanently visible', (WidgetTester tester) async {
     // Default test surface is already wide (800x600) - this just pins
     // it explicitly rather than relying on the framework default.
     tester.view.physicalSize = Size(AppShell.wideBreakpoint + 600, 800);

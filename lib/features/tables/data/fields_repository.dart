@@ -20,9 +20,7 @@ class FieldsRepository {
   }
 
   Stream<Field> watchById(String id) {
-    return (_db.select(
-      _db.fields,
-    )..where((f) => f.id.equals(id))).watchSingle();
+    return (_db.select(_db.fields)..where((f) => f.id.equals(id))).watchSingle();
   }
 
   Future<String> create({
@@ -75,11 +73,7 @@ class FieldsRepository {
   /// trusting a caller's possibly stale copy.
   Future<SelectOption> addSelectOption(String fieldId, String name) async {
     final options = await _selectOptionsOf(fieldId);
-    final option = SelectOption(
-      id: _uuid.v4(),
-      name: name,
-      color: nextOptionColor(options),
-    );
+    final option = SelectOption(id: _uuid.v4(), name: name, color: nextOptionColor(options));
     await updateConfig(fieldId, encodeSelectConfig([...options, option]));
     return option;
   }
@@ -88,12 +82,7 @@ class FieldsRepository {
   /// values reference options by id, so no entry needs touching.
   Future<void> updateSelectOption(String fieldId, SelectOption option) async {
     final options = await _selectOptionsOf(fieldId);
-    await updateConfig(
-      fieldId,
-      encodeSelectConfig([
-        for (final o in options) o.id == option.id ? option : o,
-      ]),
-    );
+    await updateConfig(fieldId, encodeSelectConfig([for (final o in options) o.id == option.id ? option : o]));
   }
 
   /// Entries still referencing the option keep its id - it's skipped
@@ -101,16 +90,11 @@ class FieldsRepository {
   /// entry.
   Future<void> removeSelectOption(String fieldId, String optionId) async {
     final options = await _selectOptionsOf(fieldId);
-    await updateConfig(
-      fieldId,
-      encodeSelectConfig(options.where((o) => o.id != optionId).toList()),
-    );
+    await updateConfig(fieldId, encodeSelectConfig(options.where((o) => o.id != optionId).toList()));
   }
 
   Future<List<SelectOption>> _selectOptionsOf(String fieldId) async {
-    final field = await (_db.select(
-      _db.fields,
-    )..where((f) => f.id.equals(fieldId))).getSingle();
+    final field = await (_db.select(_db.fields)..where((f) => f.id.equals(fieldId))).getSingle();
     return decodeSelectOptions(field.config);
   }
 
@@ -129,10 +113,7 @@ class FieldsRepository {
   Future<void> _update(String id, FieldsCompanion changes) async {
     final userId = await _db.currentUserId();
     await (_db.update(_db.fields)..where((f) => f.id.equals(id))).write(
-      changes.copyWith(
-        updatedAt: Value(DateTime.now()),
-        updatedBy: Value(userId),
-      ),
+      changes.copyWith(updatedAt: Value(DateTime.now()), updatedBy: Value(userId)),
     );
   }
 

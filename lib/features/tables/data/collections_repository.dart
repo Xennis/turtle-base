@@ -20,16 +20,10 @@ class CollectionsRepository {
   }
 
   Stream<Collection> watchById(String id) {
-    return (_db.select(
-      _db.collections,
-    )..where((c) => c.id.equals(id))).watchSingle();
+    return (_db.select(_db.collections)..where((c) => c.id.equals(id))).watchSingle();
   }
 
-  Future<String> create({
-    required String spaceId,
-    required String name,
-    String? icon,
-  }) async {
+  Future<String> create({required String spaceId, required String name, String? icon}) async {
     final userId = await _db.currentUserId();
     final now = DateTime.now();
     final id = _uuid.v4();
@@ -80,10 +74,7 @@ class CollectionsRepository {
   Future<void> _update(String id, CollectionsCompanion changes) async {
     final userId = await _db.currentUserId();
     await (_db.update(_db.collections)..where((c) => c.id.equals(id))).write(
-      changes.copyWith(
-        updatedAt: Value(DateTime.now()),
-        updatedBy: Value(userId),
-      ),
+      changes.copyWith(updatedAt: Value(DateTime.now()), updatedBy: Value(userId)),
     );
   }
 }

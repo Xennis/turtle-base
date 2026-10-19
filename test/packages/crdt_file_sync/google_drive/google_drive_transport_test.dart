@@ -12,13 +12,7 @@ import 'package:turtle_base/packages/crdt_file_sync/google_drive/google_drive_tr
 /// same fixed multipart boundary `package:_discoveryapis_commons` always
 /// uses for media uploads (see its `MultipartMediaUploader`).
 class _FakeDriveFile {
-  _FakeDriveFile({
-    required this.id,
-    required this.name,
-    required this.mimeType,
-    required this.parents,
-    this.bytes,
-  });
+  _FakeDriveFile({required this.id, required this.name, required this.mimeType, required this.parents, this.bytes});
 
   final String id;
   final String name;
@@ -40,16 +34,13 @@ class _FakeDrive {
     if (request.method == 'GET' && segments.join('/') == 'drive/v3/files') {
       return _handleList(uri);
     }
-    if (request.method == 'GET' &&
-        segments.length == 4 &&
-        segments.sublist(0, 3).join('/') == 'drive/v3/files') {
+    if (request.method == 'GET' && segments.length == 4 && segments.sublist(0, 3).join('/') == 'drive/v3/files') {
       return _handleDownload(segments[3]);
     }
     if (request.method == 'POST' && segments.join('/') == 'drive/v3/files') {
       return _handleCreate(request, metadataOnly: true);
     }
-    if (request.method == 'POST' &&
-        segments.join('/') == 'upload/drive/v3/files') {
+    if (request.method == 'POST' && segments.join('/') == 'upload/drive/v3/files') {
       return _handleCreate(request, metadataOnly: false);
     }
     return http.Response('unhandled ${request.method} $uri', 404);
@@ -86,11 +77,7 @@ class _FakeDrive {
   http.Response _handleDownload(String fileId) {
     final file = _files[fileId];
     if (file == null) return http.Response('not found', 404);
-    return http.Response.bytes(
-      file.bytes ?? Uint8List(0),
-      200,
-      headers: {'content-type': 'application/octet-stream'},
-    );
+    return http.Response.bytes(file.bytes ?? Uint8List(0), 200, headers: {'content-type': 'application/octet-stream'});
   }
 
   http.Response _handleCreate(http.Request request, {required bool metadataOnly}) {
@@ -103,10 +90,7 @@ class _FakeDrive {
     } else {
       final contentType = request.headers['content-type']!;
       final boundary = RegExp('boundary="([^"]*)"').firstMatch(contentType)!.group(1)!;
-      final (parsedMetadata, parsedBytes) = _parseMultipartRelated(
-        request.bodyBytes,
-        boundary,
-      );
+      final (parsedMetadata, parsedBytes) = _parseMultipartRelated(request.bodyBytes, boundary);
       metadata = parsedMetadata;
       bytes = parsedBytes;
     }
@@ -125,10 +109,7 @@ class _FakeDrive {
   http.Response _json(Map<String, dynamic> body) =>
       http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
 
-  (Map<String, dynamic>, Uint8List) _parseMultipartRelated(
-    Uint8List bodyBytes,
-    String boundary,
-  ) {
+  (Map<String, dynamic>, Uint8List) _parseMultipartRelated(Uint8List bodyBytes, String boundary) {
     final body = ascii.decode(bodyBytes);
     final parts = body.split('--$boundary').where((p) => p.trim().isNotEmpty && p.trim() != '--').toList();
 

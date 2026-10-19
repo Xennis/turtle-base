@@ -11,11 +11,7 @@ import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
 /// Options can also be created on the fly from the option picker (see
 /// showSelectOptionPicker) - this is where they're curated.
 class SelectOptionsEditor extends StatefulWidget {
-  const SelectOptionsEditor({
-    super.key,
-    required this.field,
-    required this.fields,
-  });
+  const SelectOptionsEditor({super.key, required this.field, required this.fields});
 
   final Field field;
   final FieldsRepository fields;
@@ -49,12 +45,7 @@ class _SelectOptionsEditorState extends State<SelectOptionsEditor> {
         for (final option in options)
           // Keyed by option id, so each row's controller/focus node
           // stays with its option when others are added or removed.
-          _OptionRow(
-            key: ValueKey(option.id),
-            fieldId: widget.field.id,
-            option: option,
-            fields: widget.fields,
-          ),
+          _OptionRow(key: ValueKey(option.id), fieldId: widget.field.id, option: option, fields: widget.fields),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
@@ -68,10 +59,7 @@ class _SelectOptionsEditorState extends State<SelectOptionsEditor> {
               ),
               Tooltip(
                 message: 'Add option',
-                child: ShadIconButton.ghost(
-                  icon: const Icon(Icons.add),
-                  onPressed: _addOption,
-                ),
+                child: ShadIconButton.ghost(icon: const Icon(Icons.add), onPressed: _addOption),
               ),
             ],
           ),
@@ -82,12 +70,7 @@ class _SelectOptionsEditorState extends State<SelectOptionsEditor> {
 }
 
 class _OptionRow extends StatefulWidget {
-  const _OptionRow({
-    super.key,
-    required this.fieldId,
-    required this.option,
-    required this.fields,
-  });
+  const _OptionRow({super.key, required this.fieldId, required this.option, required this.fields});
 
   final String fieldId;
   final SelectOption option;
@@ -121,18 +104,12 @@ class _OptionRowState extends State<_OptionRow> {
   void _saveName(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty || trimmed == widget.option.name) return;
-    widget.fields.updateSelectOption(
-      widget.fieldId,
-      widget.option.copyWith(name: trimmed),
-    );
+    widget.fields.updateSelectOption(widget.fieldId, widget.option.copyWith(name: trimmed));
   }
 
   void _setColor(OptionColor color) {
     _colorPopoverController.hide();
-    widget.fields.updateSelectOption(
-      widget.fieldId,
-      widget.option.copyWith(color: color),
-    );
+    widget.fields.updateSelectOption(widget.fieldId, widget.option.copyWith(color: color));
   }
 
   @override
@@ -144,10 +121,7 @@ class _OptionRowState extends State<_OptionRow> {
         children: [
           ShadPopover(
             controller: _colorPopoverController,
-            popover: (context) => _ColorPalette(
-              selected: widget.option.color,
-              onSelected: _setColor,
-            ),
+            popover: (context) => _ColorPalette(selected: widget.option.color, onSelected: _setColor),
             child: Tooltip(
               message: 'Change color',
               child: ShadIconButton.ghost(
@@ -158,11 +132,7 @@ class _OptionRowState extends State<_OptionRow> {
           ),
           const SizedBox(width: 4),
           Expanded(
-            child: ShadInput(
-              controller: _nameController,
-              focusNode: _focusNode,
-              onSubmitted: _saveName,
-            ),
+            child: ShadInput(controller: _nameController, focusNode: _focusNode, onSubmitted: _saveName),
           ),
           Tooltip(
             message: 'Delete option',
@@ -175,10 +145,7 @@ class _OptionRowState extends State<_OptionRow> {
                   message: 'Entries using it will no longer show this value.',
                 );
                 if (confirmed) {
-                  await widget.fields.removeSelectOption(
-                    widget.fieldId,
-                    widget.option.id,
-                  );
+                  await widget.fields.removeSelectOption(widget.fieldId, widget.option.id);
                 }
               },
             ),
@@ -213,12 +180,7 @@ class _ColorPalette extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: color == selected
-                    ? ShadDecoration(
-                        border: ShadBorder.all(
-                          color: theme.colorScheme.ring,
-                          width: 2,
-                        ),
-                      )
+                    ? ShadDecoration(border: ShadBorder.all(color: theme.colorScheme.ring, width: 2))
                     : null,
                 icon: OptionColorDot(color: color, size: 18),
                 onPressed: () => onSelected(color),
