@@ -17,9 +17,6 @@ jobs:
 
       - uses: jdx/mise-action@v4
 
-      # Needed for `dart format` to resolve analysis_options.yaml's include
-      # (flutter_lints) - without it the formatter settings (page_width)
-      # aren't applied.
       - name: Install Flutter dependencies
         run: flutter pub get
 
