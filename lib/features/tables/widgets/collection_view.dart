@@ -9,6 +9,7 @@ import 'package:turtle_base/features/tables/data/field_type.dart';
 import 'package:turtle_base/features/tables/data/field_validation.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_base/features/tables/widgets/collection_tiles_view.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_picker_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -26,7 +27,7 @@ const _dateFormat = 'yyyy-MM-dd';
 /// Text to Number/Date/URL - see FieldsRepository.changeType) are never
 /// silently dropped or misrepresented as valid; each typed column's
 /// renderer flags them in red instead.
-class CollectionView extends StatelessWidget {
+class CollectionView extends StatefulWidget {
   const CollectionView({
     super.key,
     required this.collectionId,
@@ -50,20 +51,38 @@ class CollectionView extends StatelessWidget {
   final void Function(TrinaGridOnLoadedEvent event)? onLoaded;
 
   @override
+  State<CollectionView> createState() => _CollectionViewState();
+}
+
+/// How [CollectionView] shows its entries; not persisted.
+enum _CollectionLayout {
+  table('Table', Icons.table_rows_outlined),
+  tiles('Tiles', Icons.grid_view_outlined);
+
+  const _CollectionLayout(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+class _CollectionViewState extends State<CollectionView> {
+  _CollectionLayout _layout = _CollectionLayout.table;
+
+  @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     final theme = ShadTheme.of(context);
     return StreamBuilder<Collection>(
-      stream: scope.collections.watchById(collectionId),
+      stream: scope.collections.watchById(widget.collectionId),
       builder: (context, collectionSnapshot) {
         final collection = collectionSnapshot.data;
         final titleLabel = collection?.titleFieldLabel ?? 'Name';
         return StreamBuilder<List<Field>>(
-          stream: scope.fields.watchAllInCollection(collectionId),
+          stream: scope.fields.watchAllInCollection(widget.collectionId),
           builder: (context, fieldsSnapshot) {
             final fields = fieldsSnapshot.data ?? const <Field>[];
             return StreamBuilder<List<Page>>(
-              stream: scope.pages.watchAllInCollection(collectionId),
+              stream: scope.pages.watchAllInCollection(widget.collectionId),
               builder: (context, entriesSnapshot) {
                 final entries = entriesSnapshot.data ?? const <Page>[];
                 // Relation cells show the related entries' titles, not
@@ -122,47 +141,76 @@ class CollectionView extends StatelessWidget {
                                     Icons.edit_outlined,
                                     size: 16,
                                   ),
-                                  onPressed: onEdit,
+                                  onPressed: widget.onEdit,
                                   child: const Text('Edit collection'),
+                                ),
+                                ShadSelect<_CollectionLayout>(
+                                  minWidth: 120,
+                                  initialValue: _layout,
+                                  selectedOptionBuilder: (context, value) =>
+                                      Text(value.label),
+                                  options: [
+                                    for (final layout
+                                        in _CollectionLayout.values)
+                                      ShadOption(
+                                        value: layout,
+                                        child: Text(layout.label),
+                                      ),
+                                  ],
+                                  onChanged: (layout) {
+                                    if (layout != null) {
+                                      setState(() => _layout = layout);
+                                    }
+                                  },
                                 ),
                               ],
                             ),
                           ),
                           Expanded(
-                            // TrinaGrid only reads columns/rows once (see
-                            // its didUpdateWidget), so a Key that changes
-                            // with the data forces a fresh grid instead of
-                            // stale rows.
-                            child: TrinaGrid(
-                              key: ValueKey(
-                                _gridVersion(
-                                  titleLabel,
-                                  fields,
-                                  entries,
-                                  relatedPagesByCollection,
-                                ),
-                              ),
-                              columns: _columnsFor(
-                                scope,
-                                titleLabel,
-                                fields,
-                                entries,
-                                theme.colorScheme,
-                              ),
-                              rows: _rowsFor(
-                                fields,
-                                entries,
-                                relatedPagesByCollection,
-                              ),
-                              configuration: _gridConfiguration(theme),
-                              onChanged: (event) =>
-                                  _onCellChanged(scope, event),
-                              onRowDoubleTap: (event) =>
-                                  onOpenEntry(event.row.data as String),
-                              onValidationFailed: (event) =>
-                                  _onValidationFailed(context, event),
-                              onLoaded: onLoaded,
-                            ),
+                            child: _layout == _CollectionLayout.tiles
+                                ? CollectionTilesView(
+                                    entries: _sortedByTitle(entries),
+                                    secondaryFor: (entry) => _secondaryFor(
+                                      fields.firstOrNull,
+                                      entry,
+                                      relatedPagesByCollection,
+                                    ),
+                                    onOpenEntry: widget.onOpenEntry,
+                                  )
+                                // TrinaGrid only reads columns/rows once (see
+                                // its didUpdateWidget), so a Key that changes
+                                // with the data forces a fresh grid instead
+                                // of stale rows.
+                                : TrinaGrid(
+                                    key: ValueKey(
+                                      _gridVersion(
+                                        titleLabel,
+                                        fields,
+                                        entries,
+                                        relatedPagesByCollection,
+                                      ),
+                                    ),
+                                    columns: _columnsFor(
+                                      scope,
+                                      titleLabel,
+                                      fields,
+                                      entries,
+                                      theme.colorScheme,
+                                    ),
+                                    rows: _rowsFor(
+                                      fields,
+                                      entries,
+                                      relatedPagesByCollection,
+                                    ),
+                                    configuration: _gridConfiguration(theme),
+                                    onChanged: (event) =>
+                                        _onCellChanged(scope, event),
+                                    onRowDoubleTap: (event) => widget
+                                        .onOpenEntry(event.row.data as String),
+                                    onValidationFailed: (event) =>
+                                        _onValidationFailed(context, event),
+                                    onLoaded: widget.onLoaded,
+                                  ),
                           ),
                         ],
                       ),
@@ -177,14 +225,55 @@ class CollectionView extends StatelessWidget {
     );
   }
 
+  /// Tiles are shown alphabetically by title (case-insensitive).
+  List<Page> _sortedByTitle(List<Page> entries) => [...entries]
+    ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+  /// The tile's line below the title: the collection's first field
+  /// ([field], null if it has none) - select values as chips, the rest
+  /// as text via [_cellValue]. Null when the entry has no value for it.
+  Widget? _secondaryFor(
+    Field? field,
+    Page entry,
+    Map<String, List<Page>> relatedPagesByCollection,
+  ) {
+    if (field == null) return null;
+    if (FieldType.values.byName(field.type).isSelect) {
+      final selected = resolveSelectValue(
+        decodeSelectOptions(field.config),
+        decodePageProperties(entry.properties)[field.id],
+      );
+      if (selected.isEmpty) return null;
+      return Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: [
+          for (final option in selected) SelectOptionChip(option: option),
+        ],
+      );
+    }
+    final text = _cellValue(field, entry, relatedPagesByCollection).toString();
+    if (text.isEmpty) return null;
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: ShadTheme.of(context).colorScheme.mutedForeground,
+      ),
+    );
+  }
+
   /// A blank entry, filled in directly in the grid afterwards - no
   /// separate creation page, matching the inline-editing style already
   /// used for cells and fields.
   Future<void> _addRow(AppScope scope) async {
-    final collection = await scope.collections.watchById(collectionId).first;
+    final collection = await scope.collections
+        .watchById(widget.collectionId)
+        .first;
     await scope.pages.create(
       spaceId: collection.spaceId,
-      collectionId: collectionId,
+      collectionId: widget.collectionId,
     );
   }
 

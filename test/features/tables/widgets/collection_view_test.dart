@@ -708,7 +708,10 @@ void main() {
 
       expect(find.text('3a'), findsOneWidget);
       final cellText = tester.widget<Text>(find.text('3a'));
-      expect(cellText.style?.color, const ShadZincColorScheme.light().destructive);
+      expect(
+        cellText.style?.color,
+        const ShadZincColorScheme.light().destructive,
+      );
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
@@ -764,7 +767,10 @@ void main() {
 
       expect(find.text('not a url'), findsOneWidget);
       final cellText = tester.widget<Text>(find.text('not a url'));
-      expect(cellText.style?.color, const ShadZincColorScheme.light().destructive);
+      expect(
+        cellText.style?.color,
+        const ShadZincColorScheme.light().destructive,
+      );
       expect(cellText.style?.decoration, isNot(TextDecoration.underline));
     },
     timeout: const Timeout(Duration(seconds: 30)),
@@ -817,7 +823,10 @@ void main() {
 
       expect(find.text('not a date'), findsOneWidget);
       final cellText = tester.widget<Text>(find.text('not a date'));
-      expect(cellText.style?.color, const ShadZincColorScheme.light().destructive);
+      expect(
+        cellText.style?.color,
+        const ShadZincColorScheme.light().destructive,
+      );
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
@@ -893,6 +902,77 @@ void main() {
       expect(decodePageProperties(entry.properties)[fieldId], done.id);
       expect(find.widgetWithText(SelectOptionChip, 'Done'), findsOneWidget);
       expect(find.widgetWithText(SelectOptionChip, 'To do'), findsNothing);
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
+
+  testWidgets(
+    'tiles layout shows title and first field, and tap opens the entry',
+    (WidgetTester tester) async {
+      final database = newTestDatabase();
+      addTearDown(database.close);
+
+      late String collectionId;
+      late String entryId;
+      await tester.runAsync(() async {
+        final spaceId = await SpacesRepository(database).create(name: 'Space');
+        collectionId = await CollectionsRepository(
+          database,
+        ).create(spaceId: spaceId, name: 'Tasks');
+        final priorityField = await FieldsRepository(database).create(
+          collectionId: collectionId,
+          name: 'Priority',
+          type: FieldType.text,
+        );
+        final pages = PagesRepository(database);
+        entryId = await pages.create(
+          spaceId: spaceId,
+          collectionId: collectionId,
+          title: 'Buy milk',
+        );
+        await pages.setPropertyValue(entryId, priorityField, 'High');
+        await pages.create(
+          spaceId: spaceId,
+          collectionId: collectionId,
+          title: 'Walk dog',
+        );
+      });
+
+      String? opened;
+      await tester.pumpWidget(
+        AppScope(
+          database: database,
+          child: wrapWithAppLocalizations(
+            CollectionView(
+              collectionId: collectionId,
+              onEdit: () {},
+              onOpenEntry: (id) => opened = id,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.tap(find.text('Table'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tiles'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TrinaGrid), findsNothing);
+      expect(find.byType(ShadCard), findsNWidgets(2));
+      expect(find.text('Buy milk'), findsOneWidget);
+      expect(find.text('High'), findsOneWidget); // only the tile with a value
+      expect(find.text('Walk dog'), findsOneWidget);
+
+      // Alphabetical: "Buy milk" before "Walk dog".
+      expect(
+        tester.getTopLeft(find.text('Buy milk')).dx,
+        lessThan(tester.getTopLeft(find.text('Walk dog')).dx),
+      );
+
+      await tester.tap(find.text('Buy milk'));
+      expect(opened, entryId);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
