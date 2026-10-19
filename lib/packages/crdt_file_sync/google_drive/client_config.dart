@@ -11,8 +11,12 @@ class DriveClientConfig {
   /// loopback consent flow. Not confidential for installed apps (see
   /// RFC 8252) - safe to ship in the app binary, but still kept out of
   /// version control since it's specific to whoever registered it.
-  static const desktopClientId = String.fromEnvironment('DRIVE_DESKTOP_CLIENT_ID');
-  static const desktopClientSecret = String.fromEnvironment('DRIVE_DESKTOP_CLIENT_SECRET');
+  static const desktopClientId = String.fromEnvironment(
+    'DRIVE_DESKTOP_CLIENT_ID',
+  );
+  static const desktopClientSecret = String.fromEnvironment(
+    'DRIVE_DESKTOP_CLIENT_SECRET',
+  );
 
   /// "Web application" OAuth client, passed as `serverClientId` to
   /// `GoogleSignIn.instance.initialize()`. `google_sign_in`'s Credential
@@ -23,5 +27,7 @@ class DriveClientConfig {
   /// The Android-type client (package name + signing certificate
   /// fingerprint) has no counterpart here - `google_sign_in` resolves it
   /// automatically, nothing to reference at runtime.
-  static const androidServerClientId = String.fromEnvironment('DRIVE_ANDROID_SERVER_CLIENT_ID');
+  static const androidServerClientId = String.fromEnvironment(
+    'DRIVE_ANDROID_SERVER_CLIENT_ID',
+  );
 }

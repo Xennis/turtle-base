@@ -41,9 +41,7 @@ class PagesRepository {
   }
 
   Stream<Page> watchById(String id) {
-    return (_db.select(
-      _db.pages,
-    )..where((p) => p.id.equals(id))).watchSingle();
+    return (_db.select(_db.pages)..where((p) => p.id.equals(id))).watchSingle();
   }
 
   Future<String> create({
@@ -94,13 +92,20 @@ class PagesRepository {
 
   /// Reads-modifies-writes the single field's value, leaving the rest
   /// of `properties` untouched.
-  Future<void> setPropertyValue(String id, String fieldId, Object? value) async {
+  Future<void> setPropertyValue(
+    String id,
+    String fieldId,
+    Object? value,
+  ) async {
     final page = await (_db.select(
       _db.pages,
     )..where((p) => p.id.equals(id))).getSingle();
     final properties = decodePageProperties(page.properties);
     properties[fieldId] = value;
-    await _update(id, PagesCompanion(properties: Value(jsonEncode(properties))));
+    await _update(
+      id,
+      PagesCompanion(properties: Value(jsonEncode(properties))),
+    );
   }
 
   Future<void> move(String id, String newSpaceId) {
@@ -134,9 +139,7 @@ class PagesRepository {
     final query = _db.selectOnly(_db.pages)
       ..addColumns([maxPosition])
       ..where(_db.pages.collectionId.equals(collectionId));
-    final result = await query
-        .map((row) => row.read(maxPosition))
-        .getSingle();
+    final result = await query.map((row) => row.read(maxPosition)).getSingle();
     return (result ?? -1) + 1;
   }
 
@@ -144,15 +147,15 @@ class PagesRepository {
     final maxPosition = _db.pages.position.max();
     final query = _db.selectOnly(_db.pages)
       ..addColumns([maxPosition])
-      ..where(_db.pages.spaceId.equals(spaceId) & _db.pages.collectionId.isNull())
+      ..where(
+        _db.pages.spaceId.equals(spaceId) & _db.pages.collectionId.isNull(),
+      )
       ..where(
         parentPageId == null
             ? _db.pages.parentPageId.isNull()
             : _db.pages.parentPageId.equals(parentPageId),
       );
-    final result = await query
-        .map((row) => row.read(maxPosition))
-        .getSingle();
+    final result = await query.map((row) => row.read(maxPosition)).getSingle();
     return (result ?? -1) + 1;
   }
 }

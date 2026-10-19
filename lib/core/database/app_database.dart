@@ -17,10 +17,13 @@ part 'app_database.g.dart';
 
 @DriftDatabase(tables: [Users, Spaces, Collections, Fields, Pages, Blocks])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase({LocalUserIdStore? localUserIdStore}) : this._(_openConnection(), localUserIdStore);
+  AppDatabase({LocalUserIdStore? localUserIdStore})
+    : this._(_openConnection(), localUserIdStore);
 
-  AppDatabase._((QueryExecutor, Future<CrdtDatabaseDelegate>) connection, LocalUserIdStore? localUserIdStore)
-    : _delegate = connection.$2,
+  AppDatabase._(
+    (QueryExecutor, Future<CrdtDatabaseDelegate>) connection,
+    LocalUserIdStore? localUserIdStore,
+  ) : _delegate = connection.$2,
       _localUserIdStore = localUserIdStore,
       super(connection.$1);
 
@@ -54,7 +57,9 @@ class AppDatabase extends _$AppDatabase {
   Future<SqliteCrdt> get crdt async {
     final delegate = _delegate;
     if (delegate == null) {
-      throw StateError('AppDatabase was created without a CrdtDatabaseDelegate');
+      throw StateError(
+        'AppDatabase was created without a CrdtDatabaseDelegate',
+      );
     }
     await customStatement('SELECT 1');
     return (await delegate).crdt;
@@ -89,9 +94,9 @@ class AppDatabase extends _$AppDatabase {
     final now = DateTime.now();
     final userId = uuid.v4();
 
-    await into(users).insert(
-      UsersCompanion.insert(id: userId, name: 'You', createdAt: now),
-    );
+    await into(
+      users,
+    ).insert(UsersCompanion.insert(id: userId, name: 'You', createdAt: now));
   }
 
   /// Routes every statement through [CrdtDatabaseDelegate] instead of

@@ -33,10 +33,10 @@ Document buildDocument(List<Block> blocks) {
     return Node(
       id: block.id,
       type: block.type,
-      attributes: Map<String, dynamic>.from(
-        jsonDecode(block.content) as Map,
-      ),
-      children: [for (final child in byParent[block.id] ?? []) buildNode(child)],
+      attributes: Map<String, dynamic>.from(jsonDecode(block.content) as Map),
+      children: [
+        for (final child in byParent[block.id] ?? []) buildNode(child),
+      ],
     );
   }
 

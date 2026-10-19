@@ -69,35 +69,44 @@ void main() {
     expect(spacesOnA.map((s) => s.id), containsAll([spaceAId, spaceBId]));
   });
 
-  test('a second sync does not re-upload an already-pushed changeset', () async {
-    final (db, delegate) = _openCrdtDatabase();
-    addTearDown(db.close);
-    await db.select(db.spaces).get();
+  test(
+    'a second sync does not re-upload an already-pushed changeset',
+    () async {
+      final (db, delegate) = _openCrdtDatabase();
+      addTearDown(db.close);
+      await db.select(db.spaces).get();
 
-    final transport = FakeSyncTransport();
-    final controller = SyncController(delegate.crdt, transport);
+      final transport = FakeSyncTransport();
+      final controller = SyncController(delegate.crdt, transport);
 
-    await controller.syncNow();
-    final namesAfterFirstSync = await transport.list();
-    expect(namesAfterFirstSync, hasLength(1));
+      await controller.syncNow();
+      final namesAfterFirstSync = await transport.list();
+      expect(namesAfterFirstSync, hasLength(1));
 
-    // Nothing changed locally in between - a second sync must not push again.
-    await controller.syncNow();
-    expect(await transport.list(), namesAfterFirstSync);
-  });
+      // Nothing changed locally in between - a second sync must not push again.
+      await controller.syncNow();
+      expect(await transport.list(), namesAfterFirstSync);
+    },
+  );
 
-  test('a transport failure surfaces as an error status without throwing', () async {
-    final (db, delegate) = _openCrdtDatabase();
-    addTearDown(db.close);
-    await db.select(db.spaces).get();
+  test(
+    'a transport failure surfaces as an error status without throwing',
+    () async {
+      final (db, delegate) = _openCrdtDatabase();
+      addTearDown(db.close);
+      await db.select(db.spaces).get();
 
-    final controller = SyncController(delegate.crdt, _ThrowingSyncTransport());
+      final controller = SyncController(
+        delegate.crdt,
+        _ThrowingSyncTransport(),
+      );
 
-    await controller.syncNow();
+      await controller.syncNow();
 
-    expect(controller.status, SyncStatus.error);
-    expect(controller.lastError, isNotNull);
-  });
+      expect(controller.status, SyncStatus.error);
+      expect(controller.lastError, isNotNull);
+    },
+  );
 }
 
 class _ThrowingSyncTransport implements SyncTransport {

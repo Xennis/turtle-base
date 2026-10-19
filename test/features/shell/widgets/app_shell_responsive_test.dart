@@ -21,40 +21,44 @@ Future<void> openDrawer(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('narrow layout hides the sidebar behind a drawer', (
-    WidgetTester tester,
-  ) async {
-    setNarrowSize(tester);
-    final database = await pumpApp(tester);
-    addTearDown(database.close);
+  testWidgets(
+    'narrow layout hides the sidebar behind a drawer',
+    (WidgetTester tester) async {
+      setNarrowSize(tester);
+      final database = await pumpApp(tester);
+      addTearDown(database.close);
 
-    // Sidebar content isn't directly visible on a narrow screen...
-    expect(find.text('Collections'), findsNothing);
+      // Sidebar content isn't directly visible on a narrow screen...
+      expect(find.text('Collections'), findsNothing);
 
-    // ...until the drawer (reachable via the AppBar's auto-hamburger,
-    // since narrower than AppShell.wideBreakpoint) is opened.
-    await openDrawer(tester);
+      // ...until the drawer (reachable via the AppBar's auto-hamburger,
+      // since narrower than AppShell.wideBreakpoint) is opened.
+      await openDrawer(tester);
 
-    expect(find.text('Collections'), findsOneWidget);
-    expect(find.text('Default'), findsOneWidget);
-  }, timeout: const Timeout(Duration(seconds: 30)));
+      expect(find.text('Collections'), findsOneWidget);
+      expect(find.text('Default'), findsOneWidget);
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 
-  testWidgets('wide layout keeps the sidebar permanently visible', (
-    WidgetTester tester,
-  ) async {
-    // Default test surface is already wide (800x600) - this just pins
-    // it explicitly rather than relying on the framework default.
-    tester.view.physicalSize = Size(AppShell.wideBreakpoint + 600, 800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'wide layout keeps the sidebar permanently visible',
+    (WidgetTester tester) async {
+      // Default test surface is already wide (800x600) - this just pins
+      // it explicitly rather than relying on the framework default.
+      tester.view.physicalSize = Size(AppShell.wideBreakpoint + 600, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final database = await pumpApp(tester);
-    addTearDown(database.close);
+      final database = await pumpApp(tester);
+      addTearDown(database.close);
 
-    expect(find.text('Collections'), findsOneWidget);
-    expect(find.byIcon(Icons.menu), findsNothing);
-  }, timeout: const Timeout(Duration(seconds: 30)));
+      expect(find.text('Collections'), findsOneWidget);
+      expect(find.byIcon(Icons.menu), findsNothing);
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 
   testWidgets(
     'selecting a page on a narrow screen closes the drawer and shows a back button',
@@ -69,9 +73,13 @@ void main() {
       // Creating a page does real FFI I/O, and PageDetailView's own
       // initial load does too - same runAsync pattern as the wide-layout
       // equivalent test in app_shell_test.dart.
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pump();
       // Not pumpAndSettle() - AppFlowyEditor is mounted by this point,
       // and its cursor blink is a periodic timer. The drawer's own

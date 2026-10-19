@@ -14,7 +14,9 @@ class FieldsRepository {
   /// Active (non-deleted) fields of a collection, in column order.
   Stream<List<Field>> watchAllInCollection(String collectionId) {
     return (_db.select(_db.fields)
-          ..where((f) => f.collectionId.equals(collectionId) & f.deletedAt.isNull())
+          ..where(
+            (f) => f.collectionId.equals(collectionId) & f.deletedAt.isNull(),
+          )
           ..orderBy([(f) => OrderingTerm.asc(f.position)]))
         .watch();
   }

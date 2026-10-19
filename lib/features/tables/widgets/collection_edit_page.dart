@@ -79,7 +79,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
     final scope = AppScope.of(context);
     await showEmojiPickerSheet(
       context,
-      onSelected: (emoji) => scope.collections.setIcon(widget.collectionId, emoji),
+      onSelected: (emoji) =>
+          scope.collections.setIcon(widget.collectionId, emoji),
     );
   }
 
@@ -110,7 +111,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
     if (name.isEmpty) return;
     // A relation field needs a target collection to be usable - the
     // "Add" button is disabled until one is picked, see build().
-    if (_newFieldType == FieldType.relation && _newFieldRelationTargetId == null) {
+    if (_newFieldType == FieldType.relation &&
+        _newFieldRelationTargetId == null) {
       return;
     }
     await fields.create(
@@ -121,7 +123,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
         FieldType.relation => encodeRelationConfig(_newFieldRelationTargetId!),
         // Usable right away - options are added afterwards, here or
         // from the option picker.
-        FieldType.select || FieldType.multiSelect => encodeSelectConfig(const []),
+        FieldType.select ||
+        FieldType.multiSelect => encodeSelectConfig(const []),
         _ => null,
       },
     );
@@ -242,7 +245,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                       focusNode: _nameFocusNode,
                       onSubmitted: (value) => _saveName(
                         value,
-                        (name) => scope.collections.rename(widget.collectionId, name),
+                        (name) =>
+                            scope.collections.rename(widget.collectionId, name),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -268,7 +272,9 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                     // Needed for the relation type's target-collection
                     // dropdown - other collections in the same space.
                     StreamBuilder<List<Collection>>(
-                      stream: scope.collections.watchAllInSpace(collection.spaceId),
+                      stream: scope.collections.watchAllInSpace(
+                        collection.spaceId,
+                      ),
                       builder: (context, collectionsSnapshot) {
                         final collections =
                             collectionsSnapshot.data ?? const <Collection>[];
@@ -277,7 +283,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                             widget.collectionId,
                           ),
                           builder: (context, fieldsSnapshot) {
-                            final fields = fieldsSnapshot.data ?? const <Field>[];
+                            final fields =
+                                fieldsSnapshot.data ?? const <Field>[];
                             // Drop controllers/focus nodes of fields
                             // that no longer exist (deleted, or from a
                             // previous collection).
@@ -301,17 +308,27 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                                 for (final field in fields) ...[
                                   _FieldRow(
                                     field: field,
-                                    nameController: _fieldNameControllerFor(field),
-                                    focusNode: _fieldFocusNodeFor(field, scope.fields),
+                                    nameController: _fieldNameControllerFor(
+                                      field,
+                                    ),
+                                    focusNode: _fieldFocusNodeFor(
+                                      field,
+                                      scope.fields,
+                                    ),
                                     fields: scope.fields,
                                     collections: collections,
                                   ),
-                                  if (FieldType.values.byName(field.type).isSelect)
+                                  if (FieldType.values
+                                      .byName(field.type)
+                                      .isSelect)
                                     Padding(
                                       // Indented under its field, so it
                                       // reads as that field's options
                                       // rather than another field.
-                                      padding: const EdgeInsets.only(left: 24, bottom: 8),
+                                      padding: const EdgeInsets.only(
+                                        left: 24,
+                                        bottom: 8,
+                                      ),
                                       child: SelectOptionsEditor(
                                         key: ValueKey('options-${field.id}'),
                                         field: field,
@@ -406,7 +423,10 @@ class _FieldRow extends StatelessWidget {
                   Text(collections.firstWhere((c) => c.id == value).name),
               options: [
                 for (final collection in collections)
-                  ShadOption(value: collection.id, child: Text(collection.name)),
+                  ShadOption(
+                    value: collection.id,
+                    child: Text(collection.name),
+                  ),
               ],
               onChanged: (targetId) {
                 if (targetId != null) {

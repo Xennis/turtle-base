@@ -110,9 +110,7 @@ class BlocksRepository {
             ? _db.blocks.parentBlockId.isNull()
             : _db.blocks.parentBlockId.equals(parentBlockId),
       );
-    final result = await query
-        .map((row) => row.read(maxPosition))
-        .getSingle();
+    final result = await query.map((row) => row.read(maxPosition)).getSingle();
     return (result ?? -1) + 1;
   }
 }

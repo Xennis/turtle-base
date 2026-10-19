@@ -40,11 +40,19 @@ DriveAuthenticator? createDriveAuthenticator({
 }) {
   if (Platform.isAndroid) {
     if (androidServerClientId.isEmpty) return null;
-    return AndroidDriveAuthenticator(serverClientId: androidServerClientId, scopes: scopes);
+    return AndroidDriveAuthenticator(
+      serverClientId: androidServerClientId,
+      scopes: scopes,
+    );
   }
   if (Platform.isLinux || Platform.isMacOS) {
     if (desktopClientId.isEmpty || desktopClientSecret.isEmpty) return null;
-    return DesktopDriveAuthenticator(clientId: ClientId(desktopClientId, desktopClientSecret), scopes: scopes);
+    return DesktopDriveAuthenticator(
+      clientId: ClientId(desktopClientId, desktopClientSecret),
+      scopes: scopes,
+    );
   }
-  throw UnsupportedError('No DriveAuthenticator for this platform - see AGENTS.md\'s supported platforms.');
+  throw UnsupportedError(
+    'No DriveAuthenticator for this platform - see AGENTS.md\'s supported platforms.',
+  );
 }

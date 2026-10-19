@@ -865,7 +865,9 @@ void main() {
 
       expect(find.widgetWithText(SelectOptionChip, 'Done'), findsOneWidget);
       final statusOptions = decodeSelectOptions(
-        (await (database.select(database.fields)..where((f) => f.id.equals(statusFieldId))).getSingle()).config,
+        (await (database.select(
+          database.fields,
+        )..where((f) => f.id.equals(statusFieldId))).getSingle()).config,
       );
       expect(
         (await storedProperties())[statusFieldId],
@@ -884,7 +886,9 @@ void main() {
 
       expect(find.widgetWithText(SelectOptionChip, 'Urgent'), findsOneWidget);
       final tagOptions = decodeSelectOptions(
-        (await (database.select(database.fields)..where((f) => f.id.equals(tagsFieldId))).getSingle()).config,
+        (await (database.select(
+          database.fields,
+        )..where((f) => f.id.equals(tagsFieldId))).getSingle()).config,
       );
       expect(tagOptions.single.name, 'Urgent');
       expect((await storedProperties())[tagsFieldId], [tagOptions.single.id]);

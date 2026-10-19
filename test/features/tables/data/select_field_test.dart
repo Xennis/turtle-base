@@ -37,7 +37,10 @@ void main() {
   });
 
   test('resolveSelectValue skips ids of deleted options', () {
-    expect(resolveSelectValue([todo, done], ['o2', 'gone', 'o1']), [done, todo]);
+    expect(resolveSelectValue([todo, done], ['o2', 'gone', 'o1']), [
+      done,
+      todo,
+    ]);
   });
 
   test('encodeSelectValue stores a single id or a list', () {

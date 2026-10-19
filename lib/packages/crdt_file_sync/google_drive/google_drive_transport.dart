@@ -66,7 +66,9 @@ class GoogleDriveTransport implements SyncTransport {
         spaces: 'drive',
         $fields: 'files(id,name)',
       );
-      debugPrint('[sync] drive: device folder $nodeId has ${files.files?.length ?? 0} file(s)');
+      debugPrint(
+        '[sync] drive: device folder $nodeId has ${files.files?.length ?? 0} file(s)',
+      );
       for (final file in files.files ?? const <drive.File>[]) {
         final name = '$nodeId/${file.name}';
         _fileIds[name] = file.id!;
@@ -113,10 +115,7 @@ class GoogleDriveTransport implements SyncTransport {
     final cached = _appFolderId;
     if (cached != null) return cached;
 
-    final id = await _findOrCreateFolder(
-      name: appFolderName,
-      parentId: null,
-    );
+    final id = await _findOrCreateFolder(name: appFolderName, parentId: null);
     _appFolderId = id;
     return id;
   }

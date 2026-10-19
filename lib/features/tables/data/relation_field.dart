@@ -10,7 +10,8 @@ String encodeRelationConfig(String targetCollectionId) {
 
 String? decodeRelationTargetCollectionId(String? config) {
   if (config == null) return null;
-  return (jsonDecode(config) as Map<String, dynamic>)['targetCollectionId'] as String?;
+  return (jsonDecode(config) as Map<String, dynamic>)['targetCollectionId']
+      as String?;
 }
 
 /// A relation property value is a JSON array of target page ids (see

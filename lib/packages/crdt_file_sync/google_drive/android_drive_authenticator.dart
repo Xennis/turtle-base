@@ -41,7 +41,8 @@ class AndroidDriveAuthenticator implements DriveAuthenticator {
     final account = future == null ? null : await future;
     if (account == null) return null;
 
-    final authorization = await account.authorizationClient.authorizationForScopes(scopes);
+    final authorization = await account.authorizationClient
+        .authorizationForScopes(scopes);
     if (authorization == null) return null;
     return authorization.authClient(scopes: scopes);
   }
@@ -50,7 +51,9 @@ class AndroidDriveAuthenticator implements DriveAuthenticator {
   Future<AuthClient> signIn() async {
     await _ensureInitialized();
     final account = await GoogleSignIn.instance.authenticate();
-    final authorization = await account.authorizationClient.authorizeScopes(scopes);
+    final authorization = await account.authorizationClient.authorizeScopes(
+      scopes,
+    );
     return authorization.authClient(scopes: scopes);
   }
 

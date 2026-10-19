@@ -7,15 +7,19 @@ import 'package:turtle_base/features/ai/data/ai_provider.dart';
 /// files uploaded to Google Drive (see AI_INTEGRATION.md). Keys therefore
 /// stay purely local to this device.
 class AiKeyStorage {
-  AiKeyStorage([FlutterSecureStorage? storage]) : _storage = storage ?? const FlutterSecureStorage();
+  AiKeyStorage([FlutterSecureStorage? storage])
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
   String _keyFor(AiProvider provider) => 'ai_api_key_${provider.name}';
 
-  Future<String?> read(AiProvider provider) => _storage.read(key: _keyFor(provider));
+  Future<String?> read(AiProvider provider) =>
+      _storage.read(key: _keyFor(provider));
 
-  Future<void> write(AiProvider provider, String apiKey) => _storage.write(key: _keyFor(provider), value: apiKey);
+  Future<void> write(AiProvider provider, String apiKey) =>
+      _storage.write(key: _keyFor(provider), value: apiKey);
 
-  Future<void> delete(AiProvider provider) => _storage.delete(key: _keyFor(provider));
+  Future<void> delete(AiProvider provider) =>
+      _storage.delete(key: _keyFor(provider));
 }

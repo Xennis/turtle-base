@@ -5,8 +5,11 @@ import 'package:turtle_base/core/sync/app_sync_controller.dart';
 /// InheritedNotifier pattern as ThemeScope: descendants that call [of]
 /// rebuild automatically whenever sync status/connection changes.
 class SyncScope extends InheritedNotifier<AppSyncController> {
-  const SyncScope({super.key, required AppSyncController controller, required super.child})
-    : super(notifier: controller);
+  const SyncScope({
+    super.key,
+    required AppSyncController controller,
+    required super.child,
+  }) : super(notifier: controller);
 
   static AppSyncController of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<SyncScope>();

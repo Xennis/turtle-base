@@ -67,7 +67,9 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
             ),
             Expanded(
               child: StreamBuilder<List<Page>>(
-                stream: widget.scope.pages.watchAllInCollection(widget.targetCollectionId),
+                stream: widget.scope.pages.watchAllInCollection(
+                  widget.targetCollectionId,
+                ),
                 builder: (context, snapshot) {
                   final query = _query.toLowerCase();
                   final entries = (snapshot.data ?? const <Page>[])
@@ -90,7 +92,9 @@ class _RelationPickerDialogState extends State<_RelationPickerDialog> {
                                 _selectedIds.remove(entry.id);
                               }
                             }),
-                            label: Text(entry.title.isEmpty ? 'Untitled' : entry.title),
+                            label: Text(
+                              entry.title.isEmpty ? 'Untitled' : entry.title,
+                            ),
                           ),
                         ),
                     ],

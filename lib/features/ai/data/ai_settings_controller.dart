@@ -20,7 +20,10 @@ class AiSettingsController extends ChangeNotifier {
   static Future<AiSettingsController> load() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_prefsKey);
-    final model = AiModel.values.firstWhere((m) => m.name == stored, orElse: () => AiModel.values.first);
+    final model = AiModel.values.firstWhere(
+      (m) => m.name == stored,
+      orElse: () => AiModel.values.first,
+    );
     return AiSettingsController._(prefs, model);
   }
 

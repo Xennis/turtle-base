@@ -32,7 +32,9 @@ Future<void> main() async {
   final themePresetController = await ThemePresetController.load();
   final aiSettingsController = await AiSettingsController.load();
 
-  final database = AppDatabase(localUserIdStore: await SharedPreferencesLocalUserIdStore.load());
+  final database = AppDatabase(
+    localUserIdStore: await SharedPreferencesLocalUserIdStore.load(),
+  );
   // This device's first (and only) chance to adopt a fresh users row as
   // its own before sync can merge in any others - see
   // AppDatabase.currentUserId's doc comment. (`database.crdt` below opens
@@ -52,7 +54,10 @@ Future<void> main() async {
     );
   }
 
-  final syncController = AppSyncController(crdt: await database.crdt, authenticator: driveAuthenticator);
+  final syncController = AppSyncController(
+    crdt: await database.crdt,
+    authenticator: driveAuthenticator,
+  );
   // Fire-and-forget: don't delay the first frame on a network-ish silent
   // sign-in check - SyncScope's listeners update once/if it resolves.
   unawaited(syncController.restoreConnection());
@@ -115,7 +120,9 @@ class TurtleBaseApp extends StatelessWidget {
                   // textTheme.googleFontBuilder into the Material
                   // theme's fontFamily too, so Material widgets pick up
                   // Inter as well.
-                  final textTheme = ShadTextTheme.fromGoogleFont(GoogleFonts.inter);
+                  final textTheme = ShadTextTheme.fromGoogleFont(
+                    GoogleFonts.inter,
+                  );
                   return ShadApp.custom(
                     themeMode: themeMode,
                     // The presets' neutral tones are softened app-wide -
@@ -152,9 +159,12 @@ class TurtleBaseApp extends StatelessWidget {
                           GlobalWidgetsLocalizations.delegate,
                           AppFlowyEditorLocalizations.delegate,
                         ],
-                        supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+                        supportedLocales: AppFlowyEditorLocalizations
+                            .delegate
+                            .supportedLocales,
                         home: const WindowChromeSync(child: AppShell()),
-                        builder: (context, child) => ShadAppBuilder(child: child!),
+                        builder: (context, child) =>
+                            ShadAppBuilder(child: child!),
                       );
                     },
                   );

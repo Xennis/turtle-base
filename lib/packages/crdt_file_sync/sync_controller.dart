@@ -77,7 +77,9 @@ class SyncController extends ChangeNotifier {
     final pushedAt = await _crdt.getLastModified(onlyNodeId: _crdt.nodeId);
     final name = '${_crdt.nodeId}/${_fileNameFor(pushedAt)}';
     final bytes = Uint8List.fromList(utf8.encode(jsonEncode(changeset)));
-    debugPrint('[sync] push: uploading $name (${changeset.recordCount} records)');
+    debugPrint(
+      '[sync] push: uploading $name (${changeset.recordCount} records)',
+    );
     await _transport.upload(name, bytes);
     _lastPushedAt = pushedAt;
   }

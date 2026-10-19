@@ -40,7 +40,9 @@ class AppSyncController extends ChangeNotifier {
     if (authenticator == null) return;
     final client = await authenticator.signInSilently();
     if (client != null) {
-      _attach(GoogleDriveTransport(authClient: client, appFolderName: appFolderName));
+      _attach(
+        GoogleDriveTransport(authClient: client, appFolderName: appFolderName),
+      );
     }
   }
 
@@ -48,7 +50,9 @@ class AppSyncController extends ChangeNotifier {
   /// [isAvailable] - the Settings UI hides the "Connect" button otherwise.
   Future<void> connect() async {
     final client = await _authenticator!.signIn();
-    _attach(GoogleDriveTransport(authClient: client, appFolderName: appFolderName));
+    _attach(
+      GoogleDriveTransport(authClient: client, appFolderName: appFolderName),
+    );
   }
 
   Future<void> disconnect() async {

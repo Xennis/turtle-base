@@ -31,7 +31,11 @@ void main() {
         AppScope(
           database: database,
           child: wrapWithAppLocalizations(
-            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+            CollectionEditPage(
+              collectionId: collectionId,
+              onDone: () {},
+              onDeleted: () {},
+            ),
           ),
         ),
       );
@@ -46,7 +50,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      var storedCollection = await database.select(database.collections).getSingle();
+      var storedCollection = await database
+          .select(database.collections)
+          .getSingle();
       expect(storedCollection.name, 'To-dos');
 
       // Add a field via the "new field" row, defaulting to text.
@@ -62,7 +68,10 @@ void main() {
 
       // Rename it inline (the field row's TextField, identified by its
       // current value).
-      await tester.enterText(find.widgetWithText(ShadInput, 'Priority'), 'Urgency');
+      await tester.enterText(
+        find.widgetWithText(ShadInput, 'Priority'),
+        'Urgency',
+      );
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -95,51 +104,61 @@ void main() {
     timeout: const Timeout(Duration(seconds: 30)),
   );
 
-  testWidgets('Edit collection page: customize the Name column label', (
-    WidgetTester tester,
-  ) async {
-    final database = newTestDatabase();
-    addTearDown(database.close);
+  testWidgets(
+    'Edit collection page: customize the Name column label',
+    (WidgetTester tester) async {
+      final database = newTestDatabase();
+      addTearDown(database.close);
 
-    late String collectionId;
-    await tester.runAsync(() async {
-      final spaceId = await SpacesRepository(database).create(name: 'Space');
-      collectionId = await CollectionsRepository(
-        database,
-      ).create(spaceId: spaceId, name: 'Tasks');
-    });
+      late String collectionId;
+      await tester.runAsync(() async {
+        final spaceId = await SpacesRepository(database).create(name: 'Space');
+        collectionId = await CollectionsRepository(
+          database,
+        ).create(spaceId: spaceId, name: 'Tasks');
+      });
 
-    await tester.pumpWidget(
-      AppScope(
-        database: database,
-        child: wrapWithAppLocalizations(
-          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+      await tester.pumpWidget(
+        AppScope(
+          database: database,
+          child: wrapWithAppLocalizations(
+            CollectionEditPage(
+              collectionId: collectionId,
+              onDone: () {},
+              onDeleted: () {},
+            ),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-    // Second TextField in the Collection card - the title-column
-    // label, empty by default (shows "Name" only as a hint).
-    await tester.enterText(find.byType(ShadInput).at(1), 'Task');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      // Second TextField in the Collection card - the title-column
+      // label, empty by default (shows "Name" only as a hint).
+      await tester.enterText(find.byType(ShadInput).at(1), 'Task');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-    var storedCollection = await database.select(database.collections).getSingle();
-    expect(storedCollection.titleFieldLabel, 'Task');
+      var storedCollection = await database
+          .select(database.collections)
+          .getSingle();
+      expect(storedCollection.titleFieldLabel, 'Task');
 
-    // Clearing it resets to the "Name" default rather than being
-    // ignored (unlike the collection's own name field).
-    await tester.enterText(find.byType(ShadInput).at(1), '');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      // Clearing it resets to the "Name" default rather than being
+      // ignored (unlike the collection's own name field).
+      await tester.enterText(find.byType(ShadInput).at(1), '');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-    storedCollection = await database.select(database.collections).getSingle();
-    expect(storedCollection.titleFieldLabel, isNull);
-  }, timeout: const Timeout(Duration(seconds: 30)));
+      storedCollection = await database
+          .select(database.collections)
+          .getSingle();
+      expect(storedCollection.titleFieldLabel, isNull);
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 
   testWidgets(
     'a relation field requires and stores a target collection',
@@ -152,15 +171,25 @@ void main() {
       await tester.runAsync(() async {
         final spaceId = await SpacesRepository(database).create(name: 'Space');
         final collections = CollectionsRepository(database);
-        collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-        targetCollectionId = await collections.create(spaceId: spaceId, name: 'Projects');
+        collectionId = await collections.create(
+          spaceId: spaceId,
+          name: 'Tasks',
+        );
+        targetCollectionId = await collections.create(
+          spaceId: spaceId,
+          name: 'Projects',
+        );
       });
 
       await tester.pumpWidget(
         AppScope(
           database: database,
           child: wrapWithAppLocalizations(
-            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+            CollectionEditPage(
+              collectionId: collectionId,
+              onDone: () {},
+              onDeleted: () {},
+            ),
           ),
         ),
       );
@@ -231,7 +260,11 @@ void main() {
         AppScope(
           database: database,
           child: wrapWithAppLocalizations(
-            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+            CollectionEditPage(
+              collectionId: collectionId,
+              onDone: () {},
+              onDeleted: () {},
+            ),
           ),
         ),
       );

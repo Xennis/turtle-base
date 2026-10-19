@@ -45,8 +45,13 @@ Future<void> syncBlocksFromDocument({
         if (existing.content != content) {
           await blocks.updateContent(node.id, content);
         }
-        if (existing.parentBlockId != parentId || existing.position != position) {
-          await blocks.move(node.id, parentBlockId: parentId, position: position);
+        if (existing.parentBlockId != parentId ||
+            existing.position != position) {
+          await blocks.move(
+            node.id,
+            parentBlockId: parentId,
+            position: position,
+          );
         }
       }
 

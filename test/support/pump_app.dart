@@ -72,11 +72,16 @@ Widget wrapWithAppLocalizations(Widget home) {
 /// space to select/populate - even though AppDatabase itself no longer
 /// seeds one (see its _seedDefaults doc comment). Tests covering the
 /// "no spaces yet" empty state pass false.
-Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true}) async {
+Future<AppDatabase> pumpApp(
+  WidgetTester tester, {
+  bool seedDefaultSpace = true,
+}) async {
   final database = newTestDatabase();
   await tester.runAsync(() => database.currentUserId());
   if (seedDefaultSpace) {
-    await tester.runAsync(() => SpacesRepository(database).create(name: 'Default'));
+    await tester.runAsync(
+      () => SpacesRepository(database).create(name: 'Default'),
+    );
   }
   // Mocked (no real platform channel), so unlike the database above,
   // this doesn't need runAsync().

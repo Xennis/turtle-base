@@ -28,7 +28,9 @@ void main() {
   test('a node with no matching block id creates a new block', () async {
     blocks = BlocksRepository(database);
 
-    final document = Document(root: Node(type: 'page', children: [_paragraph('n1', 'hello')]));
+    final document = Document(
+      root: Node(type: 'page', children: [_paragraph('n1', 'hello')]),
+    );
     await syncBlocksFromDocument(
       blocks: blocks,
       pageId: pageId,
@@ -44,10 +46,17 @@ void main() {
 
   test('an existing block is updated in place, not recreated', () async {
     blocks = BlocksRepository(database);
-    await blocks.create(id: 'n1', pageId: pageId, type: 'paragraph', content: '{"delta":[]}');
+    await blocks.create(
+      id: 'n1',
+      pageId: pageId,
+      type: 'paragraph',
+      content: '{"delta":[]}',
+    );
     final before = await database.select(database.blocks).get();
 
-    final document = Document(root: Node(type: 'page', children: [_paragraph('n1', 'edited')]));
+    final document = Document(
+      root: Node(type: 'page', children: [_paragraph('n1', 'edited')]),
+    );
     await syncBlocksFromDocument(
       blocks: blocks,
       pageId: pageId,
@@ -80,30 +89,35 @@ void main() {
     expect(stored.deletedAt, isNotNull);
   });
 
-  test('moving a node to a new parent updates parentBlockId and position', () async {
-    blocks = BlocksRepository(database);
-    await blocks.create(id: 'parent', pageId: pageId, type: 'paragraph');
-    await blocks.create(id: 'child', pageId: pageId, type: 'paragraph');
-    final before = await database.select(database.blocks).get();
+  test(
+    'moving a node to a new parent updates parentBlockId and position',
+    () async {
+      blocks = BlocksRepository(database);
+      await blocks.create(id: 'parent', pageId: pageId, type: 'paragraph');
+      await blocks.create(id: 'child', pageId: pageId, type: 'paragraph');
+      final before = await database.select(database.blocks).get();
 
-    // "child" is now nested under "parent" instead of being a sibling.
-    final document = Document(
-      root: Node(
-        type: 'page',
-        children: [_paragraph('parent', 'p', children: [_paragraph('child', 'c')])],
-      ),
-    );
-    await syncBlocksFromDocument(
-      blocks: blocks,
-      pageId: pageId,
-      document: document,
-      currentBlocks: before,
-    );
+      // "child" is now nested under "parent" instead of being a sibling.
+      final document = Document(
+        root: Node(
+          type: 'page',
+          children: [
+            _paragraph('parent', 'p', children: [_paragraph('child', 'c')]),
+          ],
+        ),
+      );
+      await syncBlocksFromDocument(
+        blocks: blocks,
+        pageId: pageId,
+        document: document,
+        currentBlocks: before,
+      );
 
-    final child = await (database.select(
-      database.blocks,
-    )..where((b) => b.id.equals('child'))).getSingle();
-    expect(child.parentBlockId, 'parent');
-    expect(child.position, 0);
-  });
+      final child = await (database.select(
+        database.blocks,
+      )..where((b) => b.id.equals('child'))).getSingle();
+      expect(child.parentBlockId, 'parent');
+      expect(child.position, 0);
+    },
+  );
 }
