@@ -1,9 +1,8 @@
 import 'dart:convert';
 
+import 'package:crdt_file_sync_transport/crdt_file_sync_transport.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
-
-import 'sync_transport.dart';
 
 enum SyncStatus { idle, syncing, error }
 

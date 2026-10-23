@@ -1,10 +1,10 @@
+import 'package:crdt_file_sync_transport/crdt_file_sync_transport.dart';
 import 'package:drift/backends.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
-import 'package:turtle_base/packages/crdt_file_sync/sync_transport.dart';
 import 'package:turtle_base/packages/crdt_file_sync/testing/fake_sync_transport.dart';
 import 'package:turtle_base/packages/drift_crdt/crdt_database_delegate.dart';
 
