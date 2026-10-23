@@ -6,10 +6,12 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_tiles_view.dart';
+import 'package:turtle_base/features/tables/widgets/field_type_picker.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_picker_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -101,85 +103,56 @@ class _CollectionViewState extends State<CollectionView> {
                   scope: scope,
                   collectionIds: relationTargetIds,
                   builder: (context, relatedPagesByCollection) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (collection != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Row(
-                                children: [
-                                  if (collection.icon != null) ...[
-                                    Text(collection.icon!, style: const TextStyle(fontSize: 24)),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  Text(collection.name, style: ShadTheme.of(context).textTheme.h3),
-                                ],
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final narrow = constraints.maxWidth < 600;
+                        return Padding(
+                          padding: EdgeInsets.fromLTRB(narrow ? 16 : 24, narrow ? 16 : 24, narrow ? 16 : 24, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (collection != null) _Header(collection: collection, entryCount: entries.length),
+                              const SizedBox(height: 16),
+                              _Toolbar(
+                                layout: _layout,
+                                onLayoutChanged: (layout) => setState(() => _layout = layout),
+                                onAdd: () => _addRow(scope),
+                                onEdit: widget.onEdit,
+                                compact: narrow,
                               ),
-                            ),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            // Wrap rather than Row - on narrow screens
-                            // (see UI_UX.md's Responsive/Adaptive Layout)
-                            // both buttons side by side don't fit.
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                ShadButton.outline(
-                                  leading: const Icon(Icons.add, size: 16),
-                                  onPressed: () => _addRow(scope),
-                                  child: const Text('Add row'),
-                                ),
-                                ShadButton.outline(
-                                  leading: const Icon(Icons.edit_outlined, size: 16),
-                                  onPressed: widget.onEdit,
-                                  child: const Text('Edit collection'),
-                                ),
-                                ShadSelect<_CollectionLayout>(
-                                  minWidth: 120,
-                                  initialValue: _layout,
-                                  selectedOptionBuilder: (context, value) => Text(value.label),
-                                  options: [
-                                    for (final layout in _CollectionLayout.values)
-                                      ShadOption(value: layout, child: Text(layout.label)),
-                                  ],
-                                  onChanged: (layout) {
-                                    if (layout != null) {
-                                      setState(() => _layout = layout);
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: _layout == _CollectionLayout.tiles
+                                    ? entries.isEmpty
+                                          ? const _EmptyState()
+                                          : CollectionTilesView(
+                                              entries: _sortedByTitle(entries),
+                                              secondaryFor: (entry) =>
+                                                  _secondaryFor(fields.firstOrNull, entry, relatedPagesByCollection),
+                                              onOpenEntry: widget.onOpenEntry,
+                                            )
+                                    // TrinaGrid only reads columns/rows once (see
+                                    // its didUpdateWidget), so a Key that changes
+                                    // with the data forces a fresh grid instead
+                                    // of stale rows.
+                                    : TrinaGrid(
+                                        key: ValueKey(
+                                          _gridVersion(titleLabel, fields, entries, relatedPagesByCollection),
+                                        ),
+                                        columns: _columnsFor(scope, titleLabel, fields, entries, theme.colorScheme),
+                                        rows: _rowsFor(fields, entries, relatedPagesByCollection),
+                                        configuration: _gridConfiguration(theme),
+                                        onChanged: (event) => _onCellChanged(scope, event),
+                                        onRowDoubleTap: (event) => widget.onOpenEntry(event.row.data as String),
+                                        onValidationFailed: (event) => _onValidationFailed(context, event),
+                                        onLoaded: widget.onLoaded,
+                                        noRowsWidget: const _EmptyState(),
+                                      ),
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            child: _layout == _CollectionLayout.tiles
-                                ? CollectionTilesView(
-                                    entries: _sortedByTitle(entries),
-                                    secondaryFor: (entry) =>
-                                        _secondaryFor(fields.firstOrNull, entry, relatedPagesByCollection),
-                                    onOpenEntry: widget.onOpenEntry,
-                                  )
-                                // TrinaGrid only reads columns/rows once (see
-                                // its didUpdateWidget), so a Key that changes
-                                // with the data forces a fresh grid instead
-                                // of stale rows.
-                                : TrinaGrid(
-                                    key: ValueKey(_gridVersion(titleLabel, fields, entries, relatedPagesByCollection)),
-                                    columns: _columnsFor(scope, titleLabel, fields, entries, theme.colorScheme),
-                                    rows: _rowsFor(fields, entries, relatedPagesByCollection),
-                                    configuration: _gridConfiguration(theme),
-                                    onChanged: (event) => _onCellChanged(scope, event),
-                                    onRowDoubleTap: (event) => widget.onOpenEntry(event.row.data as String),
-                                    onValidationFailed: (event) => _onValidationFailed(context, event),
-                                    onLoaded: widget.onLoaded,
-                                  ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 );
@@ -254,10 +227,10 @@ class _CollectionViewState extends State<CollectionView> {
     final colors = theme.colorScheme;
     final cellTextStyle = TextStyle(fontSize: 14, color: colors.foreground);
     final columnTextStyle = TextStyle(
-      color: colors.foreground,
+      color: colors.mutedForeground,
       decoration: TextDecoration.none,
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
     );
     final gridBorderRadius = BorderRadius.circular(8);
     final style = theme.brightness == Brightness.dark
@@ -279,6 +252,14 @@ class _CollectionViewState extends State<CollectionView> {
             cellColorInEditState: colors.background,
             cellColorInReadOnlyState: colors.muted,
             gridBorderRadius: gridBorderRadius,
+            rowHeight: 44,
+            columnHeight: 40,
+            iconSize: 16,
+            columnContextIcon: Icons.more_horiz,
+            enableRowHoverColor: true,
+            rowHoveredColor: colors.muted.withValues(alpha: 0.5),
+            defaultColumnTitlePadding: const EdgeInsets.symmetric(horizontal: 12),
+            defaultCellPadding: const EdgeInsets.symmetric(horizontal: 12),
           )
         : TrinaGridStyleConfig(
             // background, not card - same reason as the dark branch.
@@ -296,6 +277,14 @@ class _CollectionViewState extends State<CollectionView> {
             cellColorInEditState: colors.background,
             cellColorInReadOnlyState: colors.muted,
             gridBorderRadius: gridBorderRadius,
+            rowHeight: 44,
+            columnHeight: 40,
+            iconSize: 16,
+            columnContextIcon: Icons.more_horiz,
+            enableRowHoverColor: true,
+            rowHoveredColor: colors.muted.withValues(alpha: 0.5),
+            defaultColumnTitlePadding: const EdgeInsets.symmetric(horizontal: 12),
+            defaultCellPadding: const EdgeInsets.symmetric(horizontal: 12),
           );
     return TrinaGridConfiguration(style: style);
   }
@@ -313,10 +302,20 @@ class _CollectionViewState extends State<CollectionView> {
       // not a user-defined field. Its label is customizable per
       // collection (CollectionEditPage) though, unlike the column
       // itself.
-      TrinaColumn(title: titleLabel, field: 'title', type: TrinaColumnType.text()),
+      TrinaColumn(
+        title: titleLabel,
+        titleSpan: _columnTitle(titleLabel, Icons.title, colors),
+        backgroundColor: _headerColor(colors),
+        field: 'title',
+        type: TrinaColumnType.text(),
+        width: 240,
+      ),
       for (final field in fields)
         TrinaColumn(
           title: field.name,
+          titleSpan: _columnTitle(field.name, fieldTypeIcon(FieldTypeChoice(field.base, field.variant)), colors),
+          backgroundColor: _headerColor(colors),
+          width: _columnWidthFor(field),
           field: field.id,
           type: _columnTypeFor(field),
           // Relations are edited via a picker in the entry's Page-View
@@ -340,6 +339,32 @@ class _CollectionViewState extends State<CollectionView> {
   String? _validate(ResolvedField field, dynamic value) => switch (field.parse(value?.toString() ?? '')) {
     ParseError(:final message) => message,
     ParsedValue() => null,
+  };
+
+  /// Set apart from the rows, like the field editor's settings panels.
+  Color _headerColor(ShadColorScheme colors) => colors.muted.withValues(alpha: 0.6);
+
+  /// The field's type icon before its name, as in the field editor.
+  InlineSpan _columnTitle(String title, IconData icon, ShadColorScheme colors) {
+    return TextSpan(
+      children: [
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: Icon(icon, size: 15, color: colors.mutedForeground),
+          ),
+        ),
+        TextSpan(text: title),
+      ],
+    );
+  }
+
+  /// Narrower columns for values that are short by nature.
+  double _columnWidthFor(ResolvedField field) => switch (field.base) {
+    CheckboxFieldType() => 120,
+    NumberFieldType() || DateFieldType() => 150,
+    _ => 200,
   };
 
   /// [colors] is passed in because [TrinaColumnRendererContext] carries
@@ -567,6 +592,176 @@ class _CollectionViewState extends State<CollectionView> {
         .map((p) => '${p.id}:${p.updatedAt.millisecondsSinceEpoch}')
         .join(',');
     return '$titleLabel|$fieldPart|$entryPart|$relatedPart';
+  }
+}
+
+/// Shown instead of rows or tiles while the collection has no entries.
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inbox_outlined, size: 36, color: theme.colorScheme.mutedForeground),
+            const SizedBox(height: 12),
+            Text('No entries yet', style: theme.textTheme.large),
+            const SizedBox(height: 4),
+            Text('Use "New entry" to add the first one.', style: theme.textTheme.muted, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.collection, required this.entryCount});
+
+  final Collection collection;
+  final int entryCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    return Row(
+      children: [
+        if (collection.icon != null) ...[
+          Text(collection.icon!, style: const TextStyle(fontSize: 32)),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(collection.name, style: theme.textTheme.h2, maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(entryCount == 1 ? '1 entry' : '$entryCount entries', style: theme.textTheme.muted),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The layout switch on the left, actions on the right - icon-only
+/// actions when [compact], so all fits one line on a phone.
+class _Toolbar extends StatelessWidget {
+  const _Toolbar({
+    required this.layout,
+    required this.onLayoutChanged,
+    required this.onAdd,
+    required this.onEdit,
+    required this.compact,
+  });
+
+  final _CollectionLayout layout;
+  final ValueChanged<_CollectionLayout> onLayoutChanged;
+  final VoidCallback onAdd;
+  final VoidCallback onEdit;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _LayoutToggle(value: layout, onChanged: onLayoutChanged, compact: compact),
+        const Spacer(),
+        if (compact)
+          Tooltip(
+            message: 'Edit collection',
+            child: ShadIconButton.ghost(icon: const Icon(Icons.tune, size: 18), onPressed: onEdit),
+          )
+        else
+          ShadButton.ghost(
+            leading: const Icon(Icons.tune, size: 16),
+            onPressed: onEdit,
+            child: const Text('Edit collection'),
+          ),
+        const SizedBox(width: 8),
+        ShadButton(leading: const Icon(Icons.add, size: 16), onPressed: onAdd, child: const Text('New entry')),
+      ],
+    );
+  }
+}
+
+/// A segmented control - both layouts in view, the current one raised.
+class _LayoutToggle extends StatelessWidget {
+  const _LayoutToggle({required this.value, required this.onChanged, required this.compact});
+
+  final _CollectionLayout value;
+  final ValueChanged<_CollectionLayout> onChanged;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ShadTheme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(color: colors.muted, borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final layout in _CollectionLayout.values)
+            Tooltip(
+              message: layout.label,
+              child: Semantics(
+                selected: layout == value,
+                button: true,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => onChanged(layout),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: layout == value ? colors.background : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: layout == value
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            layout.icon,
+                            size: 16,
+                            color: layout == value ? colors.foreground : colors.mutedForeground,
+                          ),
+                          if (!compact) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              layout.label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: layout == value ? colors.foreground : colors.mutedForeground,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

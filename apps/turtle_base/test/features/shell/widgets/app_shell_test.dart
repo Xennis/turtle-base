@@ -91,7 +91,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
+    await tester.tap(find.byIcon(Icons.tune));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -124,7 +124,7 @@ void main() {
     await tester.tap(find.text('Tasks'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
+    await tester.tap(find.byIcon(Icons.tune));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
