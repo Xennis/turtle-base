@@ -9,7 +9,7 @@ Code (identifiers, comments) is always written in English.
 Format: `type(scope): Description`
 
 - Types: `chore`, `feat`, `fix`
-- Scope: default `app`; use the platform folder name (e.g. `linux`, `android`) when a change only touches that platform folder
+- Scope: default `app`; use the platform folder name (e.g. `linux`, `android`) when a change only touches that platform folder, or the package folder name (e.g. `crdt_file_sync_google_drive`) when a change only touches that package
 
 Example: `chore(app): Init Flutter project with Linux as platform`
 
@@ -31,6 +31,18 @@ folders like `web/` — verify changes via `mise run run-linux` (runs from `apps
 responsive/layout-related, also on Android (emulator `vPixel_10`, or `flutter run -d android`)
 and macOS (`flutter run -d macos`, or `mise run run-macos` for Drive sync config); fall back to
 `flutter analyze`/`flutter test` when no display is available.
+
+## Monorepo
+
+The repo is a Dart pub workspace (root `pubspec.yaml`, one shared `pubspec.lock`; run `flutter pub get` in the root):
+
+- `apps/turtle_base/`: the Flutter app (platform folders live here, so run `flutter` commands from this folder or use the mise tasks)
+- `packages/<name>/`: local packages, each with `resolution: workspace` and listed under `workspace:` in the root `pubspec.yaml`
+- `dependency_overrides` live only in the root `pubspec.yaml` (members' overrides are ignored)
+
+Dependencies point only from the app to packages, never back. Storage adapters are `packages/crdt_file_sync_<storage>` packages that implement `SyncTransport` from `crdt_file_sync_transport`; the CRDT/sync logic (`SyncController`, `drift_crdt`) stays in the app. A package has a `README.md` for anything specific to it (e.g. its configuration) and exposes its API via one barrel file `lib/<name>.dart` (internals in `lib/src/`, test helpers in `lib/testing.dart`).
+
+`mise run format`, `format-check`, `analyze` and `test` run over all members automatically.
 
 ## Structure
 
