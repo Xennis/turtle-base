@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:crdt_file_sync_google_drive/crdt_file_sync_google_drive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,8 +20,6 @@ import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
-import 'package:turtle_base/packages/crdt_file_sync/google_drive/client_config.dart';
-import 'package:turtle_base/packages/crdt_file_sync/google_drive/drive_authenticator.dart';
 
 Future<void> main() async {
   // ThemeController.load() does real (if fast) I/O via shared_preferences,

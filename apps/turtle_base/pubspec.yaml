@@ -39,20 +39,16 @@ dependencies:
   # Alphabetical order. appflowy_editor and sqlite_crdt are patched via
   # dependency_overrides in the root pubspec.yaml - see there for why.
   appflowy_editor: ^6.2.0
+  crdt_file_sync_google_drive:
   crdt_file_sync_transport:
   cupertino_icons: ^2.0.0
   dartantic_ai: ^3.4.2
   drift: 2.35.2
   emoji_picker_flutter: ^4.4.0
-  extension_google_sign_in_as_googleapis_auth: ^3.0.0
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^10.3.1
   google_fonts: ^9.0.0
-  google_sign_in: ^7.2.0
-  googleapis: ^17.0.0
-  googleapis_auth: ^2.3.3
-  http: ^1.6.0
   path: ^1.9.1
   path_provider: ^2.1.6
   shadcn_ui: ^0.55.1

@@ -1,5 +1,6 @@
 import 'package:googleapis_auth/googleapis_auth.dart';
-import 'package:turtle_base/packages/crdt_file_sync/google_drive/drive_authenticator.dart';
+
+import 'src/drive_authenticator.dart';
 
 /// A [DriveAuthenticator] that never actually reaches Google - stands in
 /// for widget tests that need *a* controller wired up (so SyncScope has

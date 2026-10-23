@@ -1,4 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:crdt_file_sync_google_drive/testing.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +20,6 @@ import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
-
-import 'fake_drive_authenticator.dart';
 
 /// An in-memory database for widget tests.
 ///

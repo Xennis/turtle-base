@@ -1,7 +1,6 @@
+import 'package:crdt_file_sync_google_drive/crdt_file_sync_google_drive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
-import 'package:turtle_base/packages/crdt_file_sync/google_drive/drive_authenticator.dart';
-import 'package:turtle_base/packages/crdt_file_sync/google_drive/google_drive_transport.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
 
 /// Owns the connect/disconnect lifecycle for Google Drive sync and the

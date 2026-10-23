@@ -30,8 +30,10 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/apps/turtle_base/build/
-/apps/turtle_base/coverage/
+/apps/*/build/
+/apps/*/coverage/
+/packages/*/build/
+/packages/*/coverage/
 
 # Symbolication related
 app.*.symbols
