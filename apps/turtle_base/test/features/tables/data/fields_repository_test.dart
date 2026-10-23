@@ -1,3 +1,4 @@
+import 'package:field_types/field_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
@@ -41,13 +42,14 @@ void main() {
       decodePageProperties((await pages.watchById(pageId).first).properties)[fieldId];
 
   test('create stores the variant and applies its preset', () async {
+    const variant = NumberVariant(id: 'test.count', label: 'Count', configPreset: {'min': 0});
     final id = await fields.create(
       collectionId: collectionId,
-      name: 'Rating',
+      name: 'Copies',
       type: BaseFieldType.number,
-      variant: ratingVariant,
+      variant: variant,
     );
-    expect(await configOf(id), {'min': 1, 'max': 5, 'decimals': 0, 'variant': 'rating'});
+    expect(await configOf(id), {'min': 0, 'variant': 'test.count'});
   });
 
   test('changeType keeps the config, so select options survive a round trip', () async {

@@ -69,19 +69,6 @@ class _NumberConfigEditor extends StatelessWidget {
             onSave: (value) => fields.updateConfigValues(field.id, {NumberConfig.maxKey: num.tryParse(value)}),
           ),
         ),
-        SizedBox(
-          width: 120,
-          child: _ConfigInput(
-            label: 'Decimals',
-            initialValue: config.decimals?.toString() ?? '',
-            validator: (value) => switch (int.tryParse(value)) {
-              _ when value.isEmpty => null,
-              final decimals? when decimals >= 0 && decimals <= 20 => null,
-              _ => 'Enter 0 to 20',
-            },
-            onSave: (value) => fields.updateConfigValues(field.id, {NumberConfig.decimalsKey: int.tryParse(value)}),
-          ),
-        ),
       ],
     );
   }

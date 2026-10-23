@@ -3,7 +3,7 @@ import 'package:turtle_base/features/tables/data/field_validation.dart';
 
 /// Variants the app itself ships - packages add theirs via
 /// FieldTypeRegistry.
-final appFieldVariants = <FieldVariant<Object>>[urlVariant, emailVariant, phoneVariant, ratingVariant];
+final appFieldVariants = <FieldVariant<Object>>[urlVariant, emailVariant, phoneVariant];
 
 final urlVariant = TextVariant(
   id: 'url',
@@ -32,14 +32,4 @@ final phoneVariant = TextVariant.pattern(
   inputHint: InputHint.phone,
   normalize: (value) => value.trim(),
   link: (value) => Uri(scheme: 'tel', path: value.replaceAll(RegExp(r'[^0-9+]'), '')),
-);
-
-/// A whole number shown as stars - 1 to 5 by default, adjustable via the
-/// number config like any number field.
-final ratingVariant = NumberVariant(
-  id: 'rating',
-  label: 'Rating',
-  configPreset: const {'min': 1, 'max': 5, 'decimals': 0},
-  validate: (value) => value == value.roundToDouble() ? null : 'Enter a whole number',
-  format: (value) => '★' * value.round().clamp(0, 100),
 );

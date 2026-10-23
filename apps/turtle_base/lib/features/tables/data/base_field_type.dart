@@ -58,7 +58,7 @@ sealed class BaseFieldType<V extends Object, C> {
   V? fromPlain(String text, C config);
 
   /// Display text - differs from [toPlain] where formatting is
-  /// configurable (e.g. a number's decimals).
+  /// meant for reading (e.g. a checkbox's Yes/No).
   String display(V value, C config) => toPlain(value, config);
 
   /// Config constraints (e.g. min/max). Null if [value] satisfies them.
@@ -145,25 +145,16 @@ final class TextFieldType extends BaseFieldType<String, TextConfig> {
 }
 
 final class NumberConfig {
-  const NumberConfig({this.min, this.max, this.decimals});
+  const NumberConfig({this.min, this.max});
 
   static const minKey = 'min';
   static const maxKey = 'max';
-  static const decimalsKey = 'decimals';
 
   final num? min;
   final num? max;
 
-  /// Decimal places to display - values are stored unrounded.
-  final int? decimals;
-
   static NumberConfig fromJson(Map<String, Object?> json) {
-    final decimals = json[decimalsKey];
-    return NumberConfig(
-      min: json[minKey] as num?,
-      max: json[maxKey] as num?,
-      decimals: decimals is num ? decimals.toInt().clamp(0, 20) : null,
-    );
+    return NumberConfig(min: json[minKey] as num?, max: json[maxKey] as num?);
   }
 }
 
@@ -195,12 +186,6 @@ final class NumberFieldType extends BaseFieldType<num, NumberConfig> {
   String toPlain(num value, NumberConfig config) => formatPlainNumber(value);
   @override
   num? fromPlain(String text, NumberConfig config) => isValidNumber(text.trim()) ? num.parse(text.trim()) : null;
-
-  @override
-  String display(num value, NumberConfig config) {
-    final decimals = config.decimals;
-    return decimals == null ? toPlain(value, config) : value.toStringAsFixed(decimals);
-  }
 
   @override
   String? validate(num value, NumberConfig config) {

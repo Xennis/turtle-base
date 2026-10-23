@@ -31,7 +31,7 @@ sealed class FieldVariant<V extends Object> {
   final InputHint? inputHint;
 
   /// Merged into the base type's config when the variant is picked, e.g.
-  /// `{"min": 1, "max": 5}` for a rating.
+  /// `{"min": 0}` for a number variant that is never negative.
   final Map<String, Object?>? configPreset;
 
   // Kept private behind methods: a function-typed field read through a

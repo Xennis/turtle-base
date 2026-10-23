@@ -60,9 +60,9 @@ enum _FieldTypeGroup {
   static _FieldTypeGroup of(FieldTypeChoice choice) {
     if (choice.variant != null) return format;
     return switch (choice.base) {
-      TextFieldType() || NumberFieldType() || DateFieldType() || CheckboxFieldType() => basic,
+      TextFieldType() || NumberFieldType() || DateFieldType() || CheckboxFieldType() || LocationFieldType() => basic,
       SelectFieldType() => _FieldTypeGroup.choice,
-      RelationFieldType() || LocationFieldType() || UnsupportedFieldType() => advanced,
+      RelationFieldType() || UnsupportedFieldType() => advanced,
     };
   }
 }
@@ -91,7 +91,6 @@ const _variantIcons = <String, IconData>{
   'url': Icons.link,
   'email': Icons.alternate_email,
   'phone': Icons.phone_outlined,
-  'rating': Icons.star_outline,
   'books.isbn': Icons.menu_book_outlined,
 };
 

@@ -102,7 +102,7 @@ void main() {
   });
 
   group('number config', () {
-    final field = registry.resolve(fieldRow('number', config: '{"min": 0, "max": 10, "decimals": 2}'));
+    final field = registry.resolve(fieldRow('number', config: '{"min": 0, "max": 10}'));
 
     test('rejects values outside min/max', () {
       expect((field.parse('11') as ParseError).message, 'Enter a number from 0 to 10');
@@ -112,11 +112,6 @@ void main() {
 
     test('flags stored values outside min/max', () {
       expect(field.errorFor(12), isNotNull);
-    });
-
-    test('displays the configured decimals but stores the value as is', () {
-      expect(field.display(3.14159), '3.14');
-      expect(storedOf(field.parse('3.14159')), 3.14159);
     });
   });
 
@@ -163,7 +158,7 @@ void main() {
     });
   });
 
-  group('email, phone and rating variants', () {
+  group('email and phone variants', () {
     test('email validates and links via mailto', () {
       final field = registry.resolve(fieldRow('text', config: '{"variant": "email"}'));
       expect(field.parse('me@'), isA<ParseError>());
@@ -174,13 +169,6 @@ void main() {
       final field = registry.resolve(fieldRow('text', config: '{"variant": "phone"}'));
       expect(field.parse('call me'), isA<ParseError>());
       expect(field.linkFor('+49 (30) 123-4567'), Uri.parse('tel:+49301234567'));
-    });
-
-    test('rating shows stars and only takes whole numbers in range', () {
-      final field = registry.resolve(fieldRow('number', config: '{"variant": "rating", "min": 1, "max": 5}'));
-      expect(field.display(3), '★★★');
-      expect(field.parse('2.5'), isA<ParseError>());
-      expect(field.parse('6'), isA<ParseError>());
     });
   });
 
