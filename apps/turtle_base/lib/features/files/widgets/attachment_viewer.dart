@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/core/sync/sync_scope.dart';
 import 'package:turtle_base/features/files/data/attachments_repository.dart';
 import 'package:turtle_base/features/files/widgets/stored_file_builder.dart';
 import 'package:turtle_base/packages/file_store/file_store.dart';
@@ -32,10 +33,15 @@ Future<void> openAttachment(BuildContext context, Attachment attachment) async {
 /// from - so it opens a copy under the attachment's own name.
 Future<void> openExternally(BuildContext context, Attachment attachment) async {
   final scope = AppScope.of(context);
+  final sync = SyncScope.maybeOf(context);
   final toaster = ShadToaster.of(context);
-  final original = scope.files.originalIfPresent(attachment.fileHash);
+  var original = scope.files.originalIfPresent(attachment.fileHash);
+  if (original == null && sync != null && sync.isConnected) {
+    toaster.show(ShadToast(title: Text('Downloading ${attachment.name}…')));
+    if (await sync.fetchFile(attachment.fileHash)) original = scope.files.originalIfPresent(attachment.fileHash);
+  }
   if (original == null) {
-    toaster.show(const ShadToast(title: Text('Not available offline yet - sync to download it')));
+    toaster.show(ShadToast.destructive(title: Text('${attachment.name} is not available offline')));
     return;
   }
   final copy = await _namedCopy(original, attachment);
@@ -56,13 +62,36 @@ Future<File> _namedCopy(File original, Attachment attachment) async {
   return copy;
 }
 
-class _ImageViewer extends StatelessWidget {
+/// Starts downloading the original if it's missing - the thumbnail
+/// shows meanwhile.
+class _ImageViewer extends StatefulWidget {
   const _ImageViewer({required this.attachment});
 
   final Attachment attachment;
 
   @override
+  State<_ImageViewer> createState() => _ImageViewerState();
+}
+
+class _ImageViewerState extends State<_ImageViewer> {
+  bool _fetching = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final sync = SyncScope.maybeOf(context);
+    final files = AppScope.of(context).files;
+    if (_fetching || sync == null || !sync.isConnected) return;
+    if (files.originalIfPresent(widget.attachment.fileHash) != null) return;
+    _fetching = true;
+    sync.fetchFile(widget.attachment.fileHash).whenComplete(() {
+      if (mounted) setState(() => _fetching = false);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final attachment = widget.attachment;
     final files = AppScope.of(context).files;
     final hash = attachment.fileHash;
     return Dialog.fullscreen(
@@ -73,15 +102,37 @@ class _ImageViewer extends StatelessWidget {
             child: StoredFileBuilder(
               names: [hash, FileStore.thumbnailNameOf(hash)],
               builder: (context) {
-                final file = files.originalIfPresent(hash) ?? files.thumbnailIfPresent(hash);
+                final original = files.originalIfPresent(hash);
+                final file = original ?? files.thumbnailIfPresent(hash);
                 if (file == null) {
-                  return const Center(
-                    child: Text('Not available offline yet', style: TextStyle(color: Colors.white)),
+                  return Center(
+                    child: _fetching
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Not available offline', style: TextStyle(color: Colors.white)),
                   );
                 }
-                return InteractiveViewer(
-                  maxScale: 8,
-                  child: Center(child: Image.file(file, fit: BoxFit.contain)),
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        maxScale: 8,
+                        // Keyed by file, so the original replaces the
+                        // thumbnail once it's downloaded.
+                        child: Center(
+                          child: Image.file(file, key: ValueKey(file.path), fit: BoxFit.contain),
+                        ),
+                      ),
+                    ),
+                    if (original == null && _fetching)
+                      const Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                      ),
+                  ],
                 );
               },
             ),
