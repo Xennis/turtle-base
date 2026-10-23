@@ -1,3 +1,4 @@
+import 'package:books/books.dart';
 import 'package:field_types/field_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -60,6 +61,14 @@ void main() {
       final field = registry.resolve(fieldRow('hologram'));
       expect(field.base, isA<UnsupportedFieldType>());
       expect(field.display({'x': 1}), '{x: 1}');
+    });
+
+    test('applies the books package\'s ISBN variant', () {
+      final field = FieldTypeRegistry(variants: booksVariants)
+          .resolve(fieldRow('text', config: '{"variant": "books.isbn"}'));
+      expect(storedOf(field.parse('978-3-453-31717-8')), '9783453317178');
+      expect(field.display('9783453317178'), '978-3453317178');
+      expect(field.parse('978-3-453-31717-9'), isA<ParseError>());
     });
 
     test('registers variants passed in', () {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:books/books.dart';
 import 'package:crdt_file_sync_google_drive/crdt_file_sync_google_drive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -20,6 +21,10 @@ import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
+import 'package:turtle_base/features/tables/data/field_type_registry.dart';
+
+/// Field type variants contributed by packages, next to the app's own.
+final _fieldTypes = FieldTypeRegistry(variants: booksVariants);
 
 Future<void> main() async {
   // ThemeController.load() does real (if fast) I/O via shared_preferences,
@@ -87,6 +92,7 @@ class TurtleBaseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScope(
       database: database,
+      fieldTypes: _fieldTypes,
       child: SyncScope(
         controller: syncController,
         child: ThemeScope(
