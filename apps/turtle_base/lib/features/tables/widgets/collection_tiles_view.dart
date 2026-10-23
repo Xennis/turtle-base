@@ -8,7 +8,13 @@ import 'package:turtle_base/core/database/app_database.dart';
 /// first field - see CollectionView). The tiles are read-only; tapping
 /// one opens the entry.
 class CollectionTilesView extends StatelessWidget {
-  const CollectionTilesView({super.key, required this.entries, required this.secondaryFor, required this.onOpenEntry});
+  const CollectionTilesView({
+    super.key,
+    required this.entries,
+    required this.secondaryFor,
+    required this.onOpenEntry,
+    this.coverFor,
+  });
 
   final List<Page> entries;
 
@@ -18,15 +24,22 @@ class CollectionTilesView extends StatelessWidget {
 
   final ValueChanged<String> onOpenEntry;
 
+  /// The image on top of an entry's tile, null for none. When given,
+  /// every tile reserves the space, so the grid stays even.
+  final Widget? Function(Page entry)? coverFor;
+
+  static const _coverHeight = 120.0;
+
   @override
   Widget build(BuildContext context) {
+    final coverFor = this.coverFor;
     return GridView.builder(
       // Fixed-height cards of a max width rather than an aspect ratio, so
       // they fit one column on narrow screens (see UI_UX.md's
       // Responsive/Adaptive Layout) and more per row on wide ones.
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 280,
-        mainAxisExtent: 128,
+        mainAxisExtent: 128 + (coverFor == null ? 0 : _coverHeight),
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -34,7 +47,12 @@ class CollectionTilesView extends StatelessWidget {
       itemBuilder: (context, index) {
         final entry = entries[index];
         final secondary = secondaryFor(entry);
-        return _Tile(entry: entry, secondary: secondary, onTap: () => onOpenEntry(entry.id));
+        return _Tile(
+          entry: entry,
+          secondary: secondary,
+          cover: coverFor == null ? null : SizedBox(height: _coverHeight, child: coverFor(entry)),
+          onTap: () => onOpenEntry(entry.id),
+        );
       },
     );
   }
@@ -42,10 +60,11 @@ class CollectionTilesView extends StatelessWidget {
 
 /// A card that lifts its border on hover, to read as clickable.
 class _Tile extends StatefulWidget {
-  const _Tile({required this.entry, required this.secondary, required this.onTap});
+  const _Tile({required this.entry, required this.secondary, required this.cover, required this.onTap});
 
   final Page entry;
   final Widget? secondary;
+  final Widget? cover;
   final VoidCallback onTap;
 
   @override
@@ -60,6 +79,7 @@ class _TileState extends State<_Tile> {
     final theme = ShadTheme.of(context);
     final entry = widget.entry;
     final secondary = widget.secondary;
+    final cover = widget.cover;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -71,30 +91,43 @@ class _TileState extends State<_Tile> {
         onTap: widget.onTap,
         child: ShadCard(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          // The cover runs to the card's edges, the text keeps its padding.
+          padding: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
           // The card's own border unless hovered.
           border: _hovered ? ShadBorder.all(color: theme.colorScheme.ring, radius: theme.radius) : null,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  if (entry.icon != null) ...[
-                    Text(entry.icon!, style: const TextStyle(fontSize: 20)),
-                    const SizedBox(width: 8),
-                  ],
-                  Expanded(
-                    child: Text(
-                      entry.title.isEmpty ? 'Untitled' : entry.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.large,
-                    ),
+              ?cover,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          if (entry.icon != null) ...[
+                            Text(entry.icon!, style: const TextStyle(fontSize: 20)),
+                            const SizedBox(width: 8),
+                          ],
+                          Expanded(
+                            child: Text(
+                              entry.title.isEmpty ? 'Untitled' : entry.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.large,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (secondary != null) ...[const SizedBox(height: 8), ClipRect(child: secondary)],
+                    ],
                   ),
-                ],
+                ),
               ),
-              if (secondary != null) ...[const SizedBox(height: 8), ClipRect(child: secondary)],
             ],
           ),
         ),

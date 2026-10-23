@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/features/files/widgets/files_field_value.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/pages/widgets/relation_picker_dialog.dart';
 import 'package:field_types/field_types.dart';
@@ -124,6 +125,12 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
         keyboardType: _keyboardTypeFor(field),
         validator: (value) => _validate(field, value),
         onSubmitted: (value) => _persistIfValid(scope, field, value),
+      ),
+      FilesFieldType() => FilesFieldValue(
+        pageId: widget.pageId,
+        fieldId: field.id,
+        accept: (field.config as FilesConfig).accept,
+        maxFiles: (field.config as FilesConfig).maxFiles,
       ),
       UnsupportedFieldType() => Padding(padding: const EdgeInsets.only(top: 12), child: Text(field.display(raw))),
     };

@@ -1,5 +1,7 @@
-/// The JSON shape a field value is stored in, in `pages.properties`.
-enum StorageKind { string, number, boolean, stringList, object }
+/// The JSON shape a field value is stored in, in `pages.properties` -
+/// or [external] for a value kept elsewhere (e.g. a files field's
+/// attachments).
+enum StorageKind { string, number, boolean, stringList, object, external }
 
 /// How a variant's values are typed in, so the app can pick a fitting
 /// keyboard without this package depending on Flutter.

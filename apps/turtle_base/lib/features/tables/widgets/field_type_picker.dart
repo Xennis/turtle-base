@@ -60,7 +60,12 @@ enum _FieldTypeGroup {
   static _FieldTypeGroup of(FieldTypeChoice choice) {
     if (choice.variant != null) return format;
     return switch (choice.base) {
-      TextFieldType() || NumberFieldType() || DateFieldType() || CheckboxFieldType() || LocationFieldType() => basic,
+      TextFieldType() ||
+      NumberFieldType() ||
+      DateFieldType() ||
+      CheckboxFieldType() ||
+      LocationFieldType() ||
+      FilesFieldType() => basic,
       SelectFieldType() => _FieldTypeGroup.choice,
       RelationFieldType() || UnsupportedFieldType() => advanced,
     };
@@ -106,6 +111,7 @@ IconData fieldTypeIcon(FieldTypeChoice choice) {
     SelectFieldType(multiple: true) => Icons.checklist,
     RelationFieldType() => Icons.north_east,
     LocationFieldType() => Icons.place_outlined,
+    FilesFieldType() => Icons.attach_file,
     UnsupportedFieldType() => Icons.help_outline,
   };
 }

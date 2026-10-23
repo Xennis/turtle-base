@@ -184,7 +184,7 @@ class _FieldsEditorState extends State<FieldsEditor> {
 bool _hasSettings(ResolvedField field) {
   if (field.variant != null) return false;
   return switch (field.base) {
-    TextFieldType() || NumberFieldType() || SelectFieldType() || RelationFieldType() => true,
+    TextFieldType() || NumberFieldType() || SelectFieldType() || RelationFieldType() || FilesFieldType() => true,
     DateFieldType() || CheckboxFieldType() || LocationFieldType() || UnsupportedFieldType() => false,
   };
 }
