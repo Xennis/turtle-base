@@ -47,7 +47,7 @@ Future<void> main() async {
   if (driveAuthenticator == null) {
     debugPrint(
       '[sync] Google Drive sync disabled - no OAuth client configured for '
-      'this platform, see README.md\'s "Google Drive sync configuration".',
+      'this platform, see packages/crdt_file_sync_google_drive/README.md.',
     );
   }
 

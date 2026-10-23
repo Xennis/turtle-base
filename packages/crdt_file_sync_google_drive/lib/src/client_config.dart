@@ -1,5 +1,5 @@
 /// OAuth client identifiers for Google Drive sync, injected at build time
-/// via `--dart-define` - see README.md's "Google Drive sync configuration"
+/// via `--dart-define` - see the package README's "Configuration"
 /// section for the variable names and `ops/infra/README.md` for how to
 /// obtain the values. Left blank (empty string) when not supplied, in
 /// which case `createDriveAuthenticator` disables the feature - see

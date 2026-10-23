@@ -1,7 +1,7 @@
 # Google Cloud setup for Drive sync
 
 Complete setup checklist for the Google Cloud project behind Drive sync
-(see `apps/turtle_base/lib/packages/crdt_file_sync/google_drive/`). Only the "enable the
+(see `packages/crdt_file_sync_google_drive/`). Only the "enable the
 Drive API" part is actually managed by OpenTofu here; everything else
 has no API and stays a manual Google Cloud Console checklist (see
 "Why only the API is automated" below).
@@ -143,7 +143,7 @@ Same **Clients** tab → Create client:
 
 The app reads these as `--dart-define` build variables rather than a
 committed/copied config file - see the
-[README.md's "Google Drive sync configuration"](../../README.md#google-drive-sync-configuration)
+[`crdt_file_sync_google_drive` README's "Configuration"](../../packages/crdt_file_sync_google_drive/README.md#configuration)
 section for the variable names and how to supply them locally and in
 CI.
 
