@@ -8,7 +8,7 @@ import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/pages/widgets/page_detail_view.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 
 import '../../../support/pump_app.dart';
@@ -143,7 +143,7 @@ void main() {
       final fields = FieldsRepository(database);
       final pages = PagesRepository(database);
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final priorityField = await fields.create(collectionId: collectionId, name: 'Priority', type: FieldType.text);
+      final priorityField = await fields.create(collectionId: collectionId, name: 'Priority', type: BaseFieldType.text);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       await pages.setPropertyValue(pageId, priorityField, 'High');
     });

@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
+import 'package:field_types/field_types.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_type_registry.dart';
+import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:uuid/uuid.dart';
 
@@ -23,10 +28,13 @@ class FieldsRepository {
     return (_db.select(_db.fields)..where((f) => f.id.equals(id))).watchSingle();
   }
 
+  /// [config] is the base type's own config (e.g. encodeSelectConfig);
+  /// [variant] and its preset are merged into it.
   Future<String> create({
     required String collectionId,
     required String name,
-    required FieldType type,
+    required BaseFieldType<Object, Object?> type,
+    FieldVariant<Object>? variant,
     String? config,
   }) async {
     final userId = await _db.currentUserId();
@@ -40,9 +48,9 @@ class FieldsRepository {
             id: id,
             collectionId: collectionId,
             name: name,
-            type: type.name,
+            type: type.id,
             position: await _nextPosition(collectionId),
-            config: Value(config),
+            config: Value(_withVariant(decodeFieldConfig(config), variant)),
             createdAt: now,
             updatedAt: now,
             createdBy: userId,
@@ -57,15 +65,40 @@ class FieldsRepository {
   }
 
   /// Only updates the type. Existing values in `pages.properties` are
-  /// left as-is (see ARCHITECTURE.md) - converting them is a separate,
-  /// not-yet-built concern.
-  Future<void> changeType(String id, FieldType type) {
-    return _update(id, FieldsCompanion(type: Value(type.name)));
+  /// left as-is and read tolerantly by the new type (see FIELD_TYPES.md).
+  /// The config is kept, so e.g. select options survive a switch to
+  /// multi-select and back.
+  Future<void> changeType(String id, FieldTypeChoice choice) async {
+    final field = await _byId(id);
+    return _update(
+      id,
+      FieldsCompanion(
+        type: Value(choice.base.id),
+        config: Value(_withVariant(decodeFieldConfig(field.config), choice.variant)),
+      ),
+    );
   }
 
-  Future<void> updateConfig(String id, String? config) {
-    return _update(id, FieldsCompanion(config: Value(config)));
+  /// [config] is the base type's own config - the field's variant is
+  /// kept.
+  Future<void> updateConfig(String id, String? config) async {
+    final variantId = decodeFieldConfig((await _byId(id)).config)[fieldVariantKey];
+    final json = decodeFieldConfig(config);
+    if (variantId != null) json[fieldVariantKey] = variantId;
+    return _update(id, FieldsCompanion(config: Value(json.isEmpty ? null : jsonEncode(json))));
   }
+
+  String? _withVariant(Map<String, Object?> config, FieldVariant<Object>? variant) {
+    final json = {...config, ...?variant?.configPreset};
+    if (variant == null) {
+      json.remove(fieldVariantKey);
+    } else {
+      json[fieldVariantKey] = variant.id;
+    }
+    return json.isEmpty ? null : jsonEncode(json);
+  }
+
+  Future<Field> _byId(String id) => (_db.select(_db.fields)..where((f) => f.id.equals(id))).getSingle();
 
   /// Appends a new option to a select/multi-select field, with the next
   /// palette color (see [nextOptionColor]). Like the other option
@@ -94,8 +127,7 @@ class FieldsRepository {
   }
 
   Future<List<SelectOption>> _selectOptionsOf(String fieldId) async {
-    final field = await (_db.select(_db.fields)..where((f) => f.id.equals(fieldId))).getSingle();
-    return decodeSelectOptions(field.config);
+    return decodeSelectOptions((await _byId(fieldId)).config);
   }
 
   Future<void> reorder(String id, int position) {

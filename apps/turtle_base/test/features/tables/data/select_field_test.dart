@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 
@@ -59,7 +59,7 @@ void main() {
     final fieldId = await fields.create(
       collectionId: collectionId,
       name: 'Status',
-      type: FieldType.select,
+      type: BaseFieldType.select,
       config: encodeSelectConfig(const []),
     );
 

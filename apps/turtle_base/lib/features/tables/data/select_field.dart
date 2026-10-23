@@ -47,7 +47,11 @@ String encodeSelectConfig(List<SelectOption> options) {
 
 List<SelectOption> decodeSelectOptions(String? config) {
   if (config == null) return const [];
-  final options = (jsonDecode(config) as Map<String, dynamic>)['options'];
+  return decodeSelectOptionsJson(jsonDecode(config) as Map<String, dynamic>);
+}
+
+List<SelectOption> decodeSelectOptionsJson(Map<String, Object?> config) {
+  final options = config['options'];
   if (options is! List) return const [];
   return [for (final option in options) SelectOption.fromJson(option as Map<String, dynamic>)];
 }

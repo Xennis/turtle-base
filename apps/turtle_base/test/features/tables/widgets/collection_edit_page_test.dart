@@ -4,7 +4,8 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
@@ -72,8 +73,8 @@ void main() {
     // the "new field" row's - it comes first in the list). The
     // Collection card's Icon row pushes it down, so ensure it's
     // scrolled into view before tapping.
-    await tester.ensureVisible(find.byType(ShadSelect<FieldType>).first);
-    await tester.tap(find.byType(ShadSelect<FieldType>).first);
+    await tester.ensureVisible(find.byType(ShadSelect<FieldTypeChoice>).first);
+    await tester.tap(find.byType(ShadSelect<FieldTypeChoice>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Number').last);
     await tester.pumpAndSettle();
@@ -158,7 +159,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     await tester.enterText(find.byType(ShadInput).last, 'Project');
-    await tester.tap(find.byType(ShadSelect<FieldType>).last);
+    await tester.tap(find.byType(ShadSelect<FieldTypeChoice>).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Relation').last);
     await tester.pumpAndSettle();
@@ -195,7 +196,7 @@ void main() {
       fieldId = await fields.create(
         collectionId: collectionId,
         name: 'Status',
-        type: FieldType.select,
+        type: BaseFieldType.select,
         config: encodeSelectConfig(const []),
       );
       await fields.addSelectOption(fieldId, 'To do');

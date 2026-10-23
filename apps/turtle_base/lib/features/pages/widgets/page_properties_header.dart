@@ -5,9 +5,10 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/pages/widgets/relation_picker_dialog.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
-import 'package:turtle_base/features/tables/data/field_validation.dart';
+import 'package:field_types/field_types.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_picker_dialog.dart';
@@ -42,22 +43,25 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
   // Created once per field id, like CollectionEditPage's field-name
   // controllers - pulling the value back down from the stream on every
   // rebuild would reset the cursor mid-edit.
-  TextEditingController _controllerFor(Field field, Page page) {
+  TextEditingController _controllerFor(ResolvedField field, Page page) {
     final existing = _controllers[field.id];
     if (existing != null) return existing;
-    final value = decodePageProperties(page.properties)[field.id];
-    final controller = TextEditingController(text: value?.toString() ?? '');
+    final controller = TextEditingController(text: field.display(decodePageProperties(page.properties)[field.id]));
     _controllers[field.id] = controller;
     return controller;
   }
 
-  FocusNode _focusNodeFor(Field field, AppScope scope) {
+  // Persists through whichever ResolvedField is current at blur time -
+  // the listener outlives the build it was created in, and the field's
+  // type or config may have changed since.
+  FocusNode _focusNodeFor(ResolvedField field, AppScope scope) {
     final existing = _focusNodes[field.id];
     if (existing != null) return existing;
     final focusNode = FocusNode();
     focusNode.addListener(() {
-      if (!focusNode.hasFocus) {
-        _persistIfValid(scope, field, _controllers[field.id]!.text);
+      final current = _fields[field.id];
+      if (!focusNode.hasFocus && current != null) {
+        _persistIfValid(scope, current, _controllers[field.id]!.text);
       }
     });
     _focusNodes[field.id] = focusNode;
@@ -67,24 +71,51 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
   // Invalid input is never saved - the field keeps showing what the
   // user typed (and the validator's error) until they fix or clear
   // it, but the last valid value stays in the database untouched.
-  void _persistIfValid(AppScope scope, Field field, String value) {
-    if (!isValidForType(FieldType.values.byName(field.type), value)) return;
-    scope.pages.setPropertyValue(widget.pageId, field.id, value);
-  }
-
-  String? Function(String)? _validatorFor(Field field) {
-    final type = FieldType.values.byName(field.type);
-    final message = invalidMessageFor(type);
-    if (message == null) return null; // text/relation are never invalid
-    return (value) => isValidForType(type, value) ? null : message;
-  }
-
-  TextInputType? _keyboardTypeFor(Field field) {
-    if (field.type == FieldType.number.name) {
-      return const TextInputType.numberWithOptions(decimal: true);
+  void _persistIfValid(AppScope scope, ResolvedField field, String value) {
+    if (field.parse(value) case ParsedValue(:final stored)) {
+      scope.pages.setPropertyValue(widget.pageId, field.id, stored);
     }
-    if (field.type == FieldType.url.name) return TextInputType.url;
-    return null;
+  }
+
+  String? _validate(ResolvedField field, String value) => switch (field.parse(value)) {
+    ParseError(:final message) => message,
+    ParsedValue() => null,
+  };
+
+  TextInputType? _keyboardTypeFor(ResolvedField field) => switch (field.inputHint) {
+    InputHint.number => const TextInputType.numberWithOptions(decimal: true, signed: true),
+    InputHint.url => TextInputType.url,
+    InputHint.email => TextInputType.emailAddress,
+    InputHint.phone => TextInputType.phone,
+    InputHint.text || null => null,
+  };
+
+  /// The latest resolved fields by id, see _focusNodeFor.
+  var _fields = <String, ResolvedField>{};
+
+  Widget _valueEditor(AppScope scope, ResolvedField field, Page page) {
+    final raw = decodePageProperties(page.properties)[field.id];
+    return switch (field.base) {
+      SelectFieldType() => _SelectFieldValue(pageId: widget.pageId, field: field, rawValue: raw),
+      RelationFieldType() => _RelationFieldValue(
+        pageId: widget.pageId,
+        field: field.row,
+        selectedIds: decodeRelationValue(raw),
+      ),
+      TextFieldType() || NumberFieldType() || DateFieldType() => ShadInputFormField(
+        controller: _controllerFor(field, page),
+        focusNode: _focusNodeFor(field, scope),
+        // always, not onUserInteraction - an already-invalid stored
+        // value (e.g. a number field typed as "3a" before) should show
+        // as an error right when the page opens, not just after the
+        // next edit.
+        autovalidateMode: AutovalidateMode.always,
+        keyboardType: _keyboardTypeFor(field),
+        validator: (value) => _validate(field, value),
+        onSubmitted: (value) => _persistIfValid(scope, field, value),
+      ),
+      UnsupportedFieldType() => Padding(padding: const EdgeInsets.only(top: 12), child: Text(field.display(raw))),
+    };
   }
 
   @override
@@ -98,7 +129,10 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
         return StreamBuilder<List<Field>>(
           stream: scope.fields.watchAllInCollection(widget.collectionId),
           builder: (context, fieldsSnapshot) {
-            final fields = fieldsSnapshot.data ?? const <Field>[];
+            final fields = [
+              for (final field in fieldsSnapshot.data ?? const <Field>[]) scope.fieldTypes.resolve(field),
+            ];
+            _fields = {for (final field in fields) field.id: field};
             _controllers.removeWhere((id, controller) {
               final stillExists = fields.any((f) => f.id == id);
               if (!stillExists) controller.dispose();
@@ -126,34 +160,7 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
                             child: Text(field.name, style: Theme.of(context).textTheme.bodyMedium),
                           ),
                         ),
-                        Expanded(
-                          child: FieldType.values.byName(field.type).isSelect
-                              ? _SelectFieldValue(
-                                  pageId: widget.pageId,
-                                  field: field,
-                                  rawValue: decodePageProperties(page.properties)[field.id],
-                                )
-                              : field.type == FieldType.relation.name
-                              ? _RelationFieldValue(
-                                  pageId: widget.pageId,
-                                  field: field,
-                                  selectedIds: decodeRelationValue(decodePageProperties(page.properties)[field.id]),
-                                )
-                              : ShadInputFormField(
-                                  controller: _controllerFor(field, page),
-                                  focusNode: _focusNodeFor(field, scope),
-                                  // always, not onUserInteraction - an
-                                  // already-invalid stored value (e.g. a
-                                  // number field typed as "3a" before)
-                                  // should show as an error right when
-                                  // the page opens, not just after the
-                                  // next edit.
-                                  autovalidateMode: AutovalidateMode.always,
-                                  keyboardType: _keyboardTypeFor(field),
-                                  validator: _validatorFor(field),
-                                  onSubmitted: (value) => _persistIfValid(scope, field, value),
-                                ),
-                        ),
+                        Expanded(child: _valueEditor(scope, field, page)),
                       ],
                     ),
                   ),
@@ -235,20 +242,20 @@ class _SelectFieldValue extends StatelessWidget {
   const _SelectFieldValue({required this.pageId, required this.field, required this.rawValue});
 
   final String pageId;
-  final Field field;
+  final ResolvedField field;
   final Object? rawValue;
 
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
-    final multiple = field.type == FieldType.multiSelect.name;
-    final selected = resolveSelectValue(decodeSelectOptions(field.config), rawValue);
+    final multiple = (field.base as SelectFieldType).multiple;
+    final selected = resolveSelectValue((field.config as SelectConfig).options, field.valueOf(rawValue));
     final selectedIds = [for (final option in selected) option.id];
 
     Future<void> openPicker() async {
-      final result = await showSelectOptionPicker(context, scope: scope, field: field, selectedIds: selectedIds);
+      final result = await showSelectOptionPicker(context, scope: scope, field: field.row, selectedIds: selectedIds);
       if (result == null) return;
-      await scope.pages.setPropertyValue(pageId, field.id, encodeSelectValue(result, multiple: multiple));
+      await scope.pages.setPropertyValue(pageId, field.id, field.base.encode(result, field.config));
     }
 
     return Padding(

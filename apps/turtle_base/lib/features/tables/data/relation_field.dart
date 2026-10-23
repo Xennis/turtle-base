@@ -5,12 +5,14 @@ import 'dart:convert';
 /// ARCHITECTURE.md's Feldtypen table; cardinality isn't picked in the
 /// v1 Field-Editor UI, see UI_UX.md, so it's not stored either).
 String encodeRelationConfig(String targetCollectionId) {
-  return jsonEncode({'targetCollectionId': targetCollectionId});
+  return jsonEncode({relationTargetCollectionIdKey: targetCollectionId});
 }
+
+const relationTargetCollectionIdKey = 'targetCollectionId';
 
 String? decodeRelationTargetCollectionId(String? config) {
   if (config == null) return null;
-  return (jsonDecode(config) as Map<String, dynamic>)['targetCollectionId'] as String?;
+  return (jsonDecode(config) as Map<String, dynamic>)[relationTargetCollectionIdKey] as String?;
 }
 
 /// A relation property value is a JSON array of target page ids (see

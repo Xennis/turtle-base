@@ -4,8 +4,10 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
+import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/select_options_editor.dart';
@@ -33,7 +35,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   TextEditingController? _titleFieldLabelController;
   FocusNode? _titleFieldLabelFocusNode;
   final _newFieldNameController = TextEditingController();
-  FieldType _newFieldType = FieldType.text;
+  FieldTypeChoice _newFieldType = const FieldTypeChoice(BaseFieldType.text);
   String? _newFieldRelationTargetId;
   final _fieldNameControllers = <String, TextEditingController>{};
   final _fieldFocusNodes = <String, FocusNode>{};
@@ -94,24 +96,25 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
     if (name.isEmpty) return;
     // A relation field needs a target collection to be usable - the
     // "Add" button is disabled until one is picked, see build().
-    if (_newFieldType == FieldType.relation && _newFieldRelationTargetId == null) {
+    if (_newFieldType.base is RelationFieldType && _newFieldRelationTargetId == null) {
       return;
     }
     await fields.create(
       collectionId: widget.collectionId,
       name: name,
-      type: _newFieldType,
-      config: switch (_newFieldType) {
-        FieldType.relation => encodeRelationConfig(_newFieldRelationTargetId!),
+      type: _newFieldType.base,
+      variant: _newFieldType.variant,
+      config: switch (_newFieldType.base) {
+        RelationFieldType() => encodeRelationConfig(_newFieldRelationTargetId!),
         // Usable right away - options are added afterwards, here or
         // from the option picker.
-        FieldType.select || FieldType.multiSelect => encodeSelectConfig(const []),
+        SelectFieldType() => encodeSelectConfig(const []),
         _ => null,
       },
     );
     _newFieldNameController.clear();
     setState(() {
-      _newFieldType = FieldType.text;
+      _newFieldType = const FieldTypeChoice(BaseFieldType.text);
       _newFieldRelationTargetId = null;
     });
   }
@@ -262,13 +265,14 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                                   ),
                                 for (final field in fields) ...[
                                   _FieldRow(
-                                    field: field,
+                                    field: scope.fieldTypes.resolve(field),
+                                    choices: scope.fieldTypes.choices,
                                     nameController: _fieldNameControllerFor(field),
                                     focusNode: _fieldFocusNodeFor(field, scope.fields),
                                     fields: scope.fields,
                                     collections: collections,
                                   ),
-                                  if (FieldType.values.byName(field.type).isSelect)
+                                  if (scope.fieldTypes.resolve(field).base is SelectFieldType)
                                     Padding(
                                       // Indented under its field, so it
                                       // reads as that field's options
@@ -285,6 +289,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                                 _AddFieldRow(
                                   nameController: _newFieldNameController,
                                   type: _newFieldType,
+                                  choices: scope.fieldTypes.choices,
                                   onTypeChanged: (type) => setState(() {
                                     _newFieldType = type;
                                   }),
@@ -315,13 +320,15 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
 class _FieldRow extends StatelessWidget {
   const _FieldRow({
     required this.field,
+    required this.choices,
     required this.nameController,
     required this.focusNode,
     required this.fields,
     required this.collections,
   });
 
-  final Field field;
+  final ResolvedField field;
+  final List<FieldTypeChoice> choices;
   final TextEditingController nameController;
   final FocusNode focusNode;
   final FieldsRepository fields;
@@ -332,7 +339,7 @@ class _FieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRelation = field.type == FieldType.relation.name;
+    final isRelation = field.base is RelationFieldType;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -348,18 +355,15 @@ class _FieldRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          ShadSelect<FieldType>(
-            initialValue: FieldType.values.byName(field.type),
-            selectedOptionBuilder: (context, value) => Text(value.label),
-            options: [for (final type in FieldType.values) ShadOption(value: type, child: Text(type.label))],
-            onChanged: (type) {
-              if (type != null) fields.changeType(field.id, type);
-            },
+          _FieldTypeSelect(
+            value: FieldTypeChoice(field.base, field.variant),
+            choices: choices,
+            onChanged: (choice) => fields.changeType(field.id, choice),
           ),
           if (isRelation) ...[
             const SizedBox(width: 8),
             ShadSelect<String>(
-              initialValue: decodeRelationTargetCollectionId(field.config),
+              initialValue: (field.config as RelationConfig).targetCollectionId,
               placeholder: const Text('Relates to...'),
               selectedOptionBuilder: (context, value) => Text(collections.firstWhere((c) => c.id == value).name),
               options: [
@@ -389,6 +393,7 @@ class _AddFieldRow extends StatelessWidget {
   const _AddFieldRow({
     required this.nameController,
     required this.type,
+    required this.choices,
     required this.onTypeChanged,
     required this.collections,
     required this.relationTargetId,
@@ -397,8 +402,9 @@ class _AddFieldRow extends StatelessWidget {
   });
 
   final TextEditingController nameController;
-  final FieldType type;
-  final ValueChanged<FieldType> onTypeChanged;
+  final FieldTypeChoice type;
+  final List<FieldTypeChoice> choices;
+  final ValueChanged<FieldTypeChoice> onTypeChanged;
   final List<Collection> collections;
   final String? relationTargetId;
   final ValueChanged<String?> onRelationTargetChanged;
@@ -406,7 +412,7 @@ class _AddFieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRelation = type == FieldType.relation;
+    final isRelation = type.base is RelationFieldType;
     // A relation field is useless without a target - block adding
     // until one's picked, rather than creating a half-configured field.
     final canAdd = !isRelation || relationTargetId != null;
@@ -420,14 +426,7 @@ class _AddFieldRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        ShadSelect<FieldType>(
-          initialValue: type,
-          selectedOptionBuilder: (context, value) => Text(value.label),
-          options: [for (final t in FieldType.values) ShadOption(value: t, child: Text(t.label))],
-          onChanged: (t) {
-            if (t != null) onTypeChanged(t);
-          },
-        ),
+        _FieldTypeSelect(value: type, choices: choices, onChanged: onTypeChanged),
         if (isRelation) ...[
           const SizedBox(width: 8),
           ShadSelect<String>(
@@ -445,6 +444,27 @@ class _AddFieldRow extends StatelessWidget {
           child: ShadIconButton.ghost(icon: const Icon(Icons.add), onPressed: canAdd ? onAdd : null),
         ),
       ],
+    );
+  }
+}
+
+/// Picks a base type or one of its variants.
+class _FieldTypeSelect extends StatelessWidget {
+  const _FieldTypeSelect({required this.value, required this.choices, required this.onChanged});
+
+  final FieldTypeChoice value;
+  final List<FieldTypeChoice> choices;
+  final ValueChanged<FieldTypeChoice> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShadSelect<FieldTypeChoice>(
+      initialValue: value,
+      selectedOptionBuilder: (context, choice) => Text(choice.label),
+      options: [for (final choice in choices) ShadOption(value: choice, child: Text(choice.label))],
+      onChanged: (choice) {
+        if (choice != null) onChanged(choice);
+      },
     );
   }
 }
