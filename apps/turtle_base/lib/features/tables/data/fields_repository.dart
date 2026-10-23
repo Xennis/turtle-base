@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:field_types/field_types.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_conversion.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
@@ -12,9 +14,12 @@ import 'package:uuid/uuid.dart';
 const _uuid = Uuid();
 
 class FieldsRepository {
-  FieldsRepository(this._db);
+  FieldsRepository(this._db, {FieldTypeRegistry? fieldTypes}) : _fieldTypes = fieldTypes ?? FieldTypeRegistry();
 
   final AppDatabase _db;
+
+  /// Resolves the field's old and new type when planning a type change.
+  final FieldTypeRegistry _fieldTypes;
 
   /// Active (non-deleted) fields of a collection, in column order.
   Stream<List<Field>> watchAllInCollection(String collectionId) {
@@ -64,19 +69,109 @@ class FieldsRepository {
     return _update(id, FieldsCompanion(name: Value(name)));
   }
 
-  /// Only updates the type. Existing values in `pages.properties` are
-  /// left as-is and read tolerantly by the new type (see FIELD_TYPES.md).
-  /// The config is kept, so e.g. select options survive a switch to
-  /// multi-select and back.
+  /// Changes the type right away - see [planTypeChange] to preview the
+  /// effect on the values first.
   Future<void> changeType(String id, FieldTypeChoice choice) async {
-    final field = await _byId(id);
-    return _update(
-      id,
-      FieldsCompanion(
-        type: Value(choice.base.id),
-        config: Value(_withVariant(decodeFieldConfig(field.config), choice.variant)),
-      ),
+    await applyTypeChange(await planTypeChange(id, choice));
+  }
+
+  /// What changing the field's type to [choice] does to its values (see
+  /// FIELD_TYPES.md), without writing anything. The config is kept, so
+  /// e.g. select options survive a switch to multi-select and back; a
+  /// switch to (multi-)select adds an option per distinct value.
+  Future<TypeChangePlan> planTypeChange(String id, FieldTypeChoice choice) async {
+    final row = await _byId(id);
+    final from = _fieldTypes.resolve(row);
+    final mode = conversionMode(from.base, choice.base);
+    final json = _withVariantJson(decodeFieldConfig(row.config), choice.variant);
+    final entries = await (_db.select(
+      _db.pages,
+    )..where((p) => p.collectionId.equals(row.collectionId) & p.deletedAt.isNull())).get();
+    final raws = {
+      for (final entry in entries)
+        if (decodePageProperties(entry.properties)[id] case final raw? when !ResolvedField.isEmptyRaw(raw))
+          entry.id: raw,
+    };
+
+    final to = choice.base;
+    if (to is SelectFieldType && from.base is! SelectFieldType && mode == ConversionMode.lazy) {
+      final options = [...decodeSelectOptionsJson(json)];
+      final names = {for (final option in options) option.name.toLowerCase()};
+      for (final raw in raws.values) {
+        final plain = from.base.toPlain(from.valueOf(raw) ?? plainOfRaw(raw), from.config);
+        for (final name in to.multiple ? plain.split(',') : [plain]) {
+          final trimmed = name.trim();
+          if (trimmed.isEmpty || !names.add(trimmed.toLowerCase())) continue;
+          options.add(SelectOption(id: _uuid.v4(), name: trimmed, color: nextOptionColor(options)));
+        }
+      }
+      json['options'] = [for (final option in options) option.toJson()];
+    }
+
+    final config = json.isEmpty ? null : jsonEncode(json);
+    final target = _fieldTypes.resolve(row.copyWith(type: to.id, config: Value(config)));
+    final titles = from.base is RelationFieldType && mode == ConversionMode.rewrite
+        ? await _titlesOf(raws.values.expand((raw) => from.valueOf(raw) as List<String>? ?? const []))
+        : const <String, String>{};
+
+    final rewrites = <String, Object?>{};
+    final invalidSamples = <String>[];
+    var invalidCount = 0;
+    if (mode != ConversionMode.none) {
+      for (final MapEntry(key: pageId, value: raw) in raws.entries) {
+        Object? converted = raw;
+        if (mode == ConversionMode.rewrite) {
+          final value = from.valueOf(raw);
+          final plain = switch (value) {
+            null => plainOfRaw(raw),
+            final List<String> ids when from.base is RelationFieldType => ids.map((i) => titles[i] ?? '?').join(', '),
+            _ => from.base.toPlain(value, from.config),
+          };
+          // Kept as plain text when it doesn't parse, rather than as
+          // ids that mean nothing to the new type.
+          converted = switch (target.parse(plain)) {
+            ParsedValue(:final stored) => stored,
+            ParseError() => plain,
+          };
+          rewrites[pageId] = converted;
+        }
+        if (target.errorFor(converted) != null) {
+          invalidCount++;
+          if (invalidSamples.length < 3) invalidSamples.add(from.display(raw));
+        }
+      }
+    }
+
+    return TypeChangePlan(
+      fieldId: id,
+      mode: mode,
+      type: to.id,
+      config: config,
+      valueCount: raws.length,
+      invalidCount: invalidCount,
+      invalidSamples: invalidSamples,
+      rewrites: rewrites,
     );
+  }
+
+  /// Writes a plan from [planTypeChange]. A plan of mode
+  /// [ConversionMode.none] is ignored.
+  Future<void> applyTypeChange(TypeChangePlan plan) async {
+    if (plan.mode == ConversionMode.none) return;
+    final pages = PagesRepository(_db);
+    await _db.transaction(() async {
+      await _update(plan.fieldId, FieldsCompanion(type: Value(plan.type), config: Value(plan.config)));
+      for (final MapEntry(key: pageId, value: value) in plan.rewrites.entries) {
+        await pages.setPropertyValue(pageId, plan.fieldId, value);
+      }
+    });
+  }
+
+  Future<Map<String, String>> _titlesOf(Iterable<String> pageIds) async {
+    final ids = pageIds.toSet();
+    if (ids.isEmpty) return const {};
+    final pages = await (_db.select(_db.pages)..where((p) => p.id.isIn(ids))).get();
+    return {for (final page in pages) page.id: page.title.isEmpty ? 'Untitled' : page.title};
   }
 
   /// [config] is the base type's own config - the field's variant is
@@ -96,13 +191,18 @@ class FieldsRepository {
   }
 
   String? _withVariant(Map<String, Object?> config, FieldVariant<Object>? variant) {
+    final json = _withVariantJson(config, variant);
+    return json.isEmpty ? null : jsonEncode(json);
+  }
+
+  Map<String, Object?> _withVariantJson(Map<String, Object?> config, FieldVariant<Object>? variant) {
     final json = {...config, ...?variant?.configPreset};
     if (variant == null) {
       json.remove(fieldVariantKey);
     } else {
       json[fieldVariantKey] = variant.id;
     }
-    return json.isEmpty ? null : jsonEncode(json);
+    return json;
   }
 
   Future<Field> _byId(String id) => (_db.select(_db.fields)..where((f) => f.id.equals(id))).getSingle();

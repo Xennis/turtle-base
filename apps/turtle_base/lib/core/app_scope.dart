@@ -14,7 +14,7 @@ class AppScope extends InheritedWidget {
     : fieldTypes = fieldTypes ?? FieldTypeRegistry(),
       spaces = SpacesRepository(database),
       collections = CollectionsRepository(database),
-      fields = FieldsRepository(database),
+      fields = FieldsRepository(database, fieldTypes: fieldTypes),
       pages = PagesRepository(database),
       blocks = BlocksRepository(database);
 

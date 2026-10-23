@@ -5,10 +5,12 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_conversion.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/widgets/field_config_editor.dart';
+import 'package:turtle_base/features/tables/widgets/type_change_dialog.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/select_options_editor.dart';
@@ -326,7 +328,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   }
 }
 
-class _FieldRow extends StatelessWidget {
+class _FieldRow extends StatefulWidget {
   const _FieldRow({
     required this.field,
     required this.choices,
@@ -347,7 +349,31 @@ class _FieldRow extends StatelessWidget {
   final List<Collection> collections;
 
   @override
+  State<_FieldRow> createState() => _FieldRowState();
+}
+
+class _FieldRowState extends State<_FieldRow> {
+  /// Bumped to reset the type select after a cancelled change - it
+  /// already shows the picked type, and nothing in the database changed
+  /// to rebuild it.
+  int _typeSelectGeneration = 0;
+
+  Future<void> _changeType(FieldTypeChoice choice) async {
+    final plan = await widget.fields.planTypeChange(widget.field.id, choice);
+    if (!mounted) return;
+    if (needsTypeChangeConfirmation(plan) && !await confirmTypeChange(context, plan: plan, typeLabel: choice.label)) {
+      setState(() => _typeSelectGeneration++);
+      return;
+    }
+    await widget.fields.applyTypeChange(plan);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final field = widget.field;
+    final fields = widget.fields;
+    final collections = widget.collections;
+    final current = FieldTypeChoice(field.base, field.variant);
     final isRelation = field.base is RelationFieldType;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -355,8 +381,8 @@ class _FieldRow extends StatelessWidget {
         children: [
           Expanded(
             child: ShadInput(
-              controller: nameController,
-              focusNode: focusNode,
+              controller: widget.nameController,
+              focusNode: widget.focusNode,
               onSubmitted: (value) {
                 final trimmed = value.trim();
                 if (trimmed.isNotEmpty) fields.rename(field.id, trimmed);
@@ -365,9 +391,13 @@ class _FieldRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _FieldTypeSelect(
-            value: FieldTypeChoice(field.base, field.variant),
-            choices: choices,
-            onChanged: (choice) => fields.changeType(field.id, choice),
+            key: ValueKey(_typeSelectGeneration),
+            value: current,
+            choices: [
+              for (final choice in widget.choices)
+                if (choice == current || conversionMode(field.base, choice.base) != ConversionMode.none) choice,
+            ],
+            onChanged: _changeType,
           ),
           if (isRelation) ...[
             const SizedBox(width: 8),
@@ -459,7 +489,7 @@ class _AddFieldRow extends StatelessWidget {
 
 /// Picks a base type or one of its variants.
 class _FieldTypeSelect extends StatelessWidget {
-  const _FieldTypeSelect({required this.value, required this.choices, required this.onChanged});
+  const _FieldTypeSelect({super.key, required this.value, required this.choices, required this.onChanged});
 
   final FieldTypeChoice value;
   final List<FieldTypeChoice> choices;

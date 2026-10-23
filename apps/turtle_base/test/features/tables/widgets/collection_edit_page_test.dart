@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
+import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
@@ -298,5 +299,82 @@ void main() {
     final stored = await database.select(database.fields).getSingle();
     expect(stored.id, fieldId);
     expect(decodeFieldConfig(stored.config), {'min': 1, 'max': 5, 'decimals': 0});
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('changing a type that rewrites values asks first, and cancelling keeps everything', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    late String fieldId;
+    late String entryId;
+    late String optionId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Books');
+      final fields = FieldsRepository(database);
+      fieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Status',
+        type: BaseFieldType.select,
+        config: encodeSelectConfig(const []),
+      );
+      optionId = (await fields.addSelectOption(fieldId, 'Reading')).id;
+      entryId = await PagesRepository(database)
+          .create(spaceId: spaceId, collectionId: collectionId, properties: {fieldId: optionId});
+    });
+
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // The type change plans and writes through the database in a few
+    // steps - each needs real async time and a pump to continue.
+    Future<void> settle() async {
+      for (var i = 0; i < 5; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> pickText() async {
+      await tester.ensureVisible(find.byType(ShadSelect<FieldTypeChoice>).first);
+      await tester.tap(find.byType(ShadSelect<FieldTypeChoice>).first);
+      await tester.pumpAndSettle();
+      // Not just find.text - the "new field" row's select shows Text too.
+      await tester.tap(find.descendant(of: find.byType(ShadOption<FieldTypeChoice>), matching: find.text('Text')));
+      await settle();
+    }
+
+    Future<Object?> storedValue() async {
+      final entry = await (database.select(database.pages)..where((p) => p.id.equals(entryId))).getSingle();
+      return decodePageProperties(entry.properties)[fieldId];
+    }
+
+    await pickText();
+    expect(find.text('Change type to Text?'), findsOneWidget);
+    expect(find.textContaining('1 value will be converted to Text'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect((await database.select(database.fields).getSingle()).type, 'select');
+    expect(await storedValue(), optionId);
+
+    await pickText();
+    await tester.tap(find.text('Change type'));
+    await settle();
+
+    expect((await database.select(database.fields).getSingle()).type, 'text');
+    expect(await storedValue(), 'Reading');
   }, timeout: const Timeout(Duration(seconds: 30)));
 }
