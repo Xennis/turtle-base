@@ -3,14 +3,17 @@ flutter = "3.47.7"
 opentofu = "1.12.0"
 
 [tasks.generate]
+dir = "{{config_root}}/apps/turtle_base"
 description = "Run code generation (build_runner) - requires `flutter pub get` to have run first"
 run = "dart run build_runner build"
 
 [tasks.format]
+dir = "{{config_root}}/apps/turtle_base"
 description = "Format the Dart code (line length is set in analysis_options.yaml)"
 run = "dart format lib test"
 
 [tasks.format-check]
+dir = "{{config_root}}/apps/turtle_base"
 description = "Fail if the Dart code isn't formatted - used by CI"
 run = "dart format --output=none --set-exit-if-changed lib test"
 
@@ -23,13 +26,16 @@ run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --a
 # gitignored .mise.local.toml's [env] table; omitting them still builds
 # fine, just with Drive sync disabled - see client_config.dart.
 [tasks.run-linux]
+dir = "{{config_root}}/apps/turtle_base"
 description = "flutter run on Linux with Google Drive sync config from env"
 run = "flutter run -d linux --dart-define=DRIVE_DESKTOP_CLIENT_ID=$DRIVE_DESKTOP_CLIENT_ID --dart-define=DRIVE_DESKTOP_CLIENT_SECRET=$DRIVE_DESKTOP_CLIENT_SECRET"
 
 [tasks.run-android]
+dir = "{{config_root}}/apps/turtle_base"
 description = "flutter run on Android with Google Drive sync config from env"
 run = "flutter run -d android --dart-define=DRIVE_ANDROID_SERVER_CLIENT_ID=$DRIVE_ANDROID_SERVER_CLIENT_ID"
 
 [tasks.run-macos]
+dir = "{{config_root}}/apps/turtle_base"
 description = "flutter run on macOS with Google Drive sync config from env"
 run = "flutter run -d macos --dart-define=DRIVE_DESKTOP_CLIENT_ID=$DRIVE_DESKTOP_CLIENT_ID --dart-define=DRIVE_DESKTOP_CLIENT_SECRET=$DRIVE_DESKTOP_CLIENT_SECRET"

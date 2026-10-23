@@ -46,11 +46,13 @@ jobs:
 
       - name: Install Flutter dependencies
         run: flutter pub get
+        working-directory: apps/turtle_base
 
       - name: Generate code
         run: mise run generate
 
       - name: Build Linux release bundle
+        working-directory: apps/turtle_base
         env:
           DRIVE_DESKTOP_CLIENT_ID: ${{ secrets.DRIVE_DESKTOP_CLIENT_ID }}
           DRIVE_DESKTOP_CLIENT_SECRET: ${{ secrets.DRIVE_DESKTOP_CLIENT_SECRET }}
@@ -64,10 +66,10 @@ jobs:
       - name: Assemble AppDir
         run: |
           mkdir -p AppDir/usr/bin
-          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+          cp -r apps/turtle_base/build/linux/x64/release/bundle/* AppDir/usr/bin/
           ln -s usr/bin/turtle_base AppDir/AppRun
           cp .github/workflows/turtle-base.desktop AppDir/turtle-base.desktop
-          cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png AppDir/turtle-base.png
+          cp apps/turtle_base/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png AppDir/turtle-base.png
 
       - name: Build AppImage
         run: |
@@ -98,6 +100,7 @@ jobs:
 
       - name: Install Flutter dependencies
         run: flutter pub get
+        working-directory: apps/turtle_base
 
       - name: Generate code
         run: mise run generate
@@ -109,8 +112,8 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/release.keystore
-          cat > android/key.properties <<EOF
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > apps/turtle_base/android/release.keystore
+          cat > apps/turtle_base/android/key.properties <<EOF
           storeFile=release.keystore
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
@@ -118,6 +121,7 @@ jobs:
           EOF
 
       - name: Build Android release APK
+        working-directory: apps/turtle_base
         env:
           DRIVE_ANDROID_SERVER_CLIENT_ID: ${{ secrets.DRIVE_ANDROID_SERVER_CLIENT_ID }}
         run: |
@@ -129,7 +133,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: apps/turtle_base/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
   # build-macos is disabled: the Runner target now requires signing with an
@@ -144,11 +148,13 @@ jobs:
   #
   #     - name: Install Flutter dependencies
   #       run: flutter pub get
+  #       working-directory: apps/turtle_base
   #
   #     - name: Generate code
   #       run: mise run generate
   #
   #     - name: Build macOS release bundle
+  #       working-directory: apps/turtle_base
   #       env:
   #         DRIVE_DESKTOP_CLIENT_ID: ${{ secrets.DRIVE_DESKTOP_CLIENT_ID }}
   #         DRIVE_DESKTOP_CLIENT_SECRET: ${{ secrets.DRIVE_DESKTOP_CLIENT_SECRET }}
@@ -162,7 +168,7 @@ jobs:
   #     - name: Zip app bundle
   #       run: |
   #         ditto -c -k --sequesterRsrc --keepParent \
-  #           "build/macos/Build/Products/Release/turtle_base.app" \
+  #           "apps/turtle_base/build/macos/Build/Products/Release/turtle_base.app" \
   #           "turtle-base-${{ needs.resolve-version.outputs.full_version }}-macos.zip"
   #
   #     - uses: actions/upload-artifact@v7
