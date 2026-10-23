@@ -45,6 +45,7 @@ dependencies:
   dartantic_ai: ^3.4.2
   drift: 2.35.2
   emoji_picker_flutter: ^4.4.0
+  field_types:
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^10.3.1

@@ -8,7 +8,8 @@ import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_variants.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_view.dart';
@@ -31,7 +32,7 @@ void main() {
       final pages = PagesRepository(database);
 
       final collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final priorityField = await fields.create(collectionId: collectionId, name: 'Priority', type: FieldType.text);
+      final priorityField = await fields.create(collectionId: collectionId, name: 'Priority', type: BaseFieldType.text);
       final entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       await pages.setPropertyValue(entryId, priorityField, 'High');
     });
@@ -66,7 +67,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      priorityFieldId = await fields.create(collectionId: collectionId, name: 'Priority', type: FieldType.text);
+      priorityFieldId = await fields.create(collectionId: collectionId, name: 'Priority', type: BaseFieldType.text);
       entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       await pages.setPropertyValue(entryId, priorityFieldId, 'Low');
     });
@@ -216,7 +217,7 @@ void main() {
       final relationField = await fields.create(
         collectionId: collectionId,
         name: 'Project',
-        type: FieldType.relation,
+        type: BaseFieldType.relation,
         config: encodeRelationConfig(projectsId),
       );
       final entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
@@ -277,7 +278,12 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Links');
-      final urlFieldId = await fields.create(collectionId: collectionId, name: 'Website', type: FieldType.url);
+      final urlFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Website',
+        type: BaseFieldType.text,
+        variant: urlVariant,
+      );
       final entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Anthropic');
       await pages.setPropertyValue(entryId, urlFieldId, 'anthropic.com');
     });
@@ -310,7 +316,12 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Links');
-      urlFieldId = await fields.create(collectionId: collectionId, name: 'Website', type: FieldType.url);
+      urlFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Website',
+        type: BaseFieldType.text,
+        variant: urlVariant,
+      );
       entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Anthropic');
       await pages.setPropertyValue(entryId, urlFieldId, 'anthropic.com');
     });
@@ -353,7 +364,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: FieldType.date);
+      final dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: BaseFieldType.date);
       final entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       // A legacy ISO-8601 value (as if typed before date fields had a
       // dedicated column type) should still be reformatted for display.
@@ -386,7 +397,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: FieldType.date);
+      dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: BaseFieldType.date);
       entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       await pages.setPropertyValue(entryId, dueFieldId, '2026-07-18');
     });
@@ -429,7 +440,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      await fields.create(collectionId: collectionId, name: 'Quantity', type: FieldType.number);
+      await fields.create(collectionId: collectionId, name: 'Quantity', type: BaseFieldType.number);
       await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
     });
 
@@ -457,7 +468,11 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final quantityFieldId = await fields.create(collectionId: collectionId, name: 'Quantity', type: FieldType.number);
+      final quantityFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Quantity',
+        type: BaseFieldType.number,
+      );
       final entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       // Only possible via the entry's Page-View, which warns but
       // doesn't block saving invalid numbers (see
@@ -492,7 +507,12 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final websiteFieldId = await fields.create(collectionId: collectionId, name: 'Website', type: FieldType.url);
+      final websiteFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Website',
+        type: BaseFieldType.text,
+        variant: urlVariant,
+      );
       final entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       // Only possible via a field type change (e.g. Text -> URL)
       // leaving old free-text values behind (see
@@ -528,7 +548,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: FieldType.date);
+      final dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: BaseFieldType.date);
       final entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       await pages.setPropertyValue(entryId, dueFieldId, 'not a date');
     });
@@ -557,7 +577,7 @@ void main() {
       final spaceId = await SpacesRepository(database).create(name: 'Space');
       collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
       final priorityField = await FieldsRepository(database)
-          .create(collectionId: collectionId, name: 'Priority', type: FieldType.text);
+          .create(collectionId: collectionId, name: 'Priority', type: BaseFieldType.text);
       final pages = PagesRepository(database);
       entryId = await pages.create(spaceId: spaceId, collectionId: collectionId, title: 'Buy milk');
       await pages.setPropertyValue(entryId, priorityField, 'High');

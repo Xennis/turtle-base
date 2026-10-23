@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
 
@@ -41,7 +41,7 @@ class _SelectOptionPickerDialogState extends State<_SelectOptionPickerDialog> {
   final _searchController = TextEditingController();
   String _query = '';
 
-  bool get _multiple => widget.field.type == FieldType.multiSelect.name;
+  bool get _multiple => widget.field.type == BaseFieldType.multiSelect.id;
 
   @override
   void dispose() {

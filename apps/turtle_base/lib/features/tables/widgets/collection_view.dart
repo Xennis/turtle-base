@@ -5,9 +5,9 @@ import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
-import 'package:turtle_base/features/tables/data/field_validation.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_tiles_view.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
@@ -19,14 +19,14 @@ import 'package:url_launcher/url_launcher.dart';
 const _dateFormat = 'yyyy-MM-dd';
 
 /// Grid view of a collection's entries, with inline cell editing for
-/// text/number/date/url. Edits are persisted immediately on commit
-/// (TrinaGrid's onChanged fires on Enter/Tab/blur, not per keystroke).
-/// Invalid values (bad date, malformed URL) are rejected by TrinaGrid's
-/// column validation and never reach [_onCellChanged]. Stored values
-/// that no longer match a field's type (e.g. after changing it from
-/// Text to Number/Date/URL - see FieldsRepository.changeType) are never
-/// silently dropped or misrepresented as valid; each typed column's
-/// renderer flags them in red instead.
+/// typed-in field types (text, number, date and their variants). Edits
+/// are persisted immediately on commit (TrinaGrid's onChanged fires on
+/// Enter/Tab/blur, not per keystroke). Invalid values (bad date,
+/// malformed URL) are rejected by TrinaGrid's column validation and
+/// never reach [_onCellChanged]. Stored values that no longer match a
+/// field's type (e.g. after changing it from Text to Number - see
+/// FieldsRepository.changeType) are never silently dropped or
+/// misrepresented as valid; [_valueRenderer] flags them in red instead.
 class CollectionView extends StatefulWidget {
   const CollectionView({
     super.key,
@@ -80,7 +80,9 @@ class _CollectionViewState extends State<CollectionView> {
         return StreamBuilder<List<Field>>(
           stream: scope.fields.watchAllInCollection(widget.collectionId),
           builder: (context, fieldsSnapshot) {
-            final fields = fieldsSnapshot.data ?? const <Field>[];
+            final fields = [
+              for (final field in fieldsSnapshot.data ?? const <Field>[]) scope.fieldTypes.resolve(field),
+            ];
             return StreamBuilder<List<Page>>(
               stream: scope.pages.watchAllInCollection(widget.collectionId),
               builder: (context, entriesSnapshot) {
@@ -89,8 +91,9 @@ class _CollectionViewState extends State<CollectionView> {
                 // their ids - resolve them from whichever collections
                 // this collection's relation fields target.
                 final relationTargetIds = fields
-                    .where((f) => f.type == FieldType.relation.name)
-                    .map((f) => decodeRelationTargetCollectionId(f.config))
+                    .map((f) => f.config)
+                    .whereType<RelationConfig>()
+                    .map((c) => c.targetCollectionId)
                     .whereType<String>()
                     .toSet()
                     .toList();
@@ -195,12 +198,13 @@ class _CollectionViewState extends State<CollectionView> {
   /// The tile's line below the title: the collection's first field
   /// ([field], null if it has none) - select values as chips, the rest
   /// as text via [_cellValue]. Null when the entry has no value for it.
-  Widget? _secondaryFor(Field? field, Page entry, Map<String, List<Page>> relatedPagesByCollection) {
+  Widget? _secondaryFor(ResolvedField? field, Page entry, Map<String, List<Page>> relatedPagesByCollection) {
     if (field == null) return null;
-    if (FieldType.values.byName(field.type).isSelect) {
+    final config = field.config;
+    if (config is SelectConfig) {
       final selected = resolveSelectValue(
-        decodeSelectOptions(field.config),
-        decodePageProperties(entry.properties)[field.id],
+        config.options,
+        field.valueOf(decodePageProperties(entry.properties)[field.id]),
       );
       if (selected.isEmpty) return null;
       return Wrap(
@@ -232,7 +236,11 @@ class _CollectionViewState extends State<CollectionView> {
     if (event.column.field == 'title') {
       await scope.pages.rename(entryId, event.value.toString());
     } else {
-      await scope.pages.setPropertyValue(entryId, event.column.field, event.value.toString());
+      final field = scope.fieldTypes.resolve(await scope.fields.watchById(event.column.field).first);
+      // The column validator already rejected invalid input.
+      if (field.parse(event.value.toString()) case ParsedValue(:final stored)) {
+        await scope.pages.setPropertyValue(entryId, field.id, stored);
+      }
     }
   }
 
@@ -295,7 +303,7 @@ class _CollectionViewState extends State<CollectionView> {
   List<TrinaColumn> _columnsFor(
     AppScope scope,
     String titleLabel,
-    List<Field> fields,
+    List<ResolvedField> fields,
     List<Page> entries,
     ShadColorScheme colors,
   ) {
@@ -315,59 +323,79 @@ class _CollectionViewState extends State<CollectionView> {
           // (see PagePropertiesHeader), not inline in the grid. Select
           // values via the option picker, opened by tapping the cell
           // (see _selectRenderer) instead of the grid's text editor.
-          readOnly: field.type == FieldType.relation.name || FieldType.values.byName(field.type).isSelect,
-          validator: field.type == FieldType.url.name ? _validateUrl : null,
+          readOnly: !_isTypedIn(field),
+          validator: _isTypedIn(field) ? (value, _) => _validate(field, value) : null,
           renderer: _rendererFor(scope, field, entriesById, colors),
         ),
     ];
   }
 
+  /// Whether the field is edited by typing into the cell, rather than
+  /// via a picker (select, relation) or not at all.
+  bool _isTypedIn(ResolvedField field) => switch (field.base) {
+    TextFieldType() || NumberFieldType() || DateFieldType() => true,
+    SelectFieldType() || RelationFieldType() || UnsupportedFieldType() => false,
+  };
+
+  String? _validate(ResolvedField field, dynamic value) => switch (field.parse(value?.toString() ?? '')) {
+    ParseError(:final message) => message,
+    ParsedValue() => null,
+  };
+
   /// [colors] is passed in because [TrinaColumnRendererContext] carries
   /// no BuildContext to resolve the theme from inside a renderer.
   TrinaColumnRenderer? _rendererFor(
     AppScope scope,
-    Field field,
+    ResolvedField field,
     Map<String, Page> entriesById,
     ShadColorScheme colors,
   ) {
-    if (FieldType.values.byName(field.type).isSelect) {
+    if (field.base is SelectFieldType) {
       return (context) => _selectRenderer(context, scope, field, entriesById);
     }
-    if (field.type == FieldType.url.name) {
-      return (context) => _urlRenderer(context, colors);
-    }
-    if (field.type == FieldType.number.name) {
-      return (context) => _numberRenderer(context, colors);
-    }
-    if (field.type == FieldType.date.name) {
-      return (context) => _dateRenderer(context, colors);
-    }
-    return null;
+    if (field.base is RelationFieldType) return null;
+    return (context) => _valueRenderer(context, field, entriesById, colors);
   }
 
-  String? _validateUrl(dynamic value, TrinaValidationContext context) {
-    final text = value?.toString() ?? '';
-    if (text.isEmpty || isValidUrl(text)) return null;
-    return 'Enter a valid URL, e.g. example.com';
-  }
-
-  Widget _urlRenderer(TrinaColumnRendererContext context, ShadColorScheme colors) {
-    final text = context.cell.value?.toString() ?? '';
+  /// Renders from the entry's stored value rather than the cell's, which
+  /// is only there for the grid's sorting and editing (see _cellValue).
+  /// Custom renderers bypass the grid's cellTextStyle (see
+  /// TrinaDefaultCell.build), so colors are set explicitly.
+  Widget _valueRenderer(
+    TrinaColumnRendererContext context,
+    ResolvedField field,
+    Map<String, Page> entriesById,
+    ShadColorScheme colors,
+  ) {
+    final entry = entriesById[context.row.data as String];
+    final raw = entry == null ? null : decodePageProperties(entry.properties)[field.id];
+    final text = field.display(raw);
     if (text.isEmpty) return const SizedBox.shrink();
-    // Not every stored value is still a URL - e.g. a field changed
-    // from Text to URL keeps its old free-text values (see
+    // Not every stored value still matches the field's type - e.g. a
+    // field changed from Text to URL keeps its old free-text values (see
     // FieldsRepository.changeType) - flag those instead of rendering
-    // them as a clickable link they aren't.
-    if (!isValidUrl(text)) {
-      return Text(text, style: TextStyle(color: colors.destructive));
+    // them as valid.
+    if (field.errorFor(raw) != null) {
+      return Text(
+        text,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: colors.destructive),
+      );
+    }
+    final link = field.linkFor(raw);
+    if (link == null) {
+      return Text(
+        text,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: colors.foreground),
+      );
     }
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       // GestureDetector rather than InkWell - no Material ancestor is
       // guaranteed inside a TrinaGrid cell.
       child: GestureDetector(
-        onTap: () =>
-            launchUrl(Uri.parse(text.contains('://') ? text : 'https://$text'), mode: LaunchMode.externalApplication),
+        onTap: () => launchUrl(link, mode: LaunchMode.externalApplication),
         child: Text(
           text,
           overflow: TextOverflow.ellipsis,
@@ -381,59 +409,26 @@ class _CollectionViewState extends State<CollectionView> {
     );
   }
 
-  Widget _dateRenderer(TrinaColumnRendererContext context, ShadColorScheme colors) {
-    final text = context.cell.value?.toString() ?? '';
-    if (text.isEmpty) return const SizedBox.shrink();
-    // TrinaColumnTypeDate.applyFormat silently returns '' for a value
-    // it can't parse, which would hide a stored value that no longer
-    // matches the field's type (see FieldsRepository.changeType) -
-    // flag it instead.
-    if (!isValidDate(text)) {
-      return Text(text, style: TextStyle(color: colors.destructive));
-    }
-    // Custom renderers bypass the grid's cellTextStyle (see
-    // TrinaDefaultCell.build), so the foreground color must be set
-    // explicitly here too.
-    return Text(context.column.type.applyFormat(text), style: TextStyle(color: colors.foreground));
-  }
-
-  Widget _numberRenderer(TrinaColumnRendererContext context, ShadColorScheme colors) {
-    final value = context.cell.value;
-    if (value == null || value.toString().isEmpty) {
-      return const SizedBox.shrink();
-    }
-    // A genuine num (parsed in _cellValue) formats normally; anything
-    // else is a stored value that never was a number (e.g. typed as
-    // "3a" in the entry's Page-View, which only warns, doesn't block -
-    // see PagePropertiesHeader) - flag it rather than silently showing
-    // it as 0 (TrinaColumnTypeNumber's own formatting would do that).
-    if (value is num) {
-      // Same as _dateRenderer: custom renderers bypass cellTextStyle.
-      return Text(context.column.type.applyFormat(value), style: TextStyle(color: colors.foreground));
-    }
-    return Text(value.toString(), style: TextStyle(color: colors.destructive));
-  }
-
   /// The cell's value holds the options' names (see _cellValue, for
   /// sorting/filtering), so the chips are resolved from the entry's raw
   /// option ids instead - looked up via the row's entry id.
   Widget _selectRenderer(
     TrinaColumnRendererContext context,
     AppScope scope,
-    Field field,
+    ResolvedField field,
     Map<String, Page> entriesById,
   ) {
     final entryId = context.row.data as String;
     final entry = entriesById[entryId];
     final raw = entry == null ? null : decodePageProperties(entry.properties)[field.id];
-    final selectedIds = decodeSelectValue(raw);
-    final selected = resolveSelectValue(decodeSelectOptions(field.config), raw);
+    final selected = resolveSelectValue((field.config as SelectConfig).options, field.valueOf(raw));
+    final selectedIds = [for (final option in selected) option.id];
     // Builder for a BuildContext to open the dialog from -
     // TrinaColumnRendererContext carries none.
     return Builder(
       builder: (buildContext) => MouseRegion(
         cursor: SystemMouseCursors.click,
-        // GestureDetector rather than InkWell, same as _urlRenderer.
+        // GestureDetector rather than InkWell, same as _valueRenderer.
         // Opaque, so an empty cell is tappable too.
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -441,15 +436,11 @@ class _CollectionViewState extends State<CollectionView> {
             final result = await showSelectOptionPicker(
               buildContext,
               scope: scope,
-              field: field,
+              field: field.row,
               selectedIds: selectedIds,
             );
             if (result == null) return;
-            await scope.pages.setPropertyValue(
-              entryId,
-              field.id,
-              encodeSelectValue(result, multiple: field.type == FieldType.multiSelect.name),
-            );
+            await scope.pages.setPropertyValue(entryId, field.id, field.base.encode(result, field.config));
           },
           // Clipped instead of wrapped - a grid row has a fixed height,
           // so chips that don't fit are cut off at the cell's edge.
@@ -478,7 +469,11 @@ class _CollectionViewState extends State<CollectionView> {
     ShadToaster.of(context).show(ShadToast.destructive(title: Text('${event.column.title}: ${event.errorMessage}')));
   }
 
-  List<TrinaRow> _rowsFor(List<Field> fields, List<Page> entries, Map<String, List<Page>> relatedPagesByCollection) {
+  List<TrinaRow> _rowsFor(
+    List<ResolvedField> fields,
+    List<Page> entries,
+    Map<String, List<Page>> relatedPagesByCollection,
+  ) {
     return [
       for (final entry in entries)
         TrinaRow(
@@ -491,23 +486,21 @@ class _CollectionViewState extends State<CollectionView> {
     ];
   }
 
-  Object _cellValue(Field field, Page entry, Map<String, List<Page>> relatedPagesByCollection) {
+  /// What the grid sorts, filters and edits - renderers show the
+  /// stored value themselves (see _valueRenderer).
+  Object _cellValue(ResolvedField field, Page entry, Map<String, List<Page>> relatedPagesByCollection) {
     final raw = decodePageProperties(entry.properties)[field.id];
-    if (field.type == FieldType.relation.name) {
-      final targetId = decodeRelationTargetCollectionId(field.config);
-      final targetPages = relatedPagesByCollection[targetId] ?? const <Page>[];
+    final config = field.config;
+    if (config is RelationConfig) {
+      final targetPages = relatedPagesByCollection[config.targetCollectionId] ?? const <Page>[];
       final titles = [for (final id in decodeRelationValue(raw)) _titleOf(targetPages, id)];
       return titles.join(', ');
     }
-    if (FieldType.values.byName(field.type).isSelect) {
-      final options = decodeSelectOptions(field.config);
-      return resolveSelectValue(options, raw).map((o) => o.name).join(', ');
+    // A genuine num, so the number column sorts numerically.
+    if (field.base is NumberFieldType && field.errorFor(raw) == null) {
+      return field.valueOf(raw) ?? '';
     }
-    if (raw == null) return '';
-    if (field.type == FieldType.number.name) {
-      return num.tryParse(raw.toString()) ?? raw;
-    }
-    return raw;
+    return field.display(raw);
   }
 
   String _titleOf(List<Page> pages, String id) {
@@ -517,34 +510,28 @@ class _CollectionViewState extends State<CollectionView> {
     return '?';
   }
 
-  TrinaColumnType _columnTypeFor(Field field) {
-    if (field.type == FieldType.number.name) {
-      // applyFormatOnInit off - its default behaviour formats anything
-      // it can't parse (an empty cell, or invalid stored text) as "0",
-      // which _numberRenderer must be able to tell apart from a real 0.
-      return TrinaColumnType.number(applyFormatOnInit: false);
-    }
-    if (field.type == FieldType.date.name) {
+  TrinaColumnType _columnTypeFor(ResolvedField field) {
+    return switch (field.base) {
+      // applyFormatOnInit off - its default behaviour formats anything it
+      // can't parse (an empty cell, or invalid stored text) as "0".
+      NumberFieldType() => TrinaColumnType.number(applyFormatOnInit: false),
       // format is the sortable yyyy-MM-dd - both stored in properties
       // and shown in the grid; headerFormat stays the picker's default
       // (month/year), unrelated to how the cell itself is displayed.
-      // applyFormatOnInit off, same reason as number above - its
-      // default behaviour silently formats an unparseable stored
-      // value as '', which _dateRenderer must be able to flag instead.
-      return TrinaColumnType.date(format: _dateFormat, applyFormatOnInit: false);
-    }
-    // url stays plain text - it needs its own validator/renderer
-    // (added in _columnsFor) rather than a distinct TrinaColumnType.
-    return TrinaColumnType.text();
+      // applyFormatOnInit off, same reason as number above.
+      DateFieldType() => TrinaColumnType.date(format: _dateFormat, applyFormatOnInit: false),
+      _ => TrinaColumnType.text(),
+    };
   }
 
   String _gridVersion(
     String titleLabel,
-    List<Field> fields,
+    List<ResolvedField> fields,
     List<Page> entries,
     Map<String, List<Page>> relatedPagesByCollection,
   ) {
     final fieldPart = fields
+        .map((f) => f.row)
         // config included so renaming/recoloring a select option (or
         // retargeting a relation) refreshes the grid too.
         .map((f) => '${f.id}:${f.name}:${f.type}:${f.config}')

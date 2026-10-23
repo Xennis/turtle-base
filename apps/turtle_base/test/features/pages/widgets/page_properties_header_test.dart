@@ -6,7 +6,8 @@ import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/pages/widgets/page_properties_header.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
-import 'package:turtle_base/features/tables/data/field_type.dart';
+import 'package:turtle_base/features/tables/data/base_field_type.dart';
+import 'package:turtle_base/features/tables/data/field_variants.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
@@ -28,7 +29,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final priorityField = await fields.create(collectionId: collectionId, name: 'Priority', type: FieldType.text);
+      final priorityField = await fields.create(collectionId: collectionId, name: 'Priority', type: BaseFieldType.text);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
       await pages.setPropertyValue(pageId, priorityField, 'High');
     });
@@ -64,7 +65,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      priorityFieldId = await fields.create(collectionId: collectionId, name: 'Priority', type: FieldType.text);
+      priorityFieldId = await fields.create(collectionId: collectionId, name: 'Priority', type: BaseFieldType.text);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
     });
 
@@ -111,7 +112,7 @@ void main() {
       relationFieldId = await fields.create(
         collectionId: collectionId,
         name: 'Project',
-        type: FieldType.relation,
+        type: BaseFieldType.relation,
         config: encodeRelationConfig(projectsId),
       );
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
@@ -167,7 +168,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      await fields.create(collectionId: collectionId, name: 'Quantity', type: FieldType.number);
+      await fields.create(collectionId: collectionId, name: 'Quantity', type: BaseFieldType.number);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
     });
 
@@ -210,7 +211,11 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final quantityFieldId = await fields.create(collectionId: collectionId, name: 'Quantity', type: FieldType.number);
+      final quantityFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Quantity',
+        type: BaseFieldType.number,
+      );
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
       await pages.setPropertyValue(pageId, quantityFieldId, '3a');
     });
@@ -246,7 +251,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      await fields.create(collectionId: collectionId, name: 'Due', type: FieldType.date);
+      await fields.create(collectionId: collectionId, name: 'Due', type: BaseFieldType.date);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
     });
 
@@ -289,7 +294,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: FieldType.date);
+      final dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: BaseFieldType.date);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
       await pages.setPropertyValue(pageId, dueFieldId, 'not a date');
     });
@@ -323,7 +328,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      await fields.create(collectionId: collectionId, name: 'Website', type: FieldType.url);
+      await fields.create(collectionId: collectionId, name: 'Website', type: BaseFieldType.text, variant: urlVariant);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
     });
 
@@ -366,7 +371,12 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      final websiteFieldId = await fields.create(collectionId: collectionId, name: 'Website', type: FieldType.url);
+      final websiteFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Website',
+        type: BaseFieldType.text,
+        variant: urlVariant,
+      );
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
       await pages.setPropertyValue(pageId, websiteFieldId, 'not a url');
     });
@@ -401,7 +411,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      quantityFieldId = await fields.create(collectionId: collectionId, name: 'Quantity', type: FieldType.number);
+      quantityFieldId = await fields.create(collectionId: collectionId, name: 'Quantity', type: BaseFieldType.number);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
     });
 
@@ -434,7 +444,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     entry = await (database.select(database.pages)..where((p) => p.id.equals(pageId))).getSingle();
-    expect(decodePageProperties(entry.properties)[quantityFieldId], '42');
+    expect(decodePageProperties(entry.properties)[quantityFieldId], 42);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
   testWidgets('does not persist an invalid date, only a subsequent valid one', (WidgetTester tester) async {
@@ -451,7 +461,7 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: FieldType.date);
+      dueFieldId = await fields.create(collectionId: collectionId, name: 'Due', type: BaseFieldType.date);
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
     });
 
@@ -501,7 +511,12 @@ void main() {
       final pages = PagesRepository(database);
 
       collectionId = await collections.create(spaceId: spaceId, name: 'Tasks');
-      websiteFieldId = await fields.create(collectionId: collectionId, name: 'Website', type: FieldType.url);
+      websiteFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Website',
+        type: BaseFieldType.text,
+        variant: urlVariant,
+      );
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
     });
 
@@ -554,7 +569,7 @@ void main() {
       statusFieldId = await fields.create(
         collectionId: collectionId,
         name: 'Status',
-        type: FieldType.select,
+        type: BaseFieldType.select,
         config: encodeSelectConfig(const []),
       );
       await fields.addSelectOption(statusFieldId, 'To do');
@@ -562,7 +577,7 @@ void main() {
       tagsFieldId = await fields.create(
         collectionId: collectionId,
         name: 'Tags',
-        type: FieldType.multiSelect,
+        type: BaseFieldType.multiSelect,
         config: encodeSelectConfig(const []),
       );
       pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
