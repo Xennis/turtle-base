@@ -83,6 +83,18 @@ class ResolvedField {
     return variant?.link(value) ?? base.link(value, config);
   }
 
+  /// What to store for a value from elsewhere (e.g. a plugin's entry
+  /// draft) in the JSON shape of [base]: decoded, normalized and
+  /// validated like typed input. Null when it's empty or doesn't fit.
+  Object? storedFor(Object? raw) {
+    final decoded = valueOf(raw);
+    if (decoded == null) return null;
+    final value = variant?.normalize(decoded) ?? decoded;
+    if (validate(value) != null) return null;
+    final stored = base.encode(value, config);
+    return isEmptyRaw(stored) ? null : stored;
+  }
+
   /// Parses typed input: base type parse, then the variant's normalize,
   /// then both validations.
   ParsedInput parse(String text) {

@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- Sync with Google Drive and plugin lookups (e.g. Open Library).
+         Some dependency merges it in too, but release builds shouldn't
+         rely on that. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Merged in by open_filex for opening shared storage - attachments
          only ever open from the app's own cache directory, which needs
          none of these. -->
