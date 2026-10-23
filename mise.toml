@@ -7,15 +7,43 @@ dir = "{{config_root}}/apps/turtle_base"
 description = "Run code generation (build_runner) - requires `flutter pub get` to have run first"
 run = "dart run build_runner build"
 
+# The format/analyze/test tasks run in every workspace member (apps/* and
+# packages/*), so new packages are picked up automatically.
 [tasks.format]
-dir = "{{config_root}}/apps/turtle_base"
-description = "Format the Dart code (line length is set in analysis_options.yaml)"
-run = "dart format lib test"
+description = "Format the Dart code of all workspace members (line length is set in analysis_options.yaml)"
+run = """
+set -e
+for d in apps/* packages/*; do
+  (cd "$d" && dart format $(ls -d lib test 2>/dev/null))
+done
+"""
 
 [tasks.format-check]
-dir = "{{config_root}}/apps/turtle_base"
-description = "Fail if the Dart code isn't formatted - used by CI"
-run = "dart format --output=none --set-exit-if-changed lib test"
+description = "Fail if the Dart code of any workspace member isn't formatted - used by CI"
+run = """
+set -e
+for d in apps/* packages/*; do
+  (cd "$d" && dart format --output=none --set-exit-if-changed $(ls -d lib test 2>/dev/null))
+done
+"""
+
+[tasks.analyze]
+description = "Run flutter analyze in all workspace members - requires `mise run generate` to have run first"
+run = """
+set -e
+for d in apps/* packages/*; do
+  (cd "$d" && flutter analyze)
+done
+"""
+
+[tasks.test]
+description = "Run flutter test in all workspace members that have tests - requires `mise run generate` to have run first"
+run = """
+set -e
+for d in apps/* packages/*; do
+  if [ -d "$d/test" ]; then (cd "$d" && flutter test); fi
+done
+"""
 
 [tasks.skills-install]
 description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
