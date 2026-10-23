@@ -42,6 +42,7 @@ dependencies:
   books:
   crdt_file_sync_google_drive:
   crdt_file_sync_transport:
+  crypto: ^3.0.7
   cupertino_icons: ^2.0.0
   dartantic_ai: ^3.4.2
   drift: 2.35.2
@@ -51,6 +52,8 @@ dependencies:
     sdk: flutter
   flutter_secure_storage: ^10.3.1
   google_fonts: ^9.0.0
+  image: ^4.12.0
+  mime: ^2.1.0
   path: ^1.9.1
   path_provider: ^2.1.6
   shadcn_ui: ^0.55.1

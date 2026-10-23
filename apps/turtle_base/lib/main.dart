@@ -6,6 +6,8 @@ import 'package:crdt_file_sync_google_drive/crdt_file_sync_google_drive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
@@ -22,6 +24,7 @@ import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
+import 'package:turtle_base/packages/file_store/file_store.dart';
 
 /// Field type variants contributed by packages, next to the app's own.
 final _fieldTypes = FieldTypeRegistry(variants: booksVariants);
@@ -43,6 +46,9 @@ Future<void> main() async {
   // the connection itself if this didn't, e.g. because the id was already
   // cached in [LocalUserIdStore].)
   await database.currentUserId();
+  // Next to the database, see AppDatabase._openConnection for why the
+  // support directory.
+  final files = FileStore(p.join((await getApplicationSupportDirectory()).path, 'files'));
 
   final driveAuthenticator = createDriveAuthenticator(
     desktopClientId: DriveClientConfig.desktopClientId,
@@ -64,6 +70,7 @@ Future<void> main() async {
   runApp(
     TurtleBaseApp(
       database: database,
+      files: files,
       themeController: themeController,
       themePresetController: themePresetController,
       aiSettingsController: aiSettingsController,
@@ -76,6 +83,7 @@ class TurtleBaseApp extends StatelessWidget {
   const TurtleBaseApp({
     super.key,
     required this.database,
+    required this.files,
     required this.themeController,
     required this.themePresetController,
     required this.aiSettingsController,
@@ -83,6 +91,7 @@ class TurtleBaseApp extends StatelessWidget {
   });
 
   final AppDatabase database;
+  final FileStore files;
   final ThemeController themeController;
   final ThemePresetController themePresetController;
   final AiSettingsController aiSettingsController;
@@ -93,6 +102,7 @@ class TurtleBaseApp extends StatelessWidget {
     return AppScope(
       database: database,
       fieldTypes: _fieldTypes,
+      files: files,
       child: SyncScope(
         controller: syncController,
         child: ThemeScope(
