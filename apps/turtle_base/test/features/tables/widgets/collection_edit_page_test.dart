@@ -8,6 +8,7 @@ import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
+import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 
@@ -253,5 +254,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect((await storedOptions()).map((o) => o.name), ['Open']);
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('a number field\'s min, max and decimals are stored in its config', (WidgetTester tester) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    late String fieldId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Books');
+      fieldId = await FieldsRepository(database)
+          .create(collectionId: collectionId, name: 'Rating', type: BaseFieldType.number);
+    });
+
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    Future<void> enter(String label, String value) async {
+      final input = find.widgetWithText(ShadInputFormField, label);
+      await tester.ensureVisible(input);
+      await tester.enterText(find.descendant(of: input, matching: find.byType(EditableText)), value);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    await enter('Min', '1');
+    await enter('Max', '5');
+    // Rejected, so not stored.
+    await enter('Decimals', '-1');
+    await enter('Decimals', '0');
+
+    final stored = await database.select(database.fields).getSingle();
+    expect(stored.id, fieldId);
+    expect(decodeFieldConfig(stored.config), {'min': 1, 'max': 5, 'decimals': 0});
   }, timeout: const Timeout(Duration(seconds: 30)));
 }
