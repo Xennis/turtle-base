@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:crdt_file_sync_google_drive/crdt_file_sync_google_drive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:turtle_base/packages/crdt_file_sync/google_drive/google_drive_transport.dart';
 
 /// Minimal in-memory stand-in for the Drive REST API, just enough of it to
 /// exercise [GoogleDriveTransport]'s folder-lookup/create and
