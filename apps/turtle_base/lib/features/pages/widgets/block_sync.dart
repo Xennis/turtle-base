@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/features/files/data/attachments_repository.dart';
+import 'package:turtle_base/features/files/widgets/attachment_block.dart';
 import 'package:turtle_base/features/pages/data/blocks_repository.dart';
 
 /// Reconciles the editor's current Node tree back into our flat Block
@@ -56,4 +58,51 @@ Future<void> syncBlocksFromDocument({
       await blocks.softDelete(block.id);
     }
   }
+}
+
+/// Keeps the page's rich-text attachments (those without a field) in
+/// step with the `attachment` nodes in [document]: an attachment is
+/// active exactly while a node references it - removing the block
+/// soft-deletes it, undoing that restores it.
+///
+/// A node referencing another page's attachment (pasted from there)
+/// gets a copy of its own, so the two pages don't share one row. Returns
+/// those replacements, old id to new, for the caller to write into the
+/// nodes.
+Future<Map<String, String>> syncAttachmentsFromDocument({
+  required AttachmentsRepository attachments,
+  required String pageId,
+  required Document document,
+}) async {
+  final referenced = <String>{};
+  void walk(Iterable<Node> nodes) {
+    for (final node in nodes) {
+      if (node.type == AttachmentBlockKeys.type) {
+        if (node.attributes[AttachmentBlockKeys.attachmentId] case final String id) referenced.add(id);
+      }
+      walk(node.children);
+    }
+  }
+
+  walk(document.root.children);
+
+  final own = {for (final attachment in await attachments.allInPageContent(pageId)) attachment.id: attachment};
+  final replacements = <String, String>{};
+  for (final id in referenced) {
+    final attachment = own[id];
+    if (attachment != null) {
+      if (attachment.deletedAt != null) await attachments.restore(id);
+      continue;
+    }
+    // Unknown here - another page's, or not synced in yet (then it's
+    // left alone).
+    final foreign = await attachments.byId(id);
+    if (foreign != null) replacements[id] = await attachments.copyTo(foreign, pageId: pageId);
+  }
+  for (final attachment in own.values) {
+    if (attachment.deletedAt == null && !referenced.contains(attachment.id)) {
+      await attachments.softDelete(attachment.id);
+    }
+  }
+  return replacements;
 }

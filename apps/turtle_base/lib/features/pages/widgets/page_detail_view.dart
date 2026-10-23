@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Page;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
+import 'package:turtle_base/features/files/widgets/attachment_block.dart';
+import 'package:turtle_base/features/files/widgets/pick_files.dart';
 import 'package:turtle_base/features/pages/widgets/block_document.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
 import 'package:turtle_base/features/pages/widgets/page_properties_header.dart';
@@ -169,7 +171,45 @@ class _PageDetailViewState extends State<PageDetailView> {
         document: editorState.document,
         currentBlocks: currentBlocks,
       );
+      final replacements = await syncAttachmentsFromDocument(
+        attachments: scope.attachments,
+        pageId: widget.pageId,
+        document: editorState.document,
+      );
+      if (replacements.isNotEmpty && identical(editorState, _editorState)) {
+        _replaceAttachmentIds(editorState, replacements);
+      }
     });
+  }
+
+  /// Inserts the picked files after the cursor's block, or at the end
+  /// without a cursor. The slash menu offers the same on desktop, but
+  /// appflowy has no slash menu on mobile.
+  Future<void> _attachFiles(BuildContext context) async {
+    final editorState = _editorState;
+    if (editorState == null) return;
+    final selection = editorState.selection;
+    final ids = await pickAndAttach(context, pageId: widget.pageId);
+    if (ids.isEmpty || !identical(editorState, _editorState)) return;
+    final path = selection?.end.path.next ?? [editorState.document.root.children.length];
+    final transaction = editorState.transaction..insertNodes(path, [for (final id in ids) attachmentNode(id)]);
+    await editorState.apply(transaction);
+  }
+
+  void _replaceAttachmentIds(EditorState editorState, Map<String, String> replacements) {
+    final transaction = editorState.transaction;
+    void walk(Iterable<Node> nodes) {
+      for (final node in nodes) {
+        final newId = replacements[node.attributes[AttachmentBlockKeys.attachmentId]];
+        if (node.type == AttachmentBlockKeys.type && newId != null) {
+          transaction.updateNode(node, {AttachmentBlockKeys.attachmentId: newId});
+        }
+        walk(node.children);
+      }
+    }
+
+    walk(editorState.document.root.children);
+    editorState.apply(transaction);
   }
 
   /// AppFlowyEditor doesn't follow the ambient theme on its own - its
@@ -229,6 +269,13 @@ class _PageDetailViewState extends State<PageDetailView> {
                   ),
                 ),
               const Spacer(),
+              Tooltip(
+                message: 'Attach file',
+                child: ShadIconButton.ghost(
+                  icon: const Icon(Icons.attach_file),
+                  onPressed: () => _attachFiles(context),
+                ),
+              ),
               // Delete is always available and pinned to the far
               // right - not in the sidebar, so every sidebar row (no
               // trailing action) stays the same height (see Sidebar).
@@ -277,7 +324,25 @@ class _PageDetailViewState extends State<PageDetailView> {
             child: PagePropertiesHeader(pageId: widget.pageId, collectionId: collectionId),
           ),
         Expanded(
-          child: AppFlowyEditor(editorState: editorState, editorStyle: _editorStyle(context)),
+          child: AppFlowyEditor(
+            editorState: editorState,
+            editorStyle: _editorStyle(context),
+            blockComponentBuilders: {
+              ...standardBlockComponentBuilderMap,
+              AttachmentBlockKeys.type: AttachmentBlockComponentBuilder(editorState: editorState),
+            },
+            characterShortcutEvents: [
+              for (final event in standardCharacterShortcutEvents)
+                if (event != slashCommand) event,
+              customSlashCommand([
+                // appflowy's own image entry stores a local file path,
+                // see attachmentSelectionMenuItems.
+                for (final item in standardSelectionMenuItems)
+                  if (!item.keywords.contains('image')) item,
+                ...attachmentSelectionMenuItems(pageId: widget.pageId),
+              ]),
+            ],
+          ),
         ),
       ],
     );
