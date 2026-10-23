@@ -18,3 +18,21 @@ abstract class SyncTransport {
   /// Downloads the file previously uploaded as [name].
   Future<Uint8List> download(String name);
 }
+
+/// Flat storage for content-addressed files (images, attachments) that
+/// `FileSyncController` shares between devices.
+///
+/// Streamed rather than [Uint8List]-based like [SyncTransport], since
+/// files can be far larger than a changeset. Names are chosen by the
+/// caller and unique per content, so uploading a name that already
+/// exists is harmless.
+abstract class FileTransport {
+  /// Uploads [length] bytes from [bytes] under [name].
+  Future<void> upload(String name, Stream<List<int>> bytes, int length);
+
+  /// The names of all files currently stored.
+  Future<Set<String>> list();
+
+  /// Streams the file previously uploaded as [name].
+  Stream<List<int>> download(String name);
+}
