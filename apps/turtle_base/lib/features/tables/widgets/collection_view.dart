@@ -8,6 +8,7 @@ import 'package:turtle_base/features/files/data/attachments_repository.dart';
 import 'package:turtle_base/features/files/widgets/attachment_thumbnail.dart';
 import 'package:turtle_base/features/files/widgets/files_field_value.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
+import 'package:turtle_base/features/plugins/widgets/entry_lookup_dialog.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
@@ -17,6 +18,7 @@ import 'package:turtle_base/features/tables/widgets/collection_tiles_view.dart';
 import 'package:turtle_base/features/tables/widgets/field_type_picker.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_picker_dialog.dart';
+import 'package:turtle_plugin/turtle_plugin.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Storage/display format for date fields - also what TrinaGrid's date
@@ -121,6 +123,13 @@ class _CollectionViewState extends State<CollectionView> {
                                 onLayoutChanged: (layout) => setState(() => _layout = layout),
                                 onAdd: () => _addRow(scope),
                                 onEdit: widget.onEdit,
+                                lookup: scope.plugins.templateOf(widget.collectionId)?.lookup,
+                                onLookup: (lookup) => showEntryLookup(
+                                  context,
+                                  collectionId: widget.collectionId,
+                                  lookup: lookup,
+                                  onOpenEntry: widget.onOpenEntry,
+                                ),
                                 compact: narrow,
                               ),
                               const SizedBox(height: 16),
@@ -669,13 +678,17 @@ class _Header extends StatelessWidget {
 }
 
 /// The layout switch on the left, actions on the right - icon-only
-/// actions when [compact], so all fits one line on a phone.
+/// actions when [compact], so all fits one line on a phone. With a
+/// plugin's [lookup], adding through it is the main action and a blank
+/// entry the secondary one.
 class _Toolbar extends StatelessWidget {
   const _Toolbar({
     required this.layout,
     required this.onLayoutChanged,
     required this.onAdd,
     required this.onEdit,
+    required this.lookup,
+    required this.onLookup,
     required this.compact,
   });
 
@@ -683,6 +696,8 @@ class _Toolbar extends StatelessWidget {
   final ValueChanged<_CollectionLayout> onLayoutChanged;
   final VoidCallback onAdd;
   final VoidCallback onEdit;
+  final EntryLookup? lookup;
+  final ValueChanged<EntryLookup> onLookup;
   final bool compact;
 
   @override
@@ -703,7 +718,26 @@ class _Toolbar extends StatelessWidget {
             child: const Text('Edit collection'),
           ),
         const SizedBox(width: 8),
-        ShadButton(leading: const Icon(Icons.add, size: 16), onPressed: onAdd, child: const Text('New entry')),
+        if (lookup case final lookup?) ...[
+          if (compact)
+            Tooltip(
+              message: 'New entry',
+              child: ShadIconButton.ghost(icon: const Icon(Icons.add, size: 18), onPressed: onAdd),
+            )
+          else
+            ShadButton.ghost(
+              leading: const Icon(Icons.add, size: 16),
+              onPressed: onAdd,
+              child: const Text('New entry'),
+            ),
+          const SizedBox(width: 8),
+          ShadButton(
+            leading: const Icon(Icons.search, size: 16),
+            onPressed: () => onLookup(lookup),
+            child: Text(lookup.actionLabel),
+          ),
+        ] else
+          ShadButton(leading: const Icon(Icons.add, size: 16), onPressed: onAdd, child: const Text('New entry')),
       ],
     );
   }
