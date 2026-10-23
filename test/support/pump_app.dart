@@ -12,6 +12,8 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/core/sync/app_sync_controller.dart';
 import 'package:turtle_base/core/sync/sync_scope.dart';
 import 'package:turtle_base/core/theme/theme_controller.dart';
+import 'package:turtle_base/core/theme/theme_preset_controller.dart';
+import 'package:turtle_base/core/theme/theme_preset_scope.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
@@ -74,6 +76,7 @@ Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true})
   // this doesn't need runAsync().
   SharedPreferences.setMockInitialValues({});
   final themeController = await ThemeController.load();
+  final themePresetController = await ThemePresetController.load();
   final aiSettingsController = await AiSettingsController.load();
   // Unrelated to `database` above - SyncScope just needs *a* SqliteCrdt to
   // construct AppSyncController; no widget test exercises sync itself
@@ -85,8 +88,8 @@ Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true})
       controller: themeController,
       child: AiSettingsScope(
         controller: aiSettingsController,
-        child: ThemeScope(
-          controller: themeController,
+        child: ThemePresetScope(
+          controller: themePresetController,
           child: SyncScope(
             controller: syncController,
             child: AppScope(database: database, child: wrapWithAppLocalizations(const AppShell())),
