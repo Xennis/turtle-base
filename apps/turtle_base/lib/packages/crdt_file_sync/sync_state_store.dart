@@ -11,16 +11,28 @@ abstract class SyncStateStore {
   Hlc? lastPushedAt(String nodeId);
 
   Future<void> setLastPushedAt(String nodeId, Hlc hlc);
+
+  /// Names of other devices' changeset files already merged.
+  Set<String> mergedFiles(String nodeId);
+
+  Future<void> setMergedFiles(String nodeId, Set<String> names);
 }
 
 /// Forgets everything on restart - for tests, and as the default when
 /// nothing persists the state.
 class InMemorySyncStateStore implements SyncStateStore {
   final _lastPushedAt = <String, Hlc>{};
+  final _mergedFiles = <String, Set<String>>{};
 
   @override
   Hlc? lastPushedAt(String nodeId) => _lastPushedAt[nodeId];
 
   @override
   Future<void> setLastPushedAt(String nodeId, Hlc hlc) async => _lastPushedAt[nodeId] = hlc;
+
+  @override
+  Set<String> mergedFiles(String nodeId) => {...?_mergedFiles[nodeId]};
+
+  @override
+  Future<void> setMergedFiles(String nodeId, Set<String> names) async => _mergedFiles[nodeId] = {...names};
 }

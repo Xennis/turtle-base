@@ -15,4 +15,14 @@ void main() {
     expect(reloaded.lastPushedAt('node-a'), hlc);
     expect(reloaded.lastPushedAt('node-b'), isNull);
   });
+
+  test('the merged files survive a new store instance, per node id', () async {
+    await SharedPreferencesSyncStateStore(await SharedPreferences.getInstance())
+        .setMergedFiles('node-a', {'node-b/1-0.json', 'node-c/2-0.json'});
+
+    final reloaded = SharedPreferencesSyncStateStore(await SharedPreferences.getInstance());
+
+    expect(reloaded.mergedFiles('node-a'), {'node-b/1-0.json', 'node-c/2-0.json'});
+    expect(reloaded.mergedFiles('node-b'), isEmpty);
+  });
 }
