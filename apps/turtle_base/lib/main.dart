@@ -24,12 +24,15 @@ import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/files/data/attachments_repository.dart';
+import 'package:turtle_base/features/plugins/data/plugin_registry.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/packages/file_store/file_store.dart';
 
-/// Field type variants contributed by packages, next to the app's own.
-final _fieldTypes = FieldTypeRegistry(variants: booksVariants);
+final _plugins = PluginRegistry([booksPlugin]);
+
+/// Field type variants contributed by plugins, next to the common ones.
+final _fieldTypes = FieldTypeRegistry(variants: _plugins.variants);
 
 Future<void> main() async {
   // ThemeController.load() does real (if fast) I/O via shared_preferences,
@@ -110,6 +113,7 @@ class TurtleBaseApp extends StatelessWidget {
     return AppScope(
       database: database,
       fieldTypes: _fieldTypes,
+      plugins: _plugins,
       files: files,
       child: SyncScope(
         controller: syncController,

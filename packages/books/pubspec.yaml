@@ -7,7 +7,7 @@ environment:
   sdk: ^3.13.0
 
 dependencies:
-  field_types:
+  turtle_plugin:
 
 dev_dependencies:
   flutter_test:
