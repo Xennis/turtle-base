@@ -20,7 +20,6 @@ class CollectionTilesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
     return GridView.builder(
       // Fixed-height cards of a max width rather than an aspect ratio, so
       // they fit one column on narrow screens (see UI_UX.md's
@@ -35,33 +34,71 @@ class CollectionTilesView extends StatelessWidget {
       itemBuilder: (context, index) {
         final entry = entries[index];
         final secondary = secondaryFor(entry);
-        return MouseRegion(
-          cursor: SystemMouseCursors.click,
-          // GestureDetector rather than InkWell - ShadCard brings its
-          // own surface, so there's no Material ancestor to ink on.
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => onOpenEntry(entry.id),
-            child: ShadCard(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+        return _Tile(entry: entry, secondary: secondary, onTap: () => onOpenEntry(entry.id));
+      },
+    );
+  }
+}
+
+/// A card that lifts its border on hover, to read as clickable.
+class _Tile extends StatefulWidget {
+  const _Tile({required this.entry, required this.secondary, required this.onTap});
+
+  final Page entry;
+  final Widget? secondary;
+  final VoidCallback onTap;
+
+  @override
+  State<_Tile> createState() => _TileState();
+}
+
+class _TileState extends State<_Tile> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    final entry = widget.entry;
+    final secondary = widget.secondary;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      // GestureDetector rather than InkWell - ShadCard brings its own
+      // surface, so there's no Material ancestor to ink on.
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: ShadCard(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          // The card's own border unless hovered.
+          border: _hovered ? ShadBorder.all(color: theme.colorScheme.ring, radius: theme.radius) : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
                 children: [
-                  Text(
-                    entry.title.isEmpty ? 'Untitled' : entry.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.large,
+                  if (entry.icon != null) ...[
+                    Text(entry.icon!, style: const TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      entry.title.isEmpty ? 'Untitled' : entry.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.large,
+                    ),
                   ),
-                  if (secondary != null) ...[const SizedBox(height: 8), ClipRect(child: secondary)],
                 ],
               ),
-            ),
+              if (secondary != null) ...[const SizedBox(height: 8), ClipRect(child: secondary)],
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

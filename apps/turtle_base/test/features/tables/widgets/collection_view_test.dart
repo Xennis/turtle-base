@@ -48,7 +48,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Priority'), findsOneWidget); // column header
+    // Column headers are rich text, with the type icon in front.
+    expect(find.textContaining('Priority', findRichText: true), findsOneWidget);
     expect(find.text('Buy milk'), findsOneWidget); // title cell
     expect(find.text('High'), findsOneWidget); // property cell
   }, timeout: const Timeout(Duration(seconds: 30)));
@@ -149,7 +150,7 @@ void main() {
     expect(openedEntryId, entryId);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('Add row creates a blank entry, edited inline afterwards', (WidgetTester tester) async {
+  testWidgets('New entry creates a blank entry, edited inline afterwards', (WidgetTester tester) async {
     final database = newTestDatabase();
     addTearDown(database.close);
 
@@ -178,7 +179,7 @@ void main() {
 
     expect(await database.select(database.pages).get(), isEmpty);
 
-    await tester.tap(find.widgetWithText(ShadButton, 'Add row'));
+    await tester.tap(find.widgetWithText(ShadButton, 'New entry'));
     // _addRow does real FFI I/O (a stream's .first, then an insert),
     // triggered from a button handler rather than test code directly -
     // needs runAsync to actually complete within the pump budget.
@@ -262,8 +263,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Task'), findsOneWidget);
-    expect(find.text('Name'), findsNothing);
+    // Not "Tasks", the collection's name in the header.
+    expect(find.textContaining(RegExp(r'Task\b'), findRichText: true), findsOneWidget);
+    expect(find.textContaining('Name', findRichText: true), findsNothing);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
   testWidgets('shows a URL field value as a tappable link', (WidgetTester tester) async {
@@ -596,8 +598,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    await tester.tap(find.text('Table'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Tiles'));
     await tester.pumpAndSettle();
 
