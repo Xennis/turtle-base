@@ -1,5 +1,5 @@
 name: books
-description: Book-related extensions for turtle-base, e.g. an ISBN field type.
+description: The Books plugin for turtle-base - a reading list with books from Open Library.
 publish_to: none
 resolution: workspace
 
