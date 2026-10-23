@@ -1,12 +1,11 @@
 import 'package:books/books.dart';
-import 'package:field_types/field_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
-import 'package:turtle_base/features/tables/data/field_variants.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_plugin/turtle_plugin.dart';
 
 Field fieldRow(String type, {String? config}) {
   final now = DateTime(2026);

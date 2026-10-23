@@ -1,9 +1,6 @@
 import 'dart:convert';
 
-/// Fixed palette for select options, like Notion's - stored by name
-/// rather than as a hex value, so the UI can pick fitting tones for
-/// light and dark mode (see SelectOptionChip).
-enum OptionColor { gray, brown, orange, yellow, green, blue, purple, pink, red }
+import 'package:turtle_plugin/turtle_plugin.dart';
 
 /// One choice of a select/multi-select field. Property values reference
 /// it by [id], never by [name], so renaming or recoloring an option

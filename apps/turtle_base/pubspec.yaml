@@ -62,6 +62,7 @@ dependencies:
   shared_preferences: ^2.5.5
   sqlite_crdt: ^3.0.3
   trina_grid: ^2.2.2
+  turtle_plugin:
   url_launcher: ^6.3.2
   uuid: ^4.5.3
 dev_dependencies:

@@ -1,3 +1,4 @@
+import 'package:field_types/field_types.dart';
 // Flutter's own `Page` (Navigator 2.0) collides with our `Page` data class.
 import 'package:flutter/material.dart' hide Page;
 import 'package:flutter_test/flutter_test.dart';
@@ -9,7 +10,6 @@ import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
-import 'package:turtle_base/features/tables/data/field_variants.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/widgets/collection_view.dart';

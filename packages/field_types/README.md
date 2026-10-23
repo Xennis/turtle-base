@@ -2,7 +2,7 @@
 
 The API for field type variants: semantics such as an ISBN or an email address on top of one of turtle-base's built-in base types (text, number). A variant validates, normalizes and formats values but is stored exactly like its base type, so a device without the package contributing it still reads the field as plain text or number.
 
-Packages export their variants (e.g. `const booksVariants = [isbnVariant]`), and the app registers them at startup. See `.local/FIELD_TYPES.md` for the overall field type concept.
+Packages export their variants (e.g. `const booksVariants = [isbnVariant]`), and the app registers them at startup. The variants every app offers (`url`, `email`, `phone`) live here too as `commonVariants`, so plugins can use them in their collection templates. See `.local/FIELD_TYPES.md` for the overall field type concept.
 
 ```dart
 final emailVariant = TextVariant.pattern(
