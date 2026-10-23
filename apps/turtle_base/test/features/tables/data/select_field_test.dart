@@ -4,6 +4,7 @@ import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_plugin/turtle_plugin.dart';
 
 import '../../../support/pump_app.dart';
 

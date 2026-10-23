@@ -1,7 +1,6 @@
 import 'package:field_types/field_types.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
-import 'package:turtle_base/features/tables/data/field_variants.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
 
 /// One entry of the type picker: a base type, optionally with a variant.
@@ -26,7 +25,7 @@ class FieldTypeChoice {
 class FieldTypeRegistry {
   FieldTypeRegistry({List<FieldVariant<Object>> variants = const []})
     : _variants = {
-        for (final variant in [...appFieldVariants, ...variants]) variant.id: variant,
+        for (final variant in [...commonVariants, ...variants]) variant.id: variant,
       };
 
   final Map<String, FieldVariant<Object>> _variants;

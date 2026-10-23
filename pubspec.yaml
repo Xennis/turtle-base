@@ -11,6 +11,7 @@ workspace:
   - packages/crdt_file_sync_google_drive
   - packages/crdt_file_sync_transport
   - packages/field_types
+  - packages/turtle_plugin
 
 # Every package here is overridden because of a real upstream
 # compatibility gap, not preference. Whenever the underlying issue is

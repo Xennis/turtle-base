@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
+import 'package:turtle_plugin/turtle_plugin.dart';
 
 /// Muted tints per palette color, as (background, foreground) - soft
 /// enough to sit next to the warm neutrals of the softened shadcn

@@ -1,9 +1,8 @@
-import 'package:field_types/field_types.dart';
-import 'package:turtle_base/features/tables/data/field_validation.dart';
+import 'package:field_types/src/field_variant.dart';
 
-/// Variants the app itself ships - packages add theirs via
-/// FieldTypeRegistry.
-final appFieldVariants = <FieldVariant<Object>>[urlVariant, emailVariant, phoneVariant];
+/// Variants every turtle-base app offers - plugins may use them in their
+/// collection templates, e.g. a URL field linking to the source.
+final commonVariants = <FieldVariant<Object>>[urlVariant, emailVariant, phoneVariant];
 
 final urlVariant = TextVariant(
   id: 'url',
@@ -33,3 +32,10 @@ final phoneVariant = TextVariant.pattern(
   normalize: (value) => value.trim(),
   link: (value) => Uri(scheme: 'tel', path: value.replaceAll(RegExp(r'[^0-9+]'), '')),
 );
+
+/// A host with a dot, with or without a scheme (`example.com` counts).
+bool isValidUrl(String value) {
+  final withScheme = value.contains('://') ? value : 'https://$value';
+  final uri = Uri.tryParse(withScheme);
+  return uri != null && uri.host.isNotEmpty && uri.host.contains('.');
+}

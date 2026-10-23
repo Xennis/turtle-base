@@ -5,6 +5,7 @@ import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/select_option_chip.dart';
+import 'package:turtle_plugin/turtle_plugin.dart';
 
 /// The options of a select/multi-select field in CollectionEditPage:
 /// one row per option (color, name, delete) plus an "Add option" input.
