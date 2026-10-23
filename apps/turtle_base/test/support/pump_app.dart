@@ -22,6 +22,7 @@ import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
 import 'package:turtle_base/features/files/data/attachments_repository.dart';
+import 'package:turtle_base/features/plugins/data/plugin_registry.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/packages/file_store/file_store.dart';
@@ -70,7 +71,7 @@ Widget wrapWithAppLocalizations(Widget home) {
 /// space to select/populate - even though AppDatabase itself no longer
 /// seeds one (see its _seedDefaults doc comment). Tests covering the
 /// "no spaces yet" empty state pass false.
-Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true}) async {
+Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true, PluginRegistry? plugins}) async {
   final database = newTestDatabase();
   await tester.runAsync(() => database.currentUserId());
   if (seedDefaultSpace) {
@@ -103,7 +104,12 @@ Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true})
           controller: themePresetController,
           child: SyncScope(
             controller: syncController,
-            child: AppScope(database: database, files: files, child: wrapWithAppLocalizations(const AppShell())),
+            child: AppScope(
+              database: database,
+              plugins: plugins,
+              files: files,
+              child: wrapWithAppLocalizations(const AppShell()),
+            ),
           ),
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/pages/widgets/page_detail_view.dart';
+import 'package:turtle_base/features/plugins/widgets/plugins_page.dart';
 import 'package:turtle_base/features/settings/widgets/settings_page.dart';
 import 'package:turtle_base/features/shell/widgets/app_navigation_controller.dart';
 import 'package:turtle_base/features/shell/widgets/name_prompt_dialog.dart';
@@ -121,7 +122,9 @@ class _NarrowShellState extends State<_NarrowShell> {
 
   void _closeDrawerOnSelection() {
     final navigation = widget.navigation;
-    if (navigation.selectedCollectionId != null || navigation.selectedPageId != null || navigation.isShowingSettings) {
+    if (navigation.selectedCollectionId != null ||
+        navigation.selectedPageId != null ||
+        navigation.isShowingOverlayPage) {
       _scaffoldKey.currentState?.closeDrawer();
     }
   }
@@ -132,7 +135,7 @@ class _NarrowShellState extends State<_NarrowShell> {
     return ListenableBuilder(
       listenable: navigation,
       builder: (context, _) {
-        if (navigation.isEditingCollection || navigation.isShowingSettings) {
+        if (navigation.isEditingCollection || navigation.isShowingOverlayPage) {
           // Wrapped in a Scaffold for the background only - these pages'
           // own Scaffolds are transparent so they blend into the unified
           // window background on the wide layout (see _WideShell).
@@ -168,6 +171,9 @@ class _MainContent extends StatelessWidget {
   Widget build(BuildContext context) {
     if (navigation.isShowingSettings) {
       return SettingsPage(onDone: navigation.hideSettings);
+    }
+    if (navigation.isShowingPlugins) {
+      return PluginsPage(onDone: navigation.hidePlugins, onOpenSpace: navigation.openSpace);
     }
     if (navigation.selectedCollectionId case final id?) {
       if (navigation.isEditingCollection) {

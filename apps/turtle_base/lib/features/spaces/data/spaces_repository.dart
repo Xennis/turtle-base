@@ -17,10 +17,12 @@ class SpacesRepository {
         .watch();
   }
 
-  Future<String> create({required String name, String? icon}) async {
+  /// [id] defaults to a fresh uuid - plugins derive theirs (see
+  /// PluginInstancesRepository).
+  Future<String> create({required String name, String? icon, String? id}) async {
     final userId = await _db.currentUserId();
     final now = DateTime.now();
-    final id = _uuid.v4();
+    id ??= _uuid.v4();
 
     await _db
         .into(_db.spaces)

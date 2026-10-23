@@ -34,17 +34,19 @@ class FieldsRepository {
   }
 
   /// [config] is the base type's own config (e.g. encodeSelectConfig);
-  /// [variant] and its preset are merged into it.
+  /// [variant] and its preset are merged into it. [id] defaults to a
+  /// fresh uuid - plugins derive theirs (see PluginInstancesRepository).
   Future<String> create({
     required String collectionId,
     required String name,
     required BaseFieldType<Object, Object?> type,
     FieldVariant<Object>? variant,
     String? config,
+    String? id,
   }) async {
     final userId = await _db.currentUserId();
     final now = DateTime.now();
-    final id = _uuid.v4();
+    id ??= _uuid.v4();
 
     await _db
         .into(_db.fields)

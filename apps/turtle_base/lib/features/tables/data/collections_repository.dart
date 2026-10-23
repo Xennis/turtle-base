@@ -23,10 +23,18 @@ class CollectionsRepository {
     return (_db.select(_db.collections)..where((c) => c.id.equals(id))).watchSingle();
   }
 
-  Future<String> create({required String spaceId, required String name, String? icon}) async {
+  /// [id] defaults to a fresh uuid - plugins derive theirs (see
+  /// PluginInstancesRepository).
+  Future<String> create({
+    required String spaceId,
+    required String name,
+    String? icon,
+    String? titleFieldLabel,
+    String? id,
+  }) async {
     final userId = await _db.currentUserId();
     final now = DateTime.now();
-    final id = _uuid.v4();
+    id ??= _uuid.v4();
 
     await _db
         .into(_db.collections)
@@ -36,6 +44,7 @@ class CollectionsRepository {
             spaceId: spaceId,
             name: name,
             icon: Value(icon),
+            titleFieldLabel: Value(titleFieldLabel),
             createdAt: now,
             updatedAt: now,
             createdBy: userId,
