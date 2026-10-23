@@ -1,6 +1,7 @@
 import 'package:crdt_file_sync_google_drive/crdt_file_sync_google_drive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
+import 'package:turtle_base/core/sync/sync_format.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
 
 /// Owns the connect/disconnect lifecycle for Google Drive sync and the
@@ -15,7 +16,12 @@ class AppSyncController extends ChangeNotifier {
   final DriveAuthenticator? _authenticator;
   final String appFolderName;
 
+  GoogleDriveSyncFolder? _folder;
   SyncController? _sync;
+
+  /// Set when the last sync stopped before [SyncController] ran, e.g. on
+  /// a [SyncFormatTooNewException].
+  Object? _preflightError;
 
   /// Whether an OAuth client was configured for this platform (see
   /// `createDriveAuthenticator`) - false hides the Drive sync UI entirely
@@ -23,9 +29,9 @@ class AppSyncController extends ChangeNotifier {
   bool get isAvailable => _authenticator != null;
 
   bool get isConnected => _sync != null;
-  SyncStatus get status => _sync?.status ?? SyncStatus.idle;
+  SyncStatus get status => _preflightError != null ? SyncStatus.error : _sync?.status ?? SyncStatus.idle;
   DateTime? get lastSyncedAt => _sync?.lastSyncedAt;
-  Object? get lastError => _sync?.lastError;
+  Object? get lastError => _preflightError ?? _sync?.lastError;
 
   /// Restores a previous connection without prompting - call once at app
   /// start. A no-op (stays disconnected) if there's nothing to restore or
@@ -50,15 +56,33 @@ class AppSyncController extends ChangeNotifier {
     await _authenticator?.signOut();
     _sync?.removeListener(notifyListeners);
     _sync = null;
+    _folder = null;
+    _preflightError = null;
     notifyListeners();
   }
 
+  /// Checked on every sync rather than once per connection - another
+  /// device may have bumped the format since.
   Future<void> syncNow() async {
-    await _sync?.syncNow();
+    final folder = _folder;
+    final sync = _sync;
+    if (folder == null || sync == null) return;
+    _preflightError = null;
+    try {
+      await ensureSyncFormat(read: folder.readFormatVersion, write: folder.writeFormatVersion);
+    } catch (e) {
+      debugPrint('[sync] format check failed: $e');
+      _preflightError = e;
+      notifyListeners();
+      return;
+    }
+    await sync.syncNow();
   }
 
   void _attach(GoogleDriveSyncFolder folder) {
     _sync?.removeListener(notifyListeners);
+    _folder = folder;
+    _preflightError = null;
     _sync = SyncController(_crdt, folder.changesets)..addListener(notifyListeners);
     notifyListeners();
   }
