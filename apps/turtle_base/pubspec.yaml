@@ -39,6 +39,7 @@ dependencies:
   # Alphabetical order. appflowy_editor and sqlite_crdt are patched via
   # dependency_overrides in the root pubspec.yaml - see there for why.
   appflowy_editor: ^6.2.0
+  books:
   crdt_file_sync_google_drive:
   crdt_file_sync_transport:
   cupertino_icons: ^2.0.0
