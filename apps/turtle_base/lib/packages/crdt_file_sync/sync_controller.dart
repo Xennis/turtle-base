@@ -88,27 +88,68 @@ class SyncController extends ChangeNotifier {
     await _state.setLastPushedAt(nodeId, pushedAt);
   }
 
+  /// Downloads and merges the listed files of other devices not merged
+  /// before. Changeset files never change and merging is order
+  /// independent (last writer wins per row), so remembering the merged
+  /// names is all it takes. A file that fails stays unmerged and is
+  /// retried on the next sync, without holding up the others.
   Future<void> _pull(List<String> names) async {
-    debugPrint('[sync] pull: transport.list() -> $names');
-    for (final name in names) {
-      final slash = name.indexOf('/');
-      if (slash == -1) continue;
-      final nodeId = name.substring(0, slash);
-      if (nodeId == _crdt.nodeId) {
-        debugPrint('[sync] pull: skipping own file $name');
-        continue;
-      }
+    final nodeId = _crdt.nodeId;
+    // Names no longer listed (deleted on the remote) are dropped, so the
+    // set doesn't grow forever.
+    final remembered = _state.mergedFiles(nodeId);
+    final merged = remembered.intersection(names.toSet());
+    if (merged.length != remembered.length) await _state.setMergedFiles(nodeId, merged);
 
-      debugPrint('[sync] pull: downloading+merging $name');
-      final bytes = await _transport.download(name);
-      final wireFormat = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-      await _crdt.merge(parseCrdtChangeset(wireFormat));
-      debugPrint('[sync] pull: merged $name');
+    final pending = [
+      for (final name in names)
+        if (_nodeIdOf(name) case final owner? when owner != nodeId && !merged.contains(name)) name,
+    ];
+    final failures = <String, Object>{};
+    for (final name in pending) {
+      try {
+        final bytes = await _transport.download(name);
+        final wireFormat = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+        await _crdt.merge(parseCrdtChangeset(wireFormat));
+        merged.add(name);
+        // After each merge - a crash later only means merging this one
+        // again, which is harmless.
+        await _state.setMergedFiles(nodeId, merged);
+      } catch (e) {
+        debugPrint('[sync] pull: $name failed: $e');
+        failures[name] = e;
+      }
     }
+    debugPrint(
+      '[sync] pull: ${names.length} file(s) listed, ${pending.length} new, '
+      '${pending.length - failures.length} merged, ${failures.length} failed',
+    );
+    if (failures.isNotEmpty) throw ChangesetPullException(failures);
+  }
+
+  /// The device a `<nodeId>/<file>` name belongs to, null for other names.
+  static String? _nodeIdOf(String name) {
+    final slash = name.indexOf('/');
+    return slash == -1 ? null : name.substring(0, slash);
   }
 
   /// Encodes [hlc] into a filename-safe, lexically sortable string - not
   /// `Hlc.toString()`, whose `:`-separated ISO date wouldn't be a safe
   /// file/object name on every transport.
   static String _fileNameFor(Hlc hlc) => '${hlc.dateTime.microsecondsSinceEpoch}-${hlc.counter}.json';
+}
+
+/// Some changesets couldn't be downloaded or merged - the others were,
+/// and these are retried on the next sync.
+class ChangesetPullException implements Exception {
+  const ChangesetPullException(this.failures);
+
+  /// The error per file name.
+  final Map<String, Object> failures;
+
+  @override
+  String toString() {
+    final count = failures.length == 1 ? '1 changeset' : '${failures.length} changesets';
+    return '$count could not be merged, retried on the next sync (${failures.values.first})';
+  }
 }

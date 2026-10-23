@@ -126,6 +126,81 @@ void main() {
     expect(await emptied.list(), hasLength(1));
   });
 
+  test('a second sync without new files downloads nothing', () async {
+    final (dbA, crdtA) = _openCrdtDatabase();
+    addTearDown(dbA.close);
+    final (dbB, crdtB) = _openCrdtDatabase();
+    addTearDown(dbB.close);
+    // Opens B's delegate before its crdt is read.
+    await dbB.select(dbB.spaces).get();
+    await SpacesRepository(dbA).create(name: 'On A');
+
+    final transport = FakeSyncTransport();
+    await SyncController(crdtA.crdt, transport).syncNow();
+    final controllerB = SyncController(crdtB.crdt, transport);
+    await controllerB.syncNow();
+    expect(transport.downloads, hasLength(1));
+
+    await controllerB.syncNow();
+
+    expect(transport.downloads, hasLength(1));
+  });
+
+  test('a failing file doesn\'t block the others and is retried next sync', () async {
+    final (dbA, crdtA) = _openCrdtDatabase();
+    addTearDown(dbA.close);
+    final (dbB, crdtB) = _openCrdtDatabase();
+    addTearDown(dbB.close);
+    // Opens B's delegate before its crdt is read.
+    await dbB.select(dbB.spaces).get();
+    final spacesA = SpacesRepository(dbA);
+
+    final transport = FakeSyncTransport();
+    final first = await spacesA.create(name: 'First');
+    final controllerA = SyncController(crdtA.crdt, transport);
+    await controllerA.syncNow();
+    final second = await spacesA.create(name: 'Second');
+    await controllerA.syncNow();
+    final names = await transport.list();
+    expect(names, hasLength(2));
+
+    transport.failingDownloads.add(names.first);
+    final controllerB = SyncController(crdtB.crdt, transport);
+    await controllerB.syncNow();
+
+    expect(controllerB.status, SyncStatus.error);
+    expect(controllerB.lastError, isA<ChangesetPullException>());
+    expect((await dbB.select(dbB.spaces).get()).map((s) => s.id), [second]);
+
+    transport.failingDownloads.clear();
+    transport.downloads.clear();
+    await controllerB.syncNow();
+
+    expect(controllerB.status, SyncStatus.idle);
+    expect(transport.downloads, [names.first]);
+    expect((await dbB.select(dbB.spaces).get()).map((s) => s.id), unorderedEquals([first, second]));
+  });
+
+  test('merged names no longer listed are forgotten', () async {
+    final (dbA, crdtA) = _openCrdtDatabase();
+    addTearDown(dbA.close);
+    final (dbB, crdtB) = _openCrdtDatabase();
+    addTearDown(dbB.close);
+    // Opens B's delegate before its crdt is read.
+    await dbB.select(dbB.spaces).get();
+    await SpacesRepository(dbA).create(name: 'On A');
+
+    final transport = FakeSyncTransport();
+    await SyncController(crdtA.crdt, transport).syncNow();
+    final state = InMemorySyncStateStore();
+    await SyncController(crdtB.crdt, transport, state: state).syncNow();
+    expect(state.mergedFiles(crdtB.crdt.nodeId), hasLength(1));
+
+    await SyncController(crdtB.crdt, FakeSyncTransport(), state: state).syncNow();
+
+    expect(state.mergedFiles(crdtB.crdt.nodeId), isEmpty);
+  });
+
   test('a transport failure surfaces as an error status without throwing', () async {
     final (db, delegate) = _openCrdtDatabase();
     addTearDown(db.close);
