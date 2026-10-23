@@ -154,6 +154,27 @@ void main() {
     });
   });
 
+  group('email, phone and rating variants', () {
+    test('email validates and links via mailto', () {
+      final field = registry.resolve(fieldRow('text', config: '{"variant": "email"}'));
+      expect(field.parse('me@'), isA<ParseError>());
+      expect(field.linkFor('me@example.com'), Uri.parse('mailto:me@example.com'));
+    });
+
+    test('phone links its digits via tel', () {
+      final field = registry.resolve(fieldRow('text', config: '{"variant": "phone"}'));
+      expect(field.parse('call me'), isA<ParseError>());
+      expect(field.linkFor('+49 (30) 123-4567'), Uri.parse('tel:+49301234567'));
+    });
+
+    test('rating shows stars and only takes whole numbers in range', () {
+      final field = registry.resolve(fieldRow('number', config: '{"variant": "rating", "min": 1, "max": 5}'));
+      expect(field.display(3), '★★★');
+      expect(field.parse('2.5'), isA<ParseError>());
+      expect(field.parse('6'), isA<ParseError>());
+    });
+  });
+
   group('date', () {
     final field = registry.resolve(fieldRow('date'));
 
