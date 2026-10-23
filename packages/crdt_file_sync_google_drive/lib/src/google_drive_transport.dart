@@ -4,35 +4,28 @@ import 'dart:typed_data';
 import 'package:crdt_file_sync_transport/crdt_file_sync_transport.dart';
 import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:http/http.dart' as http;
 
-const _folderMimeType = 'application/vnd.google-apps.folder';
+import 'drive_folders.dart';
 
-/// [SyncTransport] backed by a Google Drive app folder, using only
-/// `drive.file`-scoped calls (files the app itself created/opened) - see
-/// `.local/GOOGLE_DRIVE_SETUP.md` for why that scope was chosen.
-///
-/// Layout in Drive: one folder named [appFolderName] at the Drive root,
-/// containing one subfolder per device (named after that device's CRDT
-/// node id), each holding that device's changeset files - matching the
-/// `<nodeId>/<file>` name convention `SyncController` already encodes
-/// into the flat [SyncTransport] names.
+/// [SyncTransport] for changesets: one subfolder per device (named after
+/// that device's CRDT node id) below the folder at [path], each holding
+/// that device's changeset files - matching the `<nodeId>/<file>` name
+/// convention `SyncController` encodes into the flat names.
 class GoogleDriveTransport implements SyncTransport {
-  GoogleDriveTransport({required http.Client authClient, this.appFolderName = 'turtle-base-sync'})
-    : _drive = drive.DriveApi(authClient);
+  GoogleDriveTransport(this._folders, this.path);
 
-  final drive.DriveApi _drive;
-  final String appFolderName;
+  final DriveFolders _folders;
+  final List<String> path;
 
-  String? _appFolderId;
-  final _deviceFolderIds = <String, String>{};
   final _fileIds = <String, String>{};
+
+  drive.DriveApi get _api => _folders.api;
 
   @override
   Future<void> upload(String name, Uint8List bytes) async {
     final (nodeId, fileName) = _splitName(name);
-    final folderId = await _deviceFolder(nodeId);
-    final created = await _drive.files.create(
+    final folderId = await _folders.resolve([...path, nodeId]);
+    final created = await _api.files.create(
       drive.File(name: fileName, parents: [folderId]),
       uploadMedia: drive.Media(Stream.value(bytes), bytes.length),
     );
@@ -41,31 +34,19 @@ class GoogleDriveTransport implements SyncTransport {
 
   @override
   Future<List<String>> list() async {
-    final appFolderId = await _appFolder();
-    final deviceFolders = await _drive.files.list(
-      q: "'$appFolderId' in parents and mimeType='$_folderMimeType' and trashed=false",
-      spaces: 'drive',
-      $fields: 'files(id,name)',
-    );
+    final rootId = await _folders.resolve(path);
+    final deviceFolders = await _folders.childFolders(rootId);
     debugPrint(
-      '[sync] drive: app folder $appFolderName ($appFolderId) has '
-      '${deviceFolders.files?.length ?? 0} device folder(s): '
-      '${deviceFolders.files?.map((f) => '${f.name} (${f.id})').toList()}',
+      '[sync] drive: ${path.join('/')} ($rootId) has ${deviceFolders.length} device folder(s): '
+      '${deviceFolders.map((f) => '${f.name} (${f.id})').toList()}',
     );
 
     final names = <String>[];
-    for (final folder in deviceFolders.files ?? const <drive.File>[]) {
-      final nodeId = folder.name!;
-      _deviceFolderIds[nodeId] = folder.id!;
-
-      final files = await _drive.files.list(
-        q: "'${folder.id}' in parents and trashed=false",
-        spaces: 'drive',
-        $fields: 'files(id,name)',
-      );
-      debugPrint('[sync] drive: device folder $nodeId has ${files.files?.length ?? 0} file(s)');
-      for (final file in files.files ?? const <drive.File>[]) {
-        final name = '$nodeId/${file.name}';
+    for (final folder in deviceFolders) {
+      final files = await _folders.childFiles(folder.id!);
+      debugPrint('[sync] drive: device folder ${folder.name} has ${files.length} file(s)');
+      for (final file in files) {
+        final name = '${folder.name}/${file.name}';
         _fileIds[name] = file.id!;
         names.add(name);
       }
@@ -76,7 +57,7 @@ class GoogleDriveTransport implements SyncTransport {
   @override
   Future<Uint8List> download(String name) async {
     final fileId = _fileIds[name] ?? await _findFileId(name);
-    final media = await _drive.files.get(fileId, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
+    final media = await _api.files.get(fileId, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
 
     final bytes = BytesBuilder();
     await for (final chunk in media.stream) {
@@ -87,57 +68,13 @@ class GoogleDriveTransport implements SyncTransport {
 
   Future<String> _findFileId(String name) async {
     final (nodeId, fileName) = _splitName(name);
-    final folderId = await _deviceFolder(nodeId);
-    final result = await _drive.files.list(
-      q: "name='$fileName' and '$folderId' in parents and trashed=false",
-      spaces: 'drive',
-      $fields: 'files(id,name)',
-    );
-    final fileId = result.files?.firstOrNull?.id;
+    final folderId = await _folders.resolve([...path, nodeId]);
+    final fileId = (await _folders.childFiles(folderId, name: fileName)).firstOrNull?.id;
     if (fileId == null) {
       throw StateError('GoogleDriveTransport: no file named "$name"');
     }
     _fileIds[name] = fileId;
     return fileId;
-  }
-
-  Future<String> _appFolder() async {
-    final cached = _appFolderId;
-    if (cached != null) return cached;
-
-    final id = await _findOrCreateFolder(name: appFolderName, parentId: null);
-    _appFolderId = id;
-    return id;
-  }
-
-  Future<String> _deviceFolder(String nodeId) async {
-    final cached = _deviceFolderIds[nodeId];
-    if (cached != null) return cached;
-
-    final appFolderId = await _appFolder();
-    final id = await _findOrCreateFolder(name: nodeId, parentId: appFolderId);
-    _deviceFolderIds[nodeId] = id;
-    return id;
-  }
-
-  Future<String> _findOrCreateFolder({required String name, required String? parentId}) async {
-    final parentClause = parentId == null ? '' : " and '$parentId' in parents";
-    final existing = await _drive.files.list(
-      q: "name='$name' and mimeType='$_folderMimeType' and trashed=false$parentClause",
-      spaces: 'drive',
-      $fields: 'files(id,name)',
-    );
-    final existingId = existing.files?.firstOrNull?.id;
-    if (existingId != null) {
-      debugPrint('[sync] drive: found existing folder "$name" ($existingId)');
-      return existingId;
-    }
-
-    final created = await _drive.files.create(
-      drive.File(name: name, mimeType: _folderMimeType, parents: parentId == null ? null : [parentId]),
-    );
-    debugPrint('[sync] drive: created new folder "$name" (${created.id})');
-    return created.id!;
   }
 
   (String, String) _splitName(String name) {

@@ -6,7 +6,7 @@ import 'package:googleapis_auth/googleapis_auth.dart';
 import 'android_drive_authenticator.dart';
 import 'desktop_drive_authenticator.dart';
 
-/// Produces the authenticated [AuthClient] [GoogleDriveTransport] needs,
+/// Produces the authenticated [AuthClient] [GoogleDriveSyncFolder] needs,
 /// hiding the platform-specific OAuth flow behind one interface (see
 /// `.local/GOOGLE_DRIVE_SETUP.md` for why there are two flows at all).
 abstract class DriveAuthenticator {
