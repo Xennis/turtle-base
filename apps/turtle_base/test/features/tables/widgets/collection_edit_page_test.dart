@@ -163,7 +163,14 @@ void main() {
     await tester.enterText(find.byType(ShadInput).last, 'Project');
     await tester.tap(find.byType(ShadSelect<FieldTypeChoice>).last);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Relation').last);
+    // Further down the type list than fits the popover.
+    final relationOption = find.descendant(
+      of: find.byType(ShadOption<FieldTypeChoice>),
+      matching: find.text('Relation'),
+    );
+    await tester.ensureVisible(relationOption);
+    await tester.pumpAndSettle();
+    await tester.tap(relationOption);
     await tester.pumpAndSettle();
 
     // Blocked until a target collection is picked - a relation field

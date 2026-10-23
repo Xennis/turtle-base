@@ -102,7 +102,18 @@ class _PagePropertiesHeaderState extends State<PagePropertiesHeader> {
         field: field.row,
         selectedIds: decodeRelationValue(raw),
       ),
-      TextFieldType() || NumberFieldType() || DateFieldType() => ShadInputFormField(
+      CheckboxFieldType() => Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: ShadCheckbox(
+            value: field.valueOf(raw) == true,
+            onChanged: (value) =>
+                scope.pages.setPropertyValue(widget.pageId, field.id, field.base.encode(value, field.config)),
+          ),
+        ),
+      ),
+      TextFieldType() || NumberFieldType() || DateFieldType() || LocationFieldType() => ShadInputFormField(
         controller: _controllerFor(field, page),
         focusNode: _focusNodeFor(field, scope),
         // always, not onUserInteraction - an already-invalid stored

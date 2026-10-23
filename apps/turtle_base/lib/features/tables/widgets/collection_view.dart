@@ -333,8 +333,8 @@ class _CollectionViewState extends State<CollectionView> {
   /// Whether the field is edited by typing into the cell, rather than
   /// via a picker (select, relation) or not at all.
   bool _isTypedIn(ResolvedField field) => switch (field.base) {
-    TextFieldType() || NumberFieldType() || DateFieldType() => true,
-    SelectFieldType() || RelationFieldType() || UnsupportedFieldType() => false,
+    TextFieldType() || NumberFieldType() || DateFieldType() || LocationFieldType() => true,
+    CheckboxFieldType() || SelectFieldType() || RelationFieldType() || UnsupportedFieldType() => false,
   };
 
   String? _validate(ResolvedField field, dynamic value) => switch (field.parse(value?.toString() ?? '')) {
@@ -352,6 +352,9 @@ class _CollectionViewState extends State<CollectionView> {
   ) {
     if (field.base is SelectFieldType) {
       return (context) => _selectRenderer(context, scope, field, entriesById);
+    }
+    if (field.base is CheckboxFieldType) {
+      return (context) => _checkboxRenderer(context, scope, field, entriesById);
     }
     if (field.base is RelationFieldType) return null;
     return (context) => _valueRenderer(context, field, entriesById, colors);
@@ -405,6 +408,26 @@ class _CollectionViewState extends State<CollectionView> {
             decorationColor: colors.primary,
           ),
         ),
+      ),
+    );
+  }
+
+  /// Toggled right in the grid - a checkbox needs no editor.
+  Widget _checkboxRenderer(
+    TrinaColumnRendererContext context,
+    AppScope scope,
+    ResolvedField field,
+    Map<String, Page> entriesById,
+  ) {
+    final entryId = context.row.data as String;
+    final entry = entriesById[entryId];
+    final raw = entry == null ? null : decodePageProperties(entry.properties)[field.id];
+    final checked = field.valueOf(raw) == true;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ShadCheckbox(
+        value: checked,
+        onChanged: (value) => scope.pages.setPropertyValue(entryId, field.id, field.base.encode(value, field.config)),
       ),
     );
   }

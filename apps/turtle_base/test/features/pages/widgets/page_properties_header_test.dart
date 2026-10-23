@@ -649,4 +649,51 @@ void main() {
     expect(find.widgetWithText(SelectOptionChip, 'Urgent'), findsNothing);
     expect((await storedProperties())[tagsFieldId], isEmpty);
   }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('a checkbox toggles and a location is typed in as "lat, lng"', (WidgetTester tester) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    late String pageId;
+    late String readFieldId;
+    late String placeFieldId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Books');
+      final fields = FieldsRepository(database);
+      readFieldId = await fields.create(collectionId: collectionId, name: 'Read', type: BaseFieldType.checkbox);
+      placeFieldId = await fields.create(collectionId: collectionId, name: 'Bought in', type: BaseFieldType.location);
+      pageId = await PagesRepository(database).create(spaceId: spaceId, collectionId: collectionId);
+    });
+
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          Scaffold(
+            body: PagePropertiesHeader(pageId: pageId, collectionId: collectionId),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    Future<Map<String, Object?>> storedProperties() async {
+      final entry = await (database.select(database.pages)..where((p) => p.id.equals(pageId))).getSingle();
+      return decodePageProperties(entry.properties);
+    }
+
+    await tester.tap(find.byType(ShadCheckbox));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    expect((await storedProperties())[readFieldId], isTrue);
+
+    await tester.enterText(find.byType(ShadInput), '52.52, 13.405');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    expect((await storedProperties())[placeFieldId], {'lat': 52.52, 'lng': 13.405});
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

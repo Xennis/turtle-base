@@ -79,7 +79,8 @@ class ResolvedField {
   Uri? linkFor(Object? raw) {
     if (errorFor(raw) != null) return null;
     final value = valueOf(raw);
-    return value == null ? null : variant?.link(value);
+    if (value == null) return null;
+    return variant?.link(value) ?? base.link(value, config);
   }
 
   /// Parses typed input: base type parse, then the variant's normalize,
