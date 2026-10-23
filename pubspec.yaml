@@ -7,6 +7,7 @@ environment:
 
 workspace:
   - apps/turtle_base
+  - packages/crdt_file_sync_transport
 
 # Every package here is overridden because of a real upstream
 # compatibility gap, not preference. Whenever the underlying issue is

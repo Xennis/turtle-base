@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:crdt_file_sync_transport/crdt_file_sync_transport.dart';
 import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
-
-import '../sync_transport.dart';
 
 const _folderMimeType = 'application/vnd.google-apps.folder';
 

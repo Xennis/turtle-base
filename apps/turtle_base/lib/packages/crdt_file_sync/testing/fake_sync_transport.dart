@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:turtle_base/packages/crdt_file_sync/sync_transport.dart';
+import 'package:crdt_file_sync_transport/crdt_file_sync_transport.dart';
 
 /// In-memory [SyncTransport] for tests - no network, no disk.
 class FakeSyncTransport implements SyncTransport {
