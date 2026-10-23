@@ -132,6 +132,7 @@ void main() {
     // The drawer closed itself, same as selecting a page/collection.
     expect(find.text('Collections'), findsNothing);
     expect(find.text('Theme'), findsOneWidget);
-    expect(find.byType(AppBar), findsOneWidget);
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byTooltip('Back'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 }

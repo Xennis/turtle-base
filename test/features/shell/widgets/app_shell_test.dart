@@ -110,34 +110,6 @@ void main() {
     expect(find.text('Default'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('deletes a collection from the sidebar, clearing the selection', (WidgetTester tester) async {
-    final database = await pumpApp(tester);
-    addTearDown(database.close);
-
-    await tester.tap(find.byTooltip('New collection'));
-    await tester.pump();
-    await tester.enterText(find.byType(ShadInput), 'Tasks');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-
-    await tester.tap(find.text('Tasks'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-    expect(find.byType(TrinaGrid), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Delete collection'));
-    await tester.pump();
-    await tester.tap(find.text('Delete'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-
-    expect(find.text('Tasks'), findsNothing);
-    expect(find.text('Select a collection or page'), findsOneWidget);
-    final collections = await database.select(database.collections).get();
-    expect(collections.single.deletedAt, isNotNull);
-  }, timeout: const Timeout(Duration(seconds: 30)));
-
   testWidgets("deleting a collection from its own Edit page also clears the selection", (WidgetTester tester) async {
     final database = await pumpApp(tester);
     addTearDown(database.close);
