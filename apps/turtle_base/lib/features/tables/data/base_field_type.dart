@@ -16,12 +16,23 @@ sealed class BaseFieldType<V extends Object, C> {
   static const text = TextFieldType();
   static const number = NumberFieldType();
   static const date = DateFieldType();
+  static const checkbox = CheckboxFieldType();
   static const select = SelectFieldType(multiple: false);
   static const multiSelect = SelectFieldType(multiple: true);
   static const relation = RelationFieldType();
+  static const location = LocationFieldType();
 
   /// In the order the type picker offers them.
-  static const values = <BaseFieldType<Object, Object?>>[text, number, date, select, multiSelect, relation];
+  static const values = <BaseFieldType<Object, Object?>>[
+    text,
+    number,
+    date,
+    checkbox,
+    select,
+    multiSelect,
+    relation,
+    location,
+  ];
 
   /// Stored in `fields.type`.
   String get id;
@@ -52,6 +63,9 @@ sealed class BaseFieldType<V extends Object, C> {
 
   /// Config constraints (e.g. min/max). Null if [value] satisfies them.
   String? validate(V value, C config) => null;
+
+  /// Where tapping the value leads - a variant's link takes precedence.
+  Uri? link(V value, C config) => null;
 }
 
 /// Plain text of a stored value whatever type wrote it, for reading it
@@ -61,6 +75,7 @@ String plainOfRaw(Object? raw) => switch (raw) {
   String() => raw,
   num() => formatPlainNumber(raw),
   List() => raw.map(plainOfRaw).join(', '),
+  Map() => GeoPoint.fromJson(raw)?.toString() ?? raw.toString(),
   _ => raw.toString(),
 };
 
@@ -171,6 +186,7 @@ final class NumberFieldType extends BaseFieldType<num, NumberConfig> {
   num? decode(Object? raw, NumberConfig config) => switch (raw) {
     num() => raw,
     String() => num.tryParse(raw.trim()),
+    bool() => raw ? 1 : 0,
     _ => null,
   };
   @override
@@ -231,6 +247,45 @@ final class DateFieldType extends BaseFieldType<DateTime, NoConfig> {
 
   @override
   DateTime? fromPlain(String text, NoConfig config) => DateTime.tryParse(text.trim());
+}
+
+final class CheckboxFieldType extends BaseFieldType<bool, NoConfig> {
+  const CheckboxFieldType();
+
+  static const _truthy = {'true', 'yes', 'y', 'x', '1', 'on', 'checked'};
+  static const _falsy = {'false', 'no', 'n', '0', 'off', 'unchecked'};
+
+  @override
+  String get id => 'checkbox';
+  @override
+  String get label => 'Checkbox';
+  @override
+  StorageKind get storage => StorageKind.boolean;
+
+  @override
+  NoConfig decodeConfig(Map<String, Object?> json) => const NoConfig();
+
+  @override
+  bool? decode(Object? raw, NoConfig config) => switch (raw) {
+    bool() => raw,
+    num() => raw != 0,
+    String() => fromPlain(raw, config),
+    _ => null,
+  };
+  @override
+  Object? encode(bool value, NoConfig config) => value;
+  @override
+  String toPlain(bool value, NoConfig config) => value.toString();
+  @override
+  bool? fromPlain(String text, NoConfig config) {
+    final lower = text.trim().toLowerCase();
+    if (_truthy.contains(lower)) return true;
+    if (_falsy.contains(lower)) return false;
+    return null;
+  }
+
+  @override
+  String display(bool value, NoConfig config) => value ? 'Yes' : 'No';
 }
 
 final class SelectConfig {
@@ -355,4 +410,81 @@ final class UnsupportedFieldType extends BaseFieldType<Object, NoConfig> {
   String toPlain(Object value, NoConfig config) => plainOfRaw(value);
   @override
   Object? fromPlain(String text, NoConfig config) => null;
+}
+
+/// A position in WGS 84 degrees, e.g. from GPS.
+final class GeoPoint {
+  const GeoPoint(this.lat, this.lng);
+
+  final double lat;
+  final double lng;
+
+  static const _latKey = 'lat';
+  static const _lngKey = 'lng';
+
+  /// Null when [lat]/[lng] are out of range.
+  static GeoPoint? tryCreate(num lat, num lng) {
+    if (lat.abs() > 90 || lng.abs() > 180) return null;
+    return GeoPoint(lat.toDouble(), lng.toDouble());
+  }
+
+  static GeoPoint? fromJson(Map<Object?, Object?> json) {
+    final lat = json[_latKey];
+    final lng = json[_lngKey];
+    return lat is num && lng is num ? tryCreate(lat, lng) : null;
+  }
+
+  Map<String, Object?> toJson() => {_latKey: lat, _lngKey: lng};
+
+  @override
+  String toString() => '${formatPlainNumber(lat)}, ${formatPlainNumber(lng)}';
+
+  @override
+  bool operator ==(Object other) => other is GeoPoint && other.lat == lat && other.lng == lng;
+
+  @override
+  int get hashCode => Object.hash(lat, lng);
+}
+
+/// Stored as `{"lat": 52.52, "lng": 13.405}`, typed in as "lat, lng".
+final class LocationFieldType extends BaseFieldType<GeoPoint, NoConfig> {
+  const LocationFieldType();
+
+  static final _latLng = RegExp(r'^(?:geo:)?\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*$');
+
+  @override
+  String get id => 'location';
+  @override
+  String get label => 'Location';
+  @override
+  StorageKind get storage => StorageKind.object;
+  @override
+  String get invalidMessage => 'Enter a position as "latitude, longitude", e.g. 52.52, 13.405';
+
+  @override
+  NoConfig decodeConfig(Map<String, Object?> json) => const NoConfig();
+
+  @override
+  GeoPoint? decode(Object? raw, NoConfig config) => switch (raw) {
+    Map() => GeoPoint.fromJson(raw),
+    String() => fromPlain(raw, config),
+    _ => null,
+  };
+  @override
+  Object? encode(GeoPoint value, NoConfig config) => value.toJson();
+  @override
+  String toPlain(GeoPoint value, NoConfig config) => value.toString();
+
+  @override
+  GeoPoint? fromPlain(String text, NoConfig config) {
+    final match = _latLng.firstMatch(text.trim());
+    if (match == null) return null;
+    return GeoPoint.tryCreate(double.parse(match[1]!), double.parse(match[2]!));
+  }
+
+  @override
+  Uri? link(GeoPoint value, NoConfig config) => Uri.https('www.openstreetmap.org', '/', {
+    'mlat': '${value.lat}',
+    'mlon': '${value.lng}',
+  }).replace(fragment: 'map=15/${value.lat}/${value.lng}');
 }

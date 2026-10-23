@@ -188,6 +188,45 @@ void main() {
     });
   });
 
+  group('checkbox', () {
+    final field = registry.resolve(fieldRow('checkbox'));
+
+    test('reads booleans, numbers and yes/no text', () {
+      expect(field.valueOf(true), isTrue);
+      expect(field.valueOf(0), isFalse);
+      expect(field.valueOf('Yes'), isTrue);
+      expect(field.errorFor('maybe'), isNotNull);
+    });
+
+    test('is read as 1/0 by a number field', () {
+      expect(registry.resolve(fieldRow('number')).valueOf(true), 1);
+    });
+  });
+
+  group('location', () {
+    final field = registry.resolve(fieldRow('location'));
+
+    test('parses "lat, lng" into an object', () {
+      expect(storedOf(field.parse('52.52, 13.405')), {'lat': 52.52, 'lng': 13.405});
+      expect(storedOf(field.parse('geo:-33.86;151.2')), {'lat': -33.86, 'lng': 151.2});
+    });
+
+    test('rejects text and out-of-range coordinates', () {
+      expect(field.parse('Berlin'), isA<ParseError>());
+      expect(field.parse('91, 0'), isA<ParseError>());
+    });
+
+    test('displays and links a stored position', () {
+      const raw = {'lat': 52.52, 'lng': 13.405};
+      expect(field.display(raw), '52.52, 13.405');
+      expect(field.linkFor(raw)?.host, 'www.openstreetmap.org');
+    });
+
+    test('is read as "lat, lng" by a text field', () {
+      expect(registry.resolve(fieldRow('text')).display({'lat': 52.52, 'lng': 13.405}), '52.52, 13.405');
+    });
+  });
+
   group('select', () {
     const options = [
       SelectOption(id: 'o1', name: 'Red', color: OptionColor.red),
