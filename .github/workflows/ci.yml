@@ -25,3 +25,12 @@ jobs:
       # only hand-written code is checked.
       - name: Check Dart formatting
         run: mise run format-check
+
+      - name: Generate code
+        run: mise run generate
+
+      - name: Analyze
+        run: mise run analyze
+
+      - name: Test
+        run: mise run test
