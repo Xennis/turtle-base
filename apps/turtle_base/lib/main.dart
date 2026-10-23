@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/core/database/local_user_id_store.dart';
@@ -22,6 +23,7 @@ import 'package:turtle_base/core/theme/theme_preset_scope.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
+import 'package:turtle_base/features/files/data/attachments_repository.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/packages/file_store/file_store.dart';
@@ -62,7 +64,13 @@ Future<void> main() async {
     );
   }
 
-  final syncController = AppSyncController(crdt: await database.crdt, authenticator: driveAuthenticator);
+  final syncController = AppSyncController(
+    crdt: await database.crdt,
+    authenticator: driveAuthenticator,
+    files: files,
+    attachments: AttachmentsRepository(database),
+    prefs: await SharedPreferences.getInstance(),
+  );
   // Fire-and-forget: don't delay the first frame on a network-ish silent
   // sign-in check - SyncScope's listeners update once/if it resolves.
   unawaited(syncController.restoreConnection());

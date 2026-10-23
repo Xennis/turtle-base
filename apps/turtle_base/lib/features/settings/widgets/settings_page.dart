@@ -153,6 +153,11 @@ class _SyncSection extends StatelessWidget {
                 ),
                 SettingsRow(label: 'Status', control: Text(_statusLabel(sync))),
                 SettingsRow(
+                  label: 'Keep all files offline',
+                  // Per-device, not synced - see AppSyncController.
+                  control: ShadSwitch(value: sync.keepAllFilesOffline, onChanged: sync.setKeepAllFilesOffline),
+                ),
+                SettingsRow(
                   label: '',
                   control: ShadButton.outline(
                     onPressed: sync.isConnected && sync.status != SyncStatus.syncing ? () => sync.syncNow() : null,
@@ -172,7 +177,12 @@ class _SyncSection extends StatelessWidget {
     return switch (sync.status) {
       SyncStatus.syncing => 'Syncing…',
       SyncStatus.error => 'Error: ${sync.lastError}',
-      SyncStatus.idle => sync.lastSyncedAt == null ? 'Connected' : 'Last synced ${sync.lastSyncedAt}',
+      SyncStatus.idle => switch ((sync.lastSyncedAt, sync.failedFileCount)) {
+        (null, _) => 'Connected',
+        (final at, 0) => 'Last synced $at',
+        (final at, 1) => 'Last synced $at - 1 file failed, retried next time',
+        (final at, final failed) => 'Last synced $at - $failed files failed, retried next time',
+      },
     };
   }
 }

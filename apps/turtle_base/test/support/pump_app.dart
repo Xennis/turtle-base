@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:crdt_file_sync_google_drive/testing.dart';
 import 'package:drift/drift.dart';
@@ -5,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
@@ -18,8 +21,10 @@ import 'package:turtle_base/core/theme/theme_preset_scope.dart';
 import 'package:turtle_base/core/theme/theme_scope.dart';
 import 'package:turtle_base/features/ai/data/ai_settings_controller.dart';
 import 'package:turtle_base/features/ai/widgets/ai_settings_scope.dart';
+import 'package:turtle_base/features/files/data/attachments_repository.dart';
 import 'package:turtle_base/features/shell/widgets/app_shell.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
+import 'package:turtle_base/packages/file_store/file_store.dart';
 
 /// An in-memory database for widget tests.
 ///
@@ -81,7 +86,14 @@ Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true})
   // construct AppSyncController; no widget test exercises sync itself
   // (FakeDriveAuthenticator never reaches Google).
   final syncCrdt = await tester.runAsync(SqliteCrdt.openInMemory);
-  final syncController = AppSyncController(crdt: syncCrdt!, authenticator: FakeDriveAuthenticator());
+  final files = FileStore(p.join(Directory.systemTemp.path, 'turtle_base_test_files'));
+  final syncController = AppSyncController(
+    crdt: syncCrdt!,
+    authenticator: FakeDriveAuthenticator(),
+    files: files,
+    attachments: AttachmentsRepository(database),
+    prefs: await SharedPreferences.getInstance(),
+  );
   await tester.pumpWidget(
     ThemeScope(
       controller: themeController,
@@ -91,7 +103,7 @@ Future<AppDatabase> pumpApp(WidgetTester tester, {bool seedDefaultSpace = true})
           controller: themePresetController,
           child: SyncScope(
             controller: syncController,
-            child: AppScope(database: database, child: wrapWithAppLocalizations(const AppShell())),
+            child: AppScope(database: database, files: files, child: wrapWithAppLocalizations(const AppShell())),
           ),
         ),
       ),

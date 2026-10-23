@@ -13,4 +13,10 @@ class SyncScope extends InheritedNotifier<AppSyncController> {
     assert(scope != null, 'No SyncScope found in context');
     return scope!.notifier!;
   }
+
+  /// Null outside a SyncScope - for widgets that work without sync too,
+  /// e.g. in tests of a single view.
+  static AppSyncController? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<SyncScope>()?.notifier;
+  }
 }
