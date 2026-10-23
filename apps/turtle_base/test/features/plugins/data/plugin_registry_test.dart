@@ -1,3 +1,4 @@
+import 'package:books/books.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/features/plugins/data/plugin_registry.dart';
 import 'package:turtle_plugin/turtle_plugin.dart';
@@ -15,6 +16,10 @@ const _list = CollectionTemplate(
 );
 
 void main() {
+  test('accepts the plugins the app ships with', () {
+    expect(() => PluginRegistry([booksPlugin]), returnsNormally);
+  });
+
   test('collects the variants of all plugins', () {
     final variant = TextVariant(id: 'a.code', label: 'Code');
     final registry = PluginRegistry([
