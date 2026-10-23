@@ -27,6 +27,12 @@ linter:
 # Used by `dart format` (see the `format` mise task and CI).
 formatter:
   page_width: 120
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - macos/**
+    - linux/**
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

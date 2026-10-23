@@ -537,105 +537,101 @@ void main() {
     expect(decodePageProperties(entry.properties)[websiteFieldId], 'anthropic.com');
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets(
-    'a select field picks an option, a multi-select creates and removes them',
-    (WidgetTester tester) async {
-      final database = newTestDatabase();
-      addTearDown(database.close);
+  testWidgets('a select field picks an option, a multi-select creates and removes them', (WidgetTester tester) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
 
-      late String collectionId;
-      late String pageId;
-      late String statusFieldId;
-      late String tagsFieldId;
-      await tester.runAsync(() async {
-        final spaceId = await SpacesRepository(database).create(name: 'Space');
-        final fields = FieldsRepository(database);
-        final pages = PagesRepository(database);
+    late String collectionId;
+    late String pageId;
+    late String statusFieldId;
+    late String tagsFieldId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      final fields = FieldsRepository(database);
+      final pages = PagesRepository(database);
 
-        collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
-        statusFieldId = await fields.create(
-          collectionId: collectionId,
-          name: 'Status',
-          type: FieldType.select,
-          config: encodeSelectConfig(const []),
-        );
-        await fields.addSelectOption(statusFieldId, 'To do');
-        await fields.addSelectOption(statusFieldId, 'Done');
-        tagsFieldId = await fields.create(
-          collectionId: collectionId,
-          name: 'Tags',
-          type: FieldType.multiSelect,
-          config: encodeSelectConfig(const []),
-        );
-        pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
-      });
-
-      Future<void> settleDialog() async {
-        // Same bounded pumps as the relation picker test above - the
-        // option picker's search field autofocuses too.
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-
-      Future<Map<String, Object?>> storedProperties() async {
-        final entry = await (database.select(database.pages)..where((p) => p.id.equals(pageId))).getSingle();
-        return decodePageProperties(entry.properties);
-      }
-
-      await tester.pumpWidget(
-        AppScope(
-          database: database,
-          child: wrapWithAppLocalizations(
-            Scaffold(
-              body: PagePropertiesHeader(pageId: pageId, collectionId: collectionId),
-            ),
-          ),
-        ),
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
+      statusFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Status',
+        type: FieldType.select,
+        config: encodeSelectConfig(const []),
       );
+      await fields.addSelectOption(statusFieldId, 'To do');
+      await fields.addSelectOption(statusFieldId, 'Done');
+      tagsFieldId = await fields.create(
+        collectionId: collectionId,
+        name: 'Tags',
+        type: FieldType.multiSelect,
+        config: encodeSelectConfig(const []),
+      );
+      pageId = await pages.create(spaceId: spaceId, collectionId: collectionId);
+    });
+
+    Future<void> settleDialog() async {
+      // Same bounded pumps as the relation picker test above - the
+      // option picker's search field autofocuses too.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
+    }
 
-      // Select: picking an option stores its id and closes right away.
-      await tester.tap(find.widgetWithText(ShadButton, 'Select'));
-      await settleDialog();
-      await tester.tap(find.text('Done'));
-      await settleDialog();
+    Future<Map<String, Object?>> storedProperties() async {
+      final entry = await (database.select(database.pages)..where((p) => p.id.equals(pageId))).getSingle();
+      return decodePageProperties(entry.properties);
+    }
 
-      expect(find.widgetWithText(SelectOptionChip, 'Done'), findsOneWidget);
-      final statusOptions = decodeSelectOptions(
-        (await (database.select(database.fields)..where((f) => f.id.equals(statusFieldId))).getSingle()).config,
-      );
-      expect((await storedProperties())[statusFieldId], statusOptions.firstWhere((o) => o.name == 'Done').id);
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          Scaffold(
+            body: PagePropertiesHeader(pageId: pageId, collectionId: collectionId),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      // Multi-select: create an option from the search text.
-      await tester.tap(find.widgetWithText(ShadButton, 'Add'));
-      await settleDialog();
-      await tester.enterText(find.byType(ShadInput), 'Urgent');
-      await tester.pump();
-      await tester.tap(find.text('Create'));
-      await settleDialog();
-      await tester.tap(find.widgetWithText(ShadButton, 'Done'));
-      await settleDialog();
+    // Select: picking an option stores its id and closes right away.
+    await tester.tap(find.widgetWithText(ShadButton, 'Select'));
+    await settleDialog();
+    await tester.tap(find.text('Done'));
+    await settleDialog();
 
-      expect(find.widgetWithText(SelectOptionChip, 'Urgent'), findsOneWidget);
-      final tagOptions = decodeSelectOptions(
-        (await (database.select(database.fields)..where((f) => f.id.equals(tagsFieldId))).getSingle()).config,
-      );
-      expect(tagOptions.single.name, 'Urgent');
-      expect((await storedProperties())[tagsFieldId], [tagOptions.single.id]);
+    expect(find.widgetWithText(SelectOptionChip, 'Done'), findsOneWidget);
+    final statusOptions = decodeSelectOptions(
+      (await (database.select(database.fields)..where((f) => f.id.equals(statusFieldId))).getSingle()).config,
+    );
+    expect((await storedProperties())[statusFieldId], statusOptions.firstWhere((o) => o.name == 'Done').id);
 
-      // Removing the chip clears it again.
-      await tester.tap(
-        find.descendant(of: find.widgetWithText(SelectOptionChip, 'Urgent'), matching: find.byIcon(Icons.close)),
-      );
-      await settleDialog();
+    // Multi-select: create an option from the search text.
+    await tester.tap(find.widgetWithText(ShadButton, 'Add'));
+    await settleDialog();
+    await tester.enterText(find.byType(ShadInput), 'Urgent');
+    await tester.pump();
+    await tester.tap(find.text('Create'));
+    await settleDialog();
+    await tester.tap(find.widgetWithText(ShadButton, 'Done'));
+    await settleDialog();
 
-      expect(find.widgetWithText(SelectOptionChip, 'Urgent'), findsNothing);
-      expect((await storedProperties())[tagsFieldId], isEmpty);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    expect(find.widgetWithText(SelectOptionChip, 'Urgent'), findsOneWidget);
+    final tagOptions = decodeSelectOptions(
+      (await (database.select(database.fields)..where((f) => f.id.equals(tagsFieldId))).getSingle()).config,
+    );
+    expect(tagOptions.single.name, 'Urgent');
+    expect((await storedProperties())[tagsFieldId], [tagOptions.single.id]);
+
+    // Removing the chip clears it again.
+    await tester.tap(
+      find.descendant(of: find.widgetWithText(SelectOptionChip, 'Urgent'), matching: find.byIcon(Icons.close)),
+    );
+    await settleDialog();
+
+    expect(find.widgetWithText(SelectOptionChip, 'Urgent'), findsNothing);
+    expect((await storedProperties())[tagsFieldId], isEmpty);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }
