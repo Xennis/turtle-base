@@ -19,6 +19,7 @@ jobs:
 
       - name: Install Flutter dependencies
         run: flutter pub get
+        working-directory: apps/turtle_base
 
       # Generated files (*.g.dart) are gitignored and not present here, so
       # only hand-written code is checked.

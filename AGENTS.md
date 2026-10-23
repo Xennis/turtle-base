@@ -27,14 +27,14 @@ Skill content itself isn't checked in - only `skills-lock.json` is tracked. Run
 
 Linux, macOS and Android are the supported Flutter platforms. Don't run
 `flutter create --platforms=...` for other platforms (e.g. web, iOS) and don't add platform
-folders like `web/` — verify changes via `flutter run -d linux` and, for anything
+folders like `web/` — verify changes via `mise run run-linux` (runs from `apps/turtle_base`) and, for anything
 responsive/layout-related, also on Android (emulator `vPixel_10`, or `flutter run -d android`)
 and macOS (`flutter run -d macos`, or `mise run run-macos` for Drive sync config); fall back to
 `flutter analyze`/`flutter test` when no display is available.
 
 ## Structure
 
-Each `lib/features/<name>/` folder is split into:
+Each `apps/turtle_base/lib/features/<name>/` folder is split into:
 
 - `data/`: repositories and DB-adjacent types (e.g. `*_repository.dart`, enums backing a column)
 - `widgets/`: everything UI-facing — views, dialogs, and UI-state `ChangeNotifier`s

@@ -1,7 +1,7 @@
 # Google Cloud setup for Drive sync
 
 Complete setup checklist for the Google Cloud project behind Drive sync
-(see `lib/packages/crdt_file_sync/google_drive/`). Only the "enable the
+(see `apps/turtle_base/lib/packages/crdt_file_sync/google_drive/`). Only the "enable the
 Drive API" part is actually managed by OpenTofu here; everything else
 has no API and stays a manual Google Cloud Console checklist (see
 "Why only the API is automated" below).
@@ -76,7 +76,7 @@ Same **Clients** tab → Create client:
 
 - Application type: **Android**.
 - Package name: matches `applicationId` in
-  `android/app/build.gradle.kts`.
+  `apps/turtle_base/android/app/build.gradle.kts`.
 - SHA-1 certificate fingerprint: from your signing key. For a local
   debug build:
   ```sh
@@ -104,7 +104,7 @@ Same **Clients** tab → Create client:
   keystore file and passwords, so it doesn't need encryption or log
   masking; add it under Settings → Secrets and variables → Actions →
   Variables). Locally all four are set via a gitignored
-  `android/key.properties` (see `android/app/build.gradle.kts`).
+  `apps/turtle_base/android/key.properties` (see `apps/turtle_base/android/app/build.gradle.kts`).
 
   `ANDROID_KEYSTORE_BASE64` is the keystore file base64-encoded as a single
   line (the workflow decodes it back with `base64 -d`):

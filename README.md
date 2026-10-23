@@ -2,7 +2,7 @@
 
 ## Google Drive sync configuration
 
-Google Drive sync needs OAuth client IDs, supplied at build time via `--dart-define` rather than a committed/copied file - see `lib/packages/crdt_file_sync/google_drive/client_config.dart`. For how to obtain the values, see [ops/infra/README.md](ops/infra/README.md).
+Google Drive sync needs OAuth client IDs, supplied at build time via `--dart-define` rather than a committed/copied file - see `apps/turtle_base/lib/packages/crdt_file_sync/google_drive/client_config.dart`. For how to obtain the values, see [ops/infra/README.md](ops/infra/README.md).
 
 | Variable                        | Needed on      |
 | -------------------------------- | -------------- |
@@ -16,7 +16,7 @@ For local development, copy [.mise.local.toml.example](.mise.local.toml.example)
 
 ## Android release signing
 
-Google Sign-In in Android release builds requires the release APK to be signed with a key whose SHA-1 fingerprint is registered on the Android OAuth client - see [ops/infra/README.md](ops/infra/README.md#4-oauth-client---android). Locally this is configured via a gitignored `android/key.properties` (see `android/app/build.gradle.kts`; falls back to debug signing if absent). In CI, [.github/workflows/release.yml](.github/workflows/release.yml) builds that file from the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` repo secrets plus the `ANDROID_KEY_ALIAS` repo variable.
+Google Sign-In in Android release builds requires the release APK to be signed with a key whose SHA-1 fingerprint is registered on the Android OAuth client - see [ops/infra/README.md](ops/infra/README.md#4-oauth-client---android). Locally this is configured via a gitignored `apps/turtle_base/android/key.properties` (see `apps/turtle_base/android/app/build.gradle.kts`; falls back to debug signing if absent). In CI, [.github/workflows/release.yml](.github/workflows/release.yml) builds that file from the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` repo secrets plus the `ANDROID_KEY_ALIAS` repo variable.
 
 ## System dependencies (Linux)
 
