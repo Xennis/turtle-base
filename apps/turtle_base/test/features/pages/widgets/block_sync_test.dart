@@ -2,6 +2,8 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/features/files/data/attachments_repository.dart';
+import 'package:turtle_base/features/files/widgets/attachment_block.dart';
 import 'package:turtle_base/features/pages/data/blocks_repository.dart';
 import 'package:turtle_base/features/pages/widgets/block_sync.dart';
 
@@ -82,5 +84,61 @@ void main() {
     final child = await (database.select(database.blocks)..where((b) => b.id.equals('child'))).getSingle();
     expect(child.parentBlockId, 'parent');
     expect(child.position, 0);
+  });
+
+  group('syncAttachmentsFromDocument', () {
+    const file = AttachmentFile(fileHash: 'sha256-a', name: 'a.png', mimeType: 'image/png', size: 1);
+
+    Document documentWith(List<String> attachmentIds) => Document(
+      root: Node(type: 'page', children: [for (final id in attachmentIds) attachmentNode(id)]),
+    );
+
+    test('soft-deletes an attachment whose block is gone, restores it when it\'s back', () async {
+      final attachments = AttachmentsRepository(database);
+      final id = await attachments.create(pageId: pageId, file: file);
+
+      await syncAttachmentsFromDocument(attachments: attachments, pageId: pageId, document: documentWith([]));
+      expect((await attachments.byId(id))!.deletedAt, isNotNull);
+
+      await syncAttachmentsFromDocument(attachments: attachments, pageId: pageId, document: documentWith([id]));
+      expect((await attachments.byId(id))!.deletedAt, isNull);
+    });
+
+    test('leaves the page\'s field attachments alone', () async {
+      final attachments = AttachmentsRepository(database);
+      final id = await attachments.create(pageId: pageId, fieldId: 'field_1', file: file);
+
+      await syncAttachmentsFromDocument(attachments: attachments, pageId: pageId, document: documentWith([]));
+
+      expect((await attachments.byId(id))!.deletedAt, isNull);
+    });
+
+    test('copies another page\'s attachment and reports the new id', () async {
+      final attachments = AttachmentsRepository(database);
+      final foreign = await attachments.create(pageId: 'page_2', file: file);
+
+      final replacements = await syncAttachmentsFromDocument(
+        attachments: attachments,
+        pageId: pageId,
+        document: documentWith([foreign]),
+      );
+
+      final copy = await attachments.byId(replacements[foreign]!);
+      expect(copy!.pageId, pageId);
+      expect(copy.fileHash, 'sha256-a');
+      expect((await attachments.byId(foreign))!.pageId, 'page_2');
+    });
+
+    test('ignores ids it doesn\'t know yet', () async {
+      final attachments = AttachmentsRepository(database);
+
+      final replacements = await syncAttachmentsFromDocument(
+        attachments: attachments,
+        pageId: pageId,
+        document: documentWith(['not-synced-yet']),
+      );
+
+      expect(replacements, isEmpty);
+    });
   });
 }
