@@ -13,85 +13,83 @@ import 'package:turtle_base/features/tables/widgets/collection_edit_page.dart';
 import '../../../support/pump_app.dart';
 
 void main() {
-  testWidgets(
-    'Edit collection page: rename the collection, add, rename, retype, delete a field',
-    (WidgetTester tester) async {
-      final database = newTestDatabase();
-      addTearDown(database.close);
+  testWidgets('Edit collection page: rename the collection, add, rename, retype, delete a field', (
+    WidgetTester tester,
+  ) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
 
-      late String collectionId;
-      await tester.runAsync(() async {
-        final spaceId = await SpacesRepository(database).create(name: 'Space');
-        collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
-      });
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Tasks');
+    });
 
-      await tester.pumpWidget(
-        AppScope(
-          database: database,
-          child: wrapWithAppLocalizations(
-            CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
-          ),
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
         ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('No fields yet'), findsOneWidget);
+    expect(find.text('No fields yet'), findsOneWidget);
 
-      // Rename the collection via its own name field.
-      await tester.enterText(find.widgetWithText(ShadInput, 'Tasks'), 'To-dos');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Rename the collection via its own name field.
+    await tester.enterText(find.widgetWithText(ShadInput, 'Tasks'), 'To-dos');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      var storedCollection = await database.select(database.collections).getSingle();
-      expect(storedCollection.name, 'To-dos');
+    var storedCollection = await database.select(database.collections).getSingle();
+    expect(storedCollection.name, 'To-dos');
 
-      // Add a field via the "new field" row, defaulting to text.
-      await tester.enterText(find.byType(ShadInput).last, 'Priority');
-      await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Add a field via the "new field" row, defaulting to text.
+    await tester.enterText(find.byType(ShadInput).last, 'Priority');
+    await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      var storedFields = await database.select(database.fields).get();
-      expect(storedFields.single.name, 'Priority');
-      expect(storedFields.single.type, 'text');
-      expect(find.text('No fields yet'), findsNothing);
+    var storedFields = await database.select(database.fields).get();
+    expect(storedFields.single.name, 'Priority');
+    expect(storedFields.single.type, 'text');
+    expect(find.text('No fields yet'), findsNothing);
 
-      // Rename it inline (the field row's TextField, identified by its
-      // current value).
-      await tester.enterText(find.widgetWithText(ShadInput, 'Priority'), 'Urgency');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Rename it inline (the field row's TextField, identified by its
+    // current value).
+    await tester.enterText(find.widgetWithText(ShadInput, 'Priority'), 'Urgency');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      storedFields = await database.select(database.fields).get();
-      expect(storedFields.single.name, 'Urgency');
+    storedFields = await database.select(database.fields).get();
+    expect(storedFields.single.name, 'Urgency');
 
-      // Change its type via the row's dropdown (the field row's, not
-      // the "new field" row's - it comes first in the list). The
-      // Collection card's Icon row pushes it down, so ensure it's
-      // scrolled into view before tapping.
-      await tester.ensureVisible(find.byType(ShadSelect<FieldType>).first);
-      await tester.tap(find.byType(ShadSelect<FieldType>).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Number').last);
-      await tester.pumpAndSettle();
+    // Change its type via the row's dropdown (the field row's, not
+    // the "new field" row's - it comes first in the list). The
+    // Collection card's Icon row pushes it down, so ensure it's
+    // scrolled into view before tapping.
+    await tester.ensureVisible(find.byType(ShadSelect<FieldType>).first);
+    await tester.tap(find.byType(ShadSelect<FieldType>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Number').last);
+    await tester.pumpAndSettle();
 
-      storedFields = await database.select(database.fields).get();
-      expect(storedFields.single.type, 'number');
+    storedFields = await database.select(database.fields).get();
+    expect(storedFields.single.type, 'number');
 
-      // Delete it (not the collection's own delete button in the AppBar).
-      await tester.tap(find.byTooltip('Delete field'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Delete it (not the collection's own delete button in the AppBar).
+    await tester.tap(find.byTooltip('Delete field'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('No fields yet'), findsOneWidget);
-      storedFields = await database.select(database.fields).get();
-      expect(storedFields.single.deletedAt, isNotNull);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    expect(find.text('No fields yet'), findsOneWidget);
+    storedFields = await database.select(database.fields).get();
+    expect(storedFields.single.deletedAt, isNotNull);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 
   testWidgets('Edit collection page: customize the Name column label', (WidgetTester tester) async {
     final database = newTestDatabase();

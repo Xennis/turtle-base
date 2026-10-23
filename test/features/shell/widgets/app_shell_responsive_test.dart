@@ -52,92 +52,86 @@ void main() {
     expect(find.byIcon(Icons.menu), findsNothing);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets(
-    'selecting a page on a narrow screen closes the drawer and shows a back button',
-    (WidgetTester tester) async {
-      setNarrowSize(tester);
-      final database = await pumpApp(tester);
-      addTearDown(database.close);
+  testWidgets('selecting a page on a narrow screen closes the drawer and shows a back button', (
+    WidgetTester tester,
+  ) async {
+    setNarrowSize(tester);
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
 
-      await openDrawer(tester);
+    await openDrawer(tester);
 
-      await tester.tap(find.byTooltip('New page'));
-      // Creating a page does real FFI I/O, and PageDetailView's own
-      // initial load does too - same runAsync pattern as the wide-layout
-      // equivalent test in app_shell_test.dart.
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-      await tester.pump();
-      // Not pumpAndSettle() - AppFlowyEditor is mounted by this point,
-      // and its cursor blink is a periodic timer. The drawer's own
-      // closing animation still needs more than one bounded pump though.
-      await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('New page'));
+    // Creating a page does real FFI I/O, and PageDetailView's own
+    // initial load does too - same runAsync pattern as the wide-layout
+    // equivalent test in app_shell_test.dart.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    // Not pumpAndSettle() - AppFlowyEditor is mounted by this point,
+    // and its cursor blink is a periodic timer. The drawer's own
+    // closing animation still needs more than one bounded pump though.
+    await tester.pump(const Duration(milliseconds: 300));
 
-      // The drawer closed itself once a page was selected.
-      expect(find.text('Collections'), findsNothing);
-      expect(find.byTooltip('Back'), findsOneWidget);
+    // The drawer closed itself once a page was selected.
+    expect(find.text('Collections'), findsNothing);
+    expect(find.byTooltip('Back'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Back'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('Select a collection or page'), findsOneWidget);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    expect(find.text('Select a collection or page'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets(
-    'editing a collection on a narrow screen shows its own back button, not a second AppBar',
-    (WidgetTester tester) async {
-      setNarrowSize(tester);
-      final database = await pumpApp(tester);
-      addTearDown(database.close);
+  testWidgets('editing a collection on a narrow screen shows its own back button, not a second AppBar', (
+    WidgetTester tester,
+  ) async {
+    setNarrowSize(tester);
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
 
-      await openDrawer(tester);
+    await openDrawer(tester);
 
-      await tester.tap(find.byTooltip('New collection'));
-      await tester.pump();
-      await tester.enterText(find.byType(ShadInput), 'Tasks');
-      await tester.tap(find.text('Save'));
-      await tester.pump();
-      // ShadDialog's own close animation, like the drawer's, needs more
-      // than a single bounded pump to fully settle.
-      await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('New collection'));
+    await tester.pump();
+    await tester.enterText(find.byType(ShadInput), 'Tasks');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    // ShadDialog's own close animation, like the drawer's, needs more
+    // than a single bounded pump to fully settle.
+    await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('Tasks'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Tasks'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.widgetWithText(ShadButton, 'Edit collection'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      // Only CollectionEditPage's own AppBar - not stacked with ours.
-      expect(find.byType(AppBar), findsOneWidget);
-      expect(find.text('Fields'), findsOneWidget);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    // Only CollectionEditPage's own AppBar - not stacked with ours.
+    expect(find.byType(AppBar), findsOneWidget);
+    expect(find.text('Fields'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets(
-    'opening Settings on a narrow screen closes the drawer and shows its own back button',
-    (WidgetTester tester) async {
-      setNarrowSize(tester);
-      final database = await pumpApp(tester);
-      addTearDown(database.close);
+  testWidgets('opening Settings on a narrow screen closes the drawer and shows its own back button', (
+    WidgetTester tester,
+  ) async {
+    setNarrowSize(tester);
+    final database = await pumpApp(tester);
+    addTearDown(database.close);
 
-      await openDrawer(tester);
+    await openDrawer(tester);
 
-      await tester.tap(find.text('Settings'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-      // The drawer closed itself, same as selecting a page/collection.
-      expect(find.text('Collections'), findsNothing);
-      expect(find.text('Theme'), findsOneWidget);
-      expect(find.byType(AppBar), findsOneWidget);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+    // The drawer closed itself, same as selecting a page/collection.
+    expect(find.text('Collections'), findsNothing);
+    expect(find.text('Theme'), findsOneWidget);
+    expect(find.byType(AppBar), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }
