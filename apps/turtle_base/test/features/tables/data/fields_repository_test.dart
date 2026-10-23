@@ -171,4 +171,15 @@ void main() {
     expect(conversionMode(BaseFieldType.text, BaseFieldType.relation), ConversionMode.none);
     expect(conversionMode(const UnsupportedFieldType('x'), BaseFieldType.text), ConversionMode.none);
   });
+
+  test('reorderAll gives the fields the given order', () async {
+    final a = await fields.create(collectionId: collectionId, name: 'A', type: BaseFieldType.text);
+    final b = await fields.create(collectionId: collectionId, name: 'B', type: BaseFieldType.text);
+    final c = await fields.create(collectionId: collectionId, name: 'C', type: BaseFieldType.text);
+
+    await fields.reorderAll([c, a, b]);
+
+    final ordered = await fields.watchAllInCollection(collectionId).first;
+    expect(ordered.map((f) => f.name), ['C', 'A', 'B']);
+  });
 }

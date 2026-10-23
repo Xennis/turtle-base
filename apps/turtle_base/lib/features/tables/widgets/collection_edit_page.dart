@@ -4,16 +4,7 @@ import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/shell/widgets/confirm_dialog.dart';
 import 'package:turtle_base/features/shell/widgets/emoji_picker_sheet.dart';
-import 'package:turtle_base/features/tables/data/base_field_type.dart';
-import 'package:turtle_base/features/tables/data/field_conversion.dart';
-import 'package:turtle_base/features/tables/data/field_type_registry.dart';
-import 'package:turtle_base/features/tables/data/fields_repository.dart';
-import 'package:turtle_base/features/tables/data/resolved_field.dart';
-import 'package:turtle_base/features/tables/widgets/field_config_editor.dart';
-import 'package:turtle_base/features/tables/widgets/type_change_dialog.dart';
-import 'package:turtle_base/features/tables/data/relation_field.dart';
-import 'package:turtle_base/features/tables/data/select_field.dart';
-import 'package:turtle_base/features/tables/widgets/select_options_editor.dart';
+import 'package:turtle_base/features/tables/widgets/fields_editor.dart';
 
 /// Shown in the same content area as CollectionView (see
 /// AppShell/_MainContent) rather than pushed via Navigator, so the
@@ -37,11 +28,6 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   FocusNode? _nameFocusNode;
   TextEditingController? _titleFieldLabelController;
   FocusNode? _titleFieldLabelFocusNode;
-  final _newFieldNameController = TextEditingController();
-  FieldTypeChoice _newFieldType = const FieldTypeChoice(BaseFieldType.text);
-  String? _newFieldRelationTargetId;
-  final _fieldNameControllers = <String, TextEditingController>{};
-  final _fieldFocusNodes = <String, FocusNode>{};
 
   @override
   void dispose() {
@@ -49,13 +35,6 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
     _nameFocusNode?.dispose();
     _titleFieldLabelController?.dispose();
     _titleFieldLabelFocusNode?.dispose();
-    _newFieldNameController.dispose();
-    for (final controller in _fieldNameControllers.values) {
-      controller.dispose();
-    }
-    for (final focusNode in _fieldFocusNodes.values) {
-      focusNode.dispose();
-    }
     super.dispose();
   }
 
@@ -75,51 +54,6 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   Future<void> _pickIcon(BuildContext context) async {
     final scope = AppScope.of(context);
     await showEmojiPickerSheet(context, onSelected: (emoji) => scope.collections.setIcon(widget.collectionId, emoji));
-  }
-
-  TextEditingController _fieldNameControllerFor(Field field) {
-    return _fieldNameControllers[field.id] ??= TextEditingController(text: field.name);
-  }
-
-  FocusNode _fieldFocusNodeFor(Field field, FieldsRepository fields) {
-    final existing = _fieldFocusNodes[field.id];
-    if (existing != null) return existing;
-    final focusNode = FocusNode();
-    focusNode.addListener(() {
-      if (!focusNode.hasFocus) {
-        _saveName(_fieldNameControllerFor(field).text, (name) => fields.rename(field.id, name));
-      }
-    });
-    _fieldFocusNodes[field.id] = focusNode;
-    return focusNode;
-  }
-
-  Future<void> _addField(FieldsRepository fields) async {
-    final name = _newFieldNameController.text.trim();
-    if (name.isEmpty) return;
-    // A relation field needs a target collection to be usable - the
-    // "Add" button is disabled until one is picked, see build().
-    if (_newFieldType.base is RelationFieldType && _newFieldRelationTargetId == null) {
-      return;
-    }
-    await fields.create(
-      collectionId: widget.collectionId,
-      name: name,
-      type: _newFieldType.base,
-      variant: _newFieldType.variant,
-      config: switch (_newFieldType.base) {
-        RelationFieldType() => encodeRelationConfig(_newFieldRelationTargetId!),
-        // Usable right away - options are added afterwards, here or
-        // from the option picker.
-        SelectFieldType() => encodeSelectConfig(const []),
-        _ => null,
-      },
-    );
-    _newFieldNameController.clear();
-    setState(() {
-      _newFieldType = const FieldTypeChoice(BaseFieldType.text);
-      _newFieldRelationTargetId = null;
-    });
   }
 
   @override
@@ -178,332 +112,92 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              ShadCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Collection', style: theme.textTheme.h4),
-                    const SizedBox(height: 12),
-                    Text('Icon', style: theme.textTheme.small),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        ShadButton.outline(
-                          onPressed: () => _pickIcon(context),
-                          child: collection.icon != null
-                              ? Text(collection.icon!, style: const TextStyle(fontSize: 20))
-                              : const Text('Pick emoji'),
-                        ),
-                        if (collection.icon != null) ...[
-                          const SizedBox(width: 8),
-                          Tooltip(
-                            message: 'Remove icon',
-                            child: ShadIconButton.ghost(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () => scope.collections.setIcon(widget.collectionId, null),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Name', style: theme.textTheme.small),
-                    const SizedBox(height: 4),
-                    ShadInput(
-                      controller: _nameController,
-                      focusNode: _nameFocusNode,
-                      onSubmitted: (value) =>
-                          _saveName(value, (name) => scope.collections.rename(widget.collectionId, name)),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Name column label', style: theme.textTheme.small),
-                    const SizedBox(height: 4),
-                    ShadInput(
-                      controller: _titleFieldLabelController,
-                      focusNode: _titleFieldLabelFocusNode,
-                      placeholder: const Text('Name'),
-                      onSubmitted: _saveTitleFieldLabel,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              ShadCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Fields', style: theme.textTheme.h4),
-                    const SizedBox(height: 12),
-                    // Needed for the relation type's target-collection
-                    // dropdown - other collections in the same space.
-                    StreamBuilder<List<Collection>>(
-                      stream: scope.collections.watchAllInSpace(collection.spaceId),
-                      builder: (context, collectionsSnapshot) {
-                        final collections = collectionsSnapshot.data ?? const <Collection>[];
-                        return StreamBuilder<List<Field>>(
-                          stream: scope.fields.watchAllInCollection(widget.collectionId),
-                          builder: (context, fieldsSnapshot) {
-                            final fields = fieldsSnapshot.data ?? const <Field>[];
-                            // Drop controllers/focus nodes of fields
-                            // that no longer exist (deleted, or from a
-                            // previous collection).
-                            _fieldNameControllers.removeWhere((id, controller) {
-                              final stillExists = fields.any((f) => f.id == id);
-                              if (!stillExists) controller.dispose();
-                              return !stillExists;
-                            });
-                            _fieldFocusNodes.removeWhere((id, focusNode) {
-                              final stillExists = fields.any((f) => f.id == id);
-                              if (!stillExists) focusNode.dispose();
-                              return !stillExists;
-                            });
-                            return Column(
+              // Centered with a max width like SettingsPage, so inputs
+              // don't stretch across the whole window on desktop.
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ShadCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Collection', style: theme.textTheme.h4),
+                            const SizedBox(height: 12),
+                            Text('Icon and name', style: theme.textTheme.small),
+                            const SizedBox(height: 6),
+                            Row(
                               children: [
-                                if (fields.isEmpty)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 8),
-                                    child: Text('No fields yet'),
+                                Tooltip(
+                                  message: 'Pick emoji',
+                                  child: ShadButton.outline(
+                                    width: 40,
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () => _pickIcon(context),
+                                    child: collection.icon != null
+                                        ? Text(collection.icon!, style: const TextStyle(fontSize: 20))
+                                        : const Icon(Icons.add_reaction_outlined, size: 18),
                                   ),
-                                for (final field in fields) ...[
-                                  _FieldRow(
-                                    field: scope.fieldTypes.resolve(field),
-                                    choices: scope.fieldTypes.choices,
-                                    nameController: _fieldNameControllerFor(field),
-                                    focusNode: _fieldFocusNodeFor(field, scope.fields),
-                                    fields: scope.fields,
-                                    collections: collections,
+                                ),
+                                if (collection.icon != null)
+                                  Tooltip(
+                                    message: 'Remove icon',
+                                    child: ShadIconButton.ghost(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () => scope.collections.setIcon(widget.collectionId, null),
+                                    ),
                                   ),
-                                  if (fieldConfigEditorFor(scope.fieldTypes.resolve(field), scope.fields)
-                                      case final editor?)
-                                    Padding(
-                                      // Indented like the select options
-                                      // below.
-                                      padding: const EdgeInsets.only(left: 24, bottom: 8),
-                                      child: editor,
-                                    ),
-                                  if (scope.fieldTypes.resolve(field).base is SelectFieldType)
-                                    Padding(
-                                      // Indented under its field, so it
-                                      // reads as that field's options
-                                      // rather than another field.
-                                      padding: const EdgeInsets.only(left: 24, bottom: 8),
-                                      child: SelectOptionsEditor(
-                                        key: ValueKey('options-${field.id}'),
-                                        field: field,
-                                        fields: scope.fields,
-                                      ),
-                                    ),
-                                ],
-                                const ShadSeparator.horizontal(),
-                                _AddFieldRow(
-                                  nameController: _newFieldNameController,
-                                  type: _newFieldType,
-                                  choices: scope.fieldTypes.choices,
-                                  onTypeChanged: (type) => setState(() {
-                                    _newFieldType = type;
-                                  }),
-                                  collections: collections,
-                                  relationTargetId: _newFieldRelationTargetId,
-                                  onRelationTargetChanged: (id) => setState(() {
-                                    _newFieldRelationTargetId = id;
-                                  }),
-                                  onAdd: () => _addField(scope.fields),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ShadInput(
+                                    controller: _nameController,
+                                    focusNode: _nameFocusNode,
+                                    onSubmitted: (value) =>
+                                        _saveName(value, (name) => scope.collections.rename(widget.collectionId, name)),
+                                  ),
                                 ),
                               ],
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ],
+                            ),
+                            const SizedBox(height: 16),
+                            ShadInputFormField(
+                              label: const Text('Name column label'),
+                              description: const Text('The heading of the built-in column every entry has.'),
+                              controller: _titleFieldLabelController,
+                              focusNode: _titleFieldLabelFocusNode,
+                              placeholder: const Text('Name'),
+                              onSubmitted: _saveTitleFieldLabel,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ShadCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text('Fields', style: theme.textTheme.h4),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Drag to reorder. The type decides how values are entered, checked and shown.',
+                              style: theme.textTheme.muted,
+                            ),
+                            const SizedBox(height: 12),
+                            FieldsEditor(collectionId: widget.collectionId, spaceId: collection.spaceId),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           );
         },
       ),
-    );
-  }
-}
-
-class _FieldRow extends StatefulWidget {
-  const _FieldRow({
-    required this.field,
-    required this.choices,
-    required this.nameController,
-    required this.focusNode,
-    required this.fields,
-    required this.collections,
-  });
-
-  final ResolvedField field;
-  final List<FieldTypeChoice> choices;
-  final TextEditingController nameController;
-  final FocusNode focusNode;
-  final FieldsRepository fields;
-
-  /// Other collections in the same space - the relation type's target
-  /// picker offers these (see build()).
-  final List<Collection> collections;
-
-  @override
-  State<_FieldRow> createState() => _FieldRowState();
-}
-
-class _FieldRowState extends State<_FieldRow> {
-  /// Bumped to reset the type select after a cancelled change - it
-  /// already shows the picked type, and nothing in the database changed
-  /// to rebuild it.
-  int _typeSelectGeneration = 0;
-
-  Future<void> _changeType(FieldTypeChoice choice) async {
-    final plan = await widget.fields.planTypeChange(widget.field.id, choice);
-    if (!mounted) return;
-    if (needsTypeChangeConfirmation(plan) && !await confirmTypeChange(context, plan: plan, typeLabel: choice.label)) {
-      setState(() => _typeSelectGeneration++);
-      return;
-    }
-    await widget.fields.applyTypeChange(plan);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final field = widget.field;
-    final fields = widget.fields;
-    final collections = widget.collections;
-    final current = FieldTypeChoice(field.base, field.variant);
-    final isRelation = field.base is RelationFieldType;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: ShadInput(
-              controller: widget.nameController,
-              focusNode: widget.focusNode,
-              onSubmitted: (value) {
-                final trimmed = value.trim();
-                if (trimmed.isNotEmpty) fields.rename(field.id, trimmed);
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          _FieldTypeSelect(
-            key: ValueKey(_typeSelectGeneration),
-            value: current,
-            choices: [
-              for (final choice in widget.choices)
-                if (choice == current || conversionMode(field.base, choice.base) != ConversionMode.none) choice,
-            ],
-            onChanged: _changeType,
-          ),
-          if (isRelation) ...[
-            const SizedBox(width: 8),
-            ShadSelect<String>(
-              initialValue: (field.config as RelationConfig).targetCollectionId,
-              placeholder: const Text('Relates to...'),
-              selectedOptionBuilder: (context, value) => Text(collections.firstWhere((c) => c.id == value).name),
-              options: [
-                for (final collection in collections) ShadOption(value: collection.id, child: Text(collection.name)),
-              ],
-              onChanged: (targetId) {
-                if (targetId != null) {
-                  fields.updateConfig(field.id, encodeRelationConfig(targetId));
-                }
-              },
-            ),
-          ],
-          Tooltip(
-            message: 'Delete field',
-            child: ShadIconButton.ghost(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => fields.softDelete(field.id),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddFieldRow extends StatelessWidget {
-  const _AddFieldRow({
-    required this.nameController,
-    required this.type,
-    required this.choices,
-    required this.onTypeChanged,
-    required this.collections,
-    required this.relationTargetId,
-    required this.onRelationTargetChanged,
-    required this.onAdd,
-  });
-
-  final TextEditingController nameController;
-  final FieldTypeChoice type;
-  final List<FieldTypeChoice> choices;
-  final ValueChanged<FieldTypeChoice> onTypeChanged;
-  final List<Collection> collections;
-  final String? relationTargetId;
-  final ValueChanged<String?> onRelationTargetChanged;
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final isRelation = type.base is RelationFieldType;
-    // A relation field is useless without a target - block adding
-    // until one's picked, rather than creating a half-configured field.
-    final canAdd = !isRelation || relationTargetId != null;
-    return Row(
-      children: [
-        Expanded(
-          child: ShadInput(
-            controller: nameController,
-            placeholder: const Text('New field name'),
-            onSubmitted: (_) => onAdd(),
-          ),
-        ),
-        const SizedBox(width: 8),
-        _FieldTypeSelect(value: type, choices: choices, onChanged: onTypeChanged),
-        if (isRelation) ...[
-          const SizedBox(width: 8),
-          ShadSelect<String>(
-            initialValue: relationTargetId,
-            placeholder: const Text('Relates to...'),
-            selectedOptionBuilder: (context, value) => Text(collections.firstWhere((c) => c.id == value).name),
-            options: [
-              for (final collection in collections) ShadOption(value: collection.id, child: Text(collection.name)),
-            ],
-            onChanged: onRelationTargetChanged,
-          ),
-        ],
-        Tooltip(
-          message: 'Add field',
-          child: ShadIconButton.ghost(icon: const Icon(Icons.add), onPressed: canAdd ? onAdd : null),
-        ),
-      ],
-    );
-  }
-}
-
-/// Picks a base type or one of its variants.
-class _FieldTypeSelect extends StatelessWidget {
-  const _FieldTypeSelect({super.key, required this.value, required this.choices, required this.onChanged});
-
-  final FieldTypeChoice value;
-  final List<FieldTypeChoice> choices;
-  final ValueChanged<FieldTypeChoice> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShadSelect<FieldTypeChoice>(
-      initialValue: value,
-      selectedOptionBuilder: (context, choice) => Text(choice.label),
-      options: [for (final choice in choices) ShadOption(value: choice, child: Text(choice.label))],
-      onChanged: (choice) {
-        if (choice != null) onChanged(choice);
-      },
     );
   }
 }

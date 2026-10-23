@@ -241,6 +241,20 @@ class FieldsRepository {
     return _update(id, FieldsCompanion(position: Value(position)));
   }
 
+  /// Gives the fields [orderedIds]' order, only touching the ones whose
+  /// position changes.
+  Future<void> reorderAll(List<String> orderedIds) async {
+    final positions = {
+      for (final field in await (_db.select(_db.fields)..where((f) => f.id.isIn(orderedIds))).get())
+        field.id: field.position,
+    };
+    await _db.transaction(() async {
+      for (final (index, id) in orderedIds.indexed) {
+        if (positions[id] != index) await reorder(id, index);
+      }
+    });
+  }
+
   Future<void> softDelete(String id) {
     return _update(id, FieldsCompanion(deletedAt: Value(DateTime.now())));
   }

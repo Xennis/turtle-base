@@ -7,6 +7,7 @@ import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
+import 'package:turtle_base/features/tables/data/field_variants.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
@@ -39,7 +40,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('No fields yet'), findsOneWidget);
+    expect(find.textContaining('No fields yet'), findsOneWidget);
 
     // Rename the collection via its own name field.
     await tester.enterText(find.widgetWithText(ShadInput, 'Tasks'), 'To-dos');
@@ -52,14 +53,14 @@ void main() {
 
     // Add a field via the "new field" row, defaulting to text.
     await tester.enterText(find.byType(ShadInput).last, 'Priority');
-    await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
+    await tester.tap(find.widgetWithText(ShadButton, 'Add field'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
     var storedFields = await database.select(database.fields).get();
     expect(storedFields.single.name, 'Priority');
     expect(storedFields.single.type, 'text');
-    expect(find.text('No fields yet'), findsNothing);
+    expect(find.textContaining('No fields yet'), findsNothing);
 
     // Rename it inline (the field row's TextField, identified by its
     // current value).
@@ -89,7 +90,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('No fields yet'), findsOneWidget);
+    expect(find.textContaining('No fields yet'), findsOneWidget);
     storedFields = await database.select(database.fields).get();
     expect(storedFields.single.deletedAt, isNotNull);
   }, timeout: const Timeout(Duration(seconds: 30)));
@@ -175,7 +176,7 @@ void main() {
 
     // Blocked until a target collection is picked - a relation field
     // without one is useless.
-    final addButton = tester.widget<ShadIconButton>(find.widgetWithIcon(ShadIconButton, Icons.add));
+    final addButton = tester.widget<ShadButton>(find.widgetWithText(ShadButton, 'Add field'));
     expect(addButton.onPressed, isNull);
 
     await tester.tap(find.byType(ShadSelect<String>));
@@ -183,7 +184,7 @@ void main() {
     await tester.tap(find.text('Projects').last);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithIcon(ShadIconButton, Icons.add));
+    await tester.tap(find.widgetWithText(ShadButton, 'Add field'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -226,6 +227,10 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
+
+    // Options live in the field's settings, folded away by default.
+    await tester.tap(find.byTooltip('Field settings'));
+    await tester.pumpAndSettle();
 
     // Add one via the field's own "Add option" input.
     final addOption = find.widgetWithText(ShadInput, 'Add option');
@@ -296,6 +301,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
     }
+
+    await tester.tap(find.byTooltip('Field settings'));
+    await tester.pumpAndSettle();
 
     await enter('Min', '1');
     await enter('Max', '5');
@@ -383,5 +391,51 @@ void main() {
 
     expect((await database.select(database.fields).getSingle()).type, 'text');
     expect(await storedValue(), 'Reading');
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  testWidgets('fields are reordered by dragging, and only plain types have settings', (WidgetTester tester) async {
+    final database = newTestDatabase();
+    addTearDown(database.close);
+
+    late String collectionId;
+    await tester.runAsync(() async {
+      final spaceId = await SpacesRepository(database).create(name: 'Space');
+      collectionId = await CollectionsRepository(database).create(spaceId: spaceId, name: 'Books');
+      final fields = FieldsRepository(database);
+      await fields.create(collectionId: collectionId, name: 'Subtitle', type: BaseFieldType.text);
+      await fields.create(collectionId: collectionId, name: 'Website', type: BaseFieldType.text, variant: urlVariant);
+    });
+
+    await tester.pumpWidget(
+      AppScope(
+        database: database,
+        child: wrapWithAppLocalizations(
+          CollectionEditPage(collectionId: collectionId, onDone: () {}, onDeleted: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // A URL validates itself - a pattern on top would clash with it.
+    expect(find.byTooltip('Field settings').hitTestable(), findsOneWidget);
+
+    final handle = find.byIcon(Icons.drag_indicator).first;
+    await tester.ensureVisible(handle);
+    await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(tester.getCenter(handle));
+    await tester.pump(const Duration(milliseconds: 100));
+    for (var i = 0; i < 10; i++) {
+      await gesture.moveBy(const Offset(0, 10));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+
+    final stored = await database.select(database.fields).get();
+    stored.sort((a, b) => a.position.compareTo(b.position));
+    expect(stored.map((f) => f.name), ['Website', 'Subtitle']);
   }, timeout: const Timeout(Duration(seconds: 30)));
 }

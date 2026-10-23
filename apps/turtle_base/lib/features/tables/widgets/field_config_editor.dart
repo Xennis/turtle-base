@@ -4,11 +4,11 @@ import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
 
-/// The type-specific settings of a text or number field in
-/// CollectionEditPage - select options have their own
-/// SelectOptionsEditor, a relation's target sits in the field's row.
-/// Null for types without settings.
+/// The settings of a plain text or number field in FieldsEditor. Null
+/// for other types - and for variants, which bring their own rules
+/// (e.g. a pattern would clash with a URL's validation).
 Widget? fieldConfigEditorFor(ResolvedField field, FieldsRepository fields) {
+  if (field.variant != null) return null;
   final key = ValueKey('config-${field.id}-${field.base.id}');
   return switch (field.config) {
     TextConfig() => _TextConfigEditor(key: key, field: field, fields: fields),
@@ -28,7 +28,8 @@ class _TextConfigEditor extends StatelessWidget {
     final json = decodeFieldConfig(field.row.config);
     return _ConfigInput(
       label: 'Pattern',
-      placeholder: 'Regular expression, e.g. [A-Z]{3}',
+      placeholder: 'e.g. [A-Z]{3}-\\d+',
+      description: 'A regular expression every value must fully match. Leave empty to allow any text.',
       initialValue: json[TextConfig.patternKey] as String? ?? '',
       validator: (value) => value.isEmpty || tryParsePattern(value) != null ? null : 'Not a valid regular expression',
       onSave: (value) => fields.updateConfigValues(field.id, {TextConfig.patternKey: value.isEmpty ? null : value}),
@@ -47,8 +48,8 @@ class _NumberConfigEditor extends StatelessWidget {
     final config = field.config as NumberConfig;
     String? numberValidator(String value) => value.isEmpty || num.tryParse(value) != null ? null : 'Not a number';
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 12,
+      runSpacing: 12,
       children: [
         SizedBox(
           width: 120,
@@ -95,10 +96,12 @@ class _ConfigInput extends StatefulWidget {
     required this.validator,
     required this.onSave,
     this.placeholder,
+    this.description,
   });
 
   final String label;
   final String? placeholder;
+  final String? description;
   final String initialValue;
   final String? Function(String value) validator;
   final ValueChanged<String> onSave;
@@ -134,6 +137,7 @@ class _ConfigInputState extends State<_ConfigInput> {
       controller: _controller,
       focusNode: _focusNode,
       placeholder: widget.placeholder == null ? null : Text(widget.placeholder!),
+      description: widget.description == null ? null : Text(widget.description!),
       autovalidateMode: AutovalidateMode.always,
       validator: (value) => widget.validator(value.trim()),
       onSubmitted: _save,
