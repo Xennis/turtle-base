@@ -63,7 +63,7 @@ void main() {
     });
 
     test('applies the books package\'s ISBN variant', () {
-      final field = FieldTypeRegistry(variants: booksVariants)
+      final field = FieldTypeRegistry(variants: booksPlugin.variants)
           .resolve(fieldRow('text', config: '{"variant": "books.isbn"}'));
       expect(storedOf(field.parse('978-3-453-31717-8')), '9783453317178');
       expect(field.display('9783453317178'), '978-3453317178');

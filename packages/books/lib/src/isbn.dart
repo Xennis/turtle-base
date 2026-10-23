@@ -1,7 +1,4 @@
-import 'package:field_types/field_types.dart';
-
-/// Field variants this package contributes - registered by the app.
-final booksVariants = <FieldVariant<Object>>[isbnVariant];
+import 'package:turtle_plugin/turtle_plugin.dart';
 
 /// An ISBN-10 or ISBN-13, stored without separators (e.g.
 /// `9783453317178`) and shown with its prefix split off.
