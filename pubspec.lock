@@ -34,7 +34,7 @@ packages:
     source: hosted
     version: "5.0.0"
   appflowy_editor:
-    dependency: "direct main"
+    dependency: "direct overridden"
     description:
       path: "."
       ref: "fix/flutter-3-44-on-focus-received"
@@ -123,7 +123,7 @@ packages:
     source: hosted
     version: "4.1.7"
   build_runner:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: build_runner
       sha256: "6feadd32d90a68253c1f7b4fcff76adb4b41ad32a53f8bad835dc65f01ac9dc5"
@@ -243,7 +243,7 @@ packages:
     source: hosted
     version: "1.0.2"
   cupertino_icons:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: cupertino_icons
       sha256: b7cc2390aac296c083bea762859413eb1cf5b630c70e0c7e4d831018f762a8b2
@@ -267,7 +267,7 @@ packages:
     source: hosted
     version: "3.1.14"
   dartantic_ai:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: dartantic_ai
       sha256: "942ff61316b3596a1b78cd6a3808b942106d1b0dde89c6057202ba3485a1f312"
@@ -331,7 +331,7 @@ packages:
     source: hosted
     version: "0.4.1"
   drift:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: drift
       sha256: ef9598e1785c18db37209e8554fc79aff94632209d384ec98984b9e3184af0f7
@@ -339,7 +339,7 @@ packages:
     source: hosted
     version: "2.35.2"
   drift_dev:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: drift_dev
       sha256: e0d16aaa21f3408cbe2dd4bfc56c36cea43e53a537e6613b91380c0924b3bd30
@@ -355,7 +355,7 @@ packages:
     source: hosted
     version: "3.0.0"
   emoji_picker_flutter:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: emoji_picker_flutter
       sha256: "50f4da413a3dc5d2f59f2b0835ab3b3cce76c0779eb275058213506e6709503b"
@@ -379,7 +379,7 @@ packages:
     source: hosted
     version: "5.0.1"
   extension_google_sign_in_as_googleapis_auth:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: extension_google_sign_in_as_googleapis_auth
       sha256: "8a9c887a377ee5b990b2b29be229de8401a43002a7d0d0b29f7d014c1c6bfeac"
@@ -427,7 +427,7 @@ packages:
     source: hosted
     version: "1.1.1"
   flutter:
-    dependency: "direct main"
+    dependency: transitive
     description: flutter
     source: sdk
     version: "0.0.0"
@@ -440,7 +440,7 @@ packages:
     source: hosted
     version: "4.5.2"
   flutter_lints:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: flutter_lints
       sha256: "3105dc8492f6183fb076ccf1f351ac3d60564bff92e20bfc4af9cc1651f4e7e1"
@@ -448,7 +448,7 @@ packages:
     source: hosted
     version: "6.0.0"
   flutter_localizations:
-    dependency: "direct main"
+    dependency: transitive
     description: flutter
     source: sdk
     version: "0.0.0"
@@ -461,7 +461,7 @@ packages:
     source: hosted
     version: "2.0.35"
   flutter_secure_storage:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: flutter_secure_storage
       sha256: fe638107c5f69119156ada2db5a57734385fac3f64430bd7252a00d3ead2ca4b
@@ -525,7 +525,7 @@ packages:
     source: hosted
     version: "2.3.0"
   flutter_test:
-    dependency: "direct dev"
+    dependency: transitive
     description: flutter
     source: sdk
     version: "0.0.0"
@@ -559,7 +559,7 @@ packages:
     source: hosted
     version: "0.5.0"
   google_fonts:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: google_fonts
       sha256: fdbbfbbb1a62f376ab29fa9627561d389751fb984da0b630ce3326e272911c8a
@@ -575,7 +575,7 @@ packages:
     source: hosted
     version: "0.3.3+1"
   google_sign_in:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: google_sign_in
       sha256: "521031b65853b4409b8213c0387d57edaad7e2a949ce6dea0d8b2afc9cb29763"
@@ -623,7 +623,7 @@ packages:
     source: hosted
     version: "8.0.0"
   googleapis:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: googleapis
       sha256: d38bb64016ef27eca7fde992994b9d2999bcea307685807e15d6a08bff05dc61
@@ -631,7 +631,7 @@ packages:
     source: hosted
     version: "17.0.0"
   googleapis_auth:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: googleapis_auth
       sha256: e15d48204e2f3c852dc1091a49705a163a8ba5897823f9abe1c0795e512357c4
@@ -663,7 +663,7 @@ packages:
     source: hosted
     version: "0.15.7"
   http:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
@@ -951,7 +951,7 @@ packages:
     source: hosted
     version: "3.0.0"
   path:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: path
       sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
@@ -967,7 +967,7 @@ packages:
     source: hosted
     version: "1.1.0"
   path_provider:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: path_provider
       sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
@@ -1159,7 +1159,7 @@ packages:
     source: hosted
     version: "0.5.2"
   shadcn_ui:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: shadcn_ui
       sha256: "239401dc887151e359f4f7705204d46c91c49bf83f220c7de5187f0383652cfc"
@@ -1167,7 +1167,7 @@ packages:
     source: hosted
     version: "0.55.1"
   shared_preferences:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: shared_preferences
       sha256: "1e85e0dccf5b4a016077fea7dfbb4a7cb39c759ac1596fcf60c06deadb7da91f"
@@ -1317,7 +1317,7 @@ packages:
     source: hosted
     version: "3.7.1"
   sqlite_crdt:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: sqlite_crdt
       sha256: "11ce9f5b583a7c3c09f806223e2a6b1733daab45214a2b8f7ab250887382987e"
@@ -1421,7 +1421,7 @@ packages:
     source: hosted
     version: "7.5.0"
   trina_grid:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: trina_grid
       sha256: "94a39418213b2b7c1c4c0229eb78284d41adb8b876756f8832f6a3f4e587cf99"
@@ -1477,7 +1477,7 @@ packages:
     source: hosted
     version: "1.1.0"
   url_launcher:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: url_launcher
       sha256: e8cc955c97e06df9879140a1fe301f3d493f01b7c62dec7f46834be31d7e9fda
@@ -1541,7 +1541,7 @@ packages:
     source: hosted
     version: "3.1.6"
   uuid:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: uuid
       sha256: "9b129329f58692f6e6578329498a8fe9fbe98f090beb764ffbb8ee2eadd01dcd"
