@@ -7,6 +7,7 @@ environment:
 
 workspace:
   - apps/turtle_base
+  - packages/books
   - packages/crdt_file_sync_google_drive
   - packages/crdt_file_sync_transport
   - packages/field_types
