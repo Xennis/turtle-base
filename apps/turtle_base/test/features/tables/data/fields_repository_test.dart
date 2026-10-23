@@ -172,6 +172,8 @@ void main() {
     expect(conversionMode(BaseFieldType.relation, BaseFieldType.number), ConversionMode.none);
     expect(conversionMode(BaseFieldType.text, BaseFieldType.relation), ConversionMode.none);
     expect(conversionMode(const UnsupportedFieldType('x'), BaseFieldType.text), ConversionMode.none);
+    expect(conversionMode(BaseFieldType.files, BaseFieldType.text), ConversionMode.none);
+    expect(conversionMode(BaseFieldType.text, BaseFieldType.files), ConversionMode.none);
   });
 
   test('reorderAll gives the fields the given order', () async {

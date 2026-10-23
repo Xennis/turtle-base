@@ -4,6 +4,9 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:trina_grid/trina_grid.dart';
 import 'package:turtle_base/core/app_scope.dart';
 import 'package:turtle_base/core/database/app_database.dart';
+import 'package:turtle_base/features/files/data/attachments_repository.dart';
+import 'package:turtle_base/features/files/widgets/attachment_thumbnail.dart';
+import 'package:turtle_base/features/files/widgets/files_field_value.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
 import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
@@ -125,11 +128,17 @@ class _CollectionViewState extends State<CollectionView> {
                                 child: _layout == _CollectionLayout.tiles
                                     ? entries.isEmpty
                                           ? const _EmptyState()
-                                          : CollectionTilesView(
-                                              entries: _sortedByTitle(entries),
-                                              secondaryFor: (entry) =>
-                                                  _secondaryFor(fields.firstOrNull, entry, relatedPagesByCollection),
-                                              onOpenEntry: widget.onOpenEntry,
+                                          : _CoversResolver(
+                                              scope: scope,
+                                              collectionId: widget.collectionId,
+                                              field: fields.where((f) => f.base is FilesFieldType).firstOrNull,
+                                              builder: (context, coverFor) => CollectionTilesView(
+                                                entries: _sortedByTitle(entries),
+                                                secondaryFor: (entry) =>
+                                                    _secondaryFor(fields.firstOrNull, entry, relatedPagesByCollection),
+                                                coverFor: coverFor,
+                                                onOpenEntry: widget.onOpenEntry,
+                                              ),
                                             )
                                     // TrinaGrid only reads columns/rows once (see
                                     // its didUpdateWidget), so a Key that changes
@@ -333,7 +342,11 @@ class _CollectionViewState extends State<CollectionView> {
   /// via a picker (select, relation) or not at all.
   bool _isTypedIn(ResolvedField field) => switch (field.base) {
     TextFieldType() || NumberFieldType() || DateFieldType() || LocationFieldType() => true,
-    CheckboxFieldType() || SelectFieldType() || RelationFieldType() || UnsupportedFieldType() => false,
+    CheckboxFieldType() ||
+    SelectFieldType() ||
+    RelationFieldType() ||
+    FilesFieldType() ||
+    UnsupportedFieldType() => false,
   };
 
   String? _validate(ResolvedField field, dynamic value) => switch (field.parse(value?.toString() ?? '')) {
@@ -382,6 +395,12 @@ class _CollectionViewState extends State<CollectionView> {
       return (context) => _checkboxRenderer(context, scope, field, entriesById);
     }
     if (field.base is RelationFieldType) return null;
+    if (field.base is FilesFieldType) {
+      return (context) => Align(
+        alignment: Alignment.centerLeft,
+        child: AttachmentStrip(pageId: context.row.data as String, fieldId: field.id),
+      );
+    }
     return (context) => _valueRenderer(context, field, entriesById, colors);
   }
 
@@ -785,6 +804,34 @@ class _RelatedPagesResolver extends StatelessWidget {
       stream: scope.pages.watchAllInCollection(collectionId),
       builder: (context, snapshot) {
         return _build(context, remaining.sublist(1), {...resolved, collectionId: snapshot.data ?? const <Page>[]});
+      },
+    );
+  }
+}
+
+/// Tile covers from the collection's first files field ([field], null
+/// if it has none): each entry's first image there.
+class _CoversResolver extends StatelessWidget {
+  const _CoversResolver({required this.scope, required this.collectionId, required this.field, required this.builder});
+
+  final AppScope scope;
+  final String collectionId;
+  final ResolvedField? field;
+  final Widget Function(BuildContext context, Widget? Function(Page entry)? coverFor) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final field = this.field;
+    if (field == null) return builder(context, null);
+    final placeholder = ColoredBox(color: ShadTheme.of(context).colorScheme.muted);
+    return StreamBuilder<Map<String, List<Attachment>>>(
+      stream: scope.attachments.watchInFieldOfCollection(collectionId, field.id),
+      builder: (context, snapshot) {
+        final byPage = snapshot.data ?? const <String, List<Attachment>>{};
+        return builder(context, (entry) {
+          final image = byPage[entry.id]?.where((a) => a.isImage).firstOrNull;
+          return image == null ? placeholder : AttachmentCover(attachment: image);
+        });
       },
     );
   }

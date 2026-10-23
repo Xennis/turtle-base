@@ -17,6 +17,8 @@ enum ConversionMode {
 ConversionMode conversionMode(BaseFieldType<Object, Object?> from, BaseFieldType<Object, Object?> to) {
   if (from.id == to.id) return ConversionMode.lazy;
   if (from is UnsupportedFieldType || to is UnsupportedFieldType) return ConversionMode.none;
+  // Its values are attachments, not properties another type could read.
+  if (from is FilesFieldType || to is FilesFieldType) return ConversionMode.none;
   if (from is SelectFieldType && to is SelectFieldType) return ConversionMode.lazy;
   if (to is RelationFieldType) return ConversionMode.none;
   if (from is RelationFieldType) return to is TextFieldType ? ConversionMode.rewrite : ConversionMode.none;

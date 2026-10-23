@@ -1,4 +1,5 @@
 import 'package:field_types/field_types.dart';
+import 'package:turtle_base/features/files/data/file_accept.dart';
 import 'package:turtle_base/features/tables/data/field_validation.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
@@ -21,6 +22,7 @@ sealed class BaseFieldType<V extends Object, C> {
   static const multiSelect = SelectFieldType(multiple: true);
   static const relation = RelationFieldType();
   static const location = LocationFieldType();
+  static const files = FilesFieldType();
 
   /// In the order the type picker offers them.
   static const values = <BaseFieldType<Object, Object?>>[
@@ -32,6 +34,7 @@ sealed class BaseFieldType<V extends Object, C> {
     multiSelect,
     relation,
     location,
+    files,
   ];
 
   /// Stored in `fields.type`.
@@ -472,4 +475,52 @@ final class LocationFieldType extends BaseFieldType<GeoPoint, NoConfig> {
     'mlat': '${value.lat}',
     'mlon': '${value.lng}',
   }).replace(fragment: 'map=15/${value.lat}/${value.lng}');
+}
+
+final class FilesConfig {
+  const FilesConfig({this.accept = FileAccept.any, this.maxFiles});
+
+  static const acceptKey = 'accept';
+  static const maxFilesKey = 'maxFiles';
+
+  final FileAccept accept;
+
+  /// Null for no limit, 1 for a single-file field.
+  final int? maxFiles;
+
+  static FilesConfig fromJson(Map<String, Object?> json) {
+    final accept = json[acceptKey];
+    final maxFiles = json[maxFilesKey];
+    return FilesConfig(
+      accept: accept is List ? FileAccept([...accept.whereType<String>()]) : FileAccept.any,
+      maxFiles: maxFiles is int && maxFiles > 0 ? maxFiles : null,
+    );
+  }
+}
+
+/// Files attached to the entry. Unlike every other type, the value
+/// isn't in `pages.properties` but in the attachments table (see
+/// AttachmentsRepository), so the property-based methods find nothing -
+/// views read and write it through the repository instead.
+final class FilesFieldType extends BaseFieldType<List<String>, FilesConfig> {
+  const FilesFieldType();
+
+  @override
+  String get id => 'files';
+  @override
+  String get label => 'Files';
+  @override
+  StorageKind get storage => StorageKind.external;
+
+  @override
+  FilesConfig decodeConfig(Map<String, Object?> json) => FilesConfig.fromJson(json);
+
+  @override
+  List<String>? decode(Object? raw, FilesConfig config) => null;
+  @override
+  Object? encode(List<String> value, FilesConfig config) => null;
+  @override
+  String toPlain(List<String> value, FilesConfig config) => '';
+  @override
+  List<String>? fromPlain(String text, FilesConfig config) => null;
 }
