@@ -76,7 +76,30 @@ final class NoConfig {
   const NoConfig();
 }
 
-final class TextFieldType extends BaseFieldType<String, NoConfig> {
+final class TextConfig {
+  const TextConfig({this.pattern});
+
+  static const patternKey = 'pattern';
+
+  /// A regular expression values must fully match. Null when unset - or
+  /// when it doesn't compile, so a broken pattern never blocks input.
+  final RegExp? pattern;
+
+  static TextConfig fromJson(Map<String, Object?> json) {
+    final source = json[patternKey];
+    return TextConfig(pattern: source is String && source.isNotEmpty ? tryParsePattern(source) : null);
+  }
+}
+
+RegExp? tryParsePattern(String source) {
+  try {
+    return RegExp(source);
+  } on FormatException {
+    return null;
+  }
+}
+
+final class TextFieldType extends BaseFieldType<String, TextConfig> {
   const TextFieldType();
 
   @override
@@ -87,19 +110,49 @@ final class TextFieldType extends BaseFieldType<String, NoConfig> {
   StorageKind get storage => StorageKind.string;
 
   @override
-  NoConfig decodeConfig(Map<String, Object?> json) => const NoConfig();
+  TextConfig decodeConfig(Map<String, Object?> json) => TextConfig.fromJson(json);
 
   @override
-  String? decode(Object? raw, NoConfig config) => plainOfRaw(raw);
+  String? decode(Object? raw, TextConfig config) => plainOfRaw(raw);
   @override
-  Object? encode(String value, NoConfig config) => value;
+  Object? encode(String value, TextConfig config) => value;
   @override
-  String toPlain(String value, NoConfig config) => value;
+  String toPlain(String value, TextConfig config) => value;
   @override
-  String? fromPlain(String text, NoConfig config) => text;
+  String? fromPlain(String text, TextConfig config) => text;
+
+  @override
+  String? validate(String value, TextConfig config) {
+    final pattern = config.pattern;
+    if (pattern == null || matchesFully(pattern, value)) return null;
+    return 'Must match ${pattern.pattern}';
+  }
 }
 
-final class NumberFieldType extends BaseFieldType<num, NoConfig> {
+final class NumberConfig {
+  const NumberConfig({this.min, this.max, this.decimals});
+
+  static const minKey = 'min';
+  static const maxKey = 'max';
+  static const decimalsKey = 'decimals';
+
+  final num? min;
+  final num? max;
+
+  /// Decimal places to display - values are stored unrounded.
+  final int? decimals;
+
+  static NumberConfig fromJson(Map<String, Object?> json) {
+    final decimals = json[decimalsKey];
+    return NumberConfig(
+      min: json[minKey] as num?,
+      max: json[maxKey] as num?,
+      decimals: decimals is num ? decimals.toInt().clamp(0, 20) : null,
+    );
+  }
+}
+
+final class NumberFieldType extends BaseFieldType<num, NumberConfig> {
   const NumberFieldType();
 
   @override
@@ -110,22 +163,40 @@ final class NumberFieldType extends BaseFieldType<num, NoConfig> {
   StorageKind get storage => StorageKind.number;
 
   @override
-  NoConfig decodeConfig(Map<String, Object?> json) => const NoConfig();
+  NumberConfig decodeConfig(Map<String, Object?> json) => NumberConfig.fromJson(json);
 
   /// Also reads numeric strings - how numbers were stored before
   /// FIELD_TYPES.md, and still are until edited.
   @override
-  num? decode(Object? raw, NoConfig config) => switch (raw) {
+  num? decode(Object? raw, NumberConfig config) => switch (raw) {
     num() => raw,
     String() => num.tryParse(raw.trim()),
     _ => null,
   };
   @override
-  Object? encode(num value, NoConfig config) => value;
+  Object? encode(num value, NumberConfig config) => value;
   @override
-  String toPlain(num value, NoConfig config) => formatPlainNumber(value);
+  String toPlain(num value, NumberConfig config) => formatPlainNumber(value);
   @override
-  num? fromPlain(String text, NoConfig config) => isValidNumber(text.trim()) ? num.parse(text.trim()) : null;
+  num? fromPlain(String text, NumberConfig config) => isValidNumber(text.trim()) ? num.parse(text.trim()) : null;
+
+  @override
+  String display(num value, NumberConfig config) {
+    final decimals = config.decimals;
+    return decimals == null ? toPlain(value, config) : value.toStringAsFixed(decimals);
+  }
+
+  @override
+  String? validate(num value, NumberConfig config) {
+    final min = config.min;
+    final max = config.max;
+    if (min != null && max != null && (value < min || value > max)) {
+      return 'Enter a number from ${formatPlainNumber(min)} to ${formatPlainNumber(max)}';
+    }
+    if (min != null && value < min) return 'Enter a number of at least ${formatPlainNumber(min)}';
+    if (max != null && value > max) return 'Enter a number of at most ${formatPlainNumber(max)}';
+    return null;
+  }
 }
 
 /// Stored as ISO-8601: `yyyy-MM-dd` for a plain date, the full

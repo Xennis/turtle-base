@@ -8,6 +8,7 @@ import 'package:turtle_base/features/tables/data/base_field_type.dart';
 import 'package:turtle_base/features/tables/data/field_type_registry.dart';
 import 'package:turtle_base/features/tables/data/fields_repository.dart';
 import 'package:turtle_base/features/tables/data/resolved_field.dart';
+import 'package:turtle_base/features/tables/widgets/field_config_editor.dart';
 import 'package:turtle_base/features/tables/data/relation_field.dart';
 import 'package:turtle_base/features/tables/data/select_field.dart';
 import 'package:turtle_base/features/tables/widgets/select_options_editor.dart';
@@ -272,6 +273,14 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                                     fields: scope.fields,
                                     collections: collections,
                                   ),
+                                  if (fieldConfigEditorFor(scope.fieldTypes.resolve(field), scope.fields)
+                                      case final editor?)
+                                    Padding(
+                                      // Indented like the select options
+                                      // below.
+                                      padding: const EdgeInsets.only(left: 24, bottom: 8),
+                                      child: editor,
+                                    ),
                                   if (scope.fieldTypes.resolve(field).base is SelectFieldType)
                                     Padding(
                                       // Indented under its field, so it

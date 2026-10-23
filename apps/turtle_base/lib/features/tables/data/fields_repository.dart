@@ -88,6 +88,13 @@ class FieldsRepository {
     return _update(id, FieldsCompanion(config: Value(json.isEmpty ? null : jsonEncode(json))));
   }
 
+  /// Sets single config keys, keeping all others - a null value
+  /// removes its key.
+  Future<void> updateConfigValues(String id, Map<String, Object?> values) async {
+    final json = {...decodeFieldConfig((await _byId(id)).config), ...values}..removeWhere((_, value) => value == null);
+    return _update(id, FieldsCompanion(config: Value(json.isEmpty ? null : jsonEncode(json))));
+  }
+
   String? _withVariant(Map<String, Object?> config, FieldVariant<Object>? variant) {
     final json = {...config, ...?variant?.configPreset};
     if (variant == null) {

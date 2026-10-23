@@ -92,6 +92,38 @@ void main() {
     });
   });
 
+  group('number config', () {
+    final field = registry.resolve(fieldRow('number', config: '{"min": 0, "max": 10, "decimals": 2}'));
+
+    test('rejects values outside min/max', () {
+      expect((field.parse('11') as ParseError).message, 'Enter a number from 0 to 10');
+      expect(field.parse('-1'), isA<ParseError>());
+      expect(storedOf(field.parse('10')), 10);
+    });
+
+    test('flags stored values outside min/max', () {
+      expect(field.errorFor(12), isNotNull);
+    });
+
+    test('displays the configured decimals but stores the value as is', () {
+      expect(field.display(3.14159), '3.14');
+      expect(storedOf(field.parse('3.14159')), 3.14159);
+    });
+  });
+
+  group('text config', () {
+    test('requires a full match of the pattern', () {
+      final field = registry.resolve(fieldRow('text', config: r'{"pattern": "[A-Z]{3}"}'));
+      expect(storedOf(field.parse('ABC')), 'ABC');
+      expect(field.parse('ABCD'), isA<ParseError>());
+    });
+
+    test('ignores a pattern that does not compile', () {
+      final field = registry.resolve(fieldRow('text', config: '{"pattern": "("}'));
+      expect(storedOf(field.parse('anything')), 'anything');
+    });
+  });
+
   group('text', () {
     final field = registry.resolve(fieldRow('text'));
 
