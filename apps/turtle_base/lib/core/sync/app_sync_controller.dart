@@ -2,6 +2,7 @@ import 'package:crdt_file_sync_google_drive/crdt_file_sync_google_drive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
+import 'package:turtle_base/core/sync/shared_preferences_sync_state_store.dart';
 import 'package:turtle_base/core/sync/sync_format.dart';
 import 'package:turtle_base/features/files/data/attachments_repository.dart';
 import 'package:turtle_base/packages/crdt_file_sync/file_sync_controller.dart';
@@ -147,7 +148,8 @@ class AppSyncController extends ChangeNotifier {
     _sync?.removeListener(notifyListeners);
     _folder = folder;
     _error = null;
-    _sync = SyncController(_crdt, folder.changesets)..addListener(notifyListeners);
+    _sync = SyncController(_crdt, folder.changesets, state: SharedPreferencesSyncStateStore(_prefs))
+      ..addListener(notifyListeners);
     _fileSync = FileSyncController(_files, folder.files);
     notifyListeners();
   }

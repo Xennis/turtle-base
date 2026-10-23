@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crdt_file_sync_transport/crdt_file_sync_transport.dart';
 import 'package:drift/backends.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -5,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/packages/crdt_file_sync/sync_controller.dart';
+import 'package:turtle_base/packages/crdt_file_sync/sync_state_store.dart';
 import 'package:turtle_base/packages/crdt_file_sync/testing/fake_sync_transport.dart';
 import 'package:turtle_base/packages/drift_crdt/crdt_database_delegate.dart';
 
@@ -82,6 +85,45 @@ void main() {
     // Nothing changed locally in between - a second sync must not push again.
     await controller.syncNow();
     expect(await transport.list(), namesAfterFirstSync);
+  });
+
+  test('after a restart, only changes since the last push are uploaded', () async {
+    final (db, delegate) = _openCrdtDatabase();
+    addTearDown(db.close);
+    final spaces = SpacesRepository(db);
+    await spaces.create(name: 'Before');
+
+    final transport = FakeSyncTransport();
+    final state = InMemorySyncStateStore();
+    await SyncController(delegate.crdt, transport, state: state).syncNow();
+
+    // A new controller, as after an app restart - the state store is
+    // what survives.
+    final restarted = SyncController(delegate.crdt, transport, state: state);
+    await restarted.syncNow();
+    expect(await transport.list(), hasLength(1), reason: 'nothing changed, so nothing to push');
+
+    await spaces.create(name: 'After');
+    await restarted.syncNow();
+    final names = await transport.list();
+    expect(names, hasLength(2));
+    final latest = jsonDecode(utf8.decode(await transport.download(names.last))) as Map<String, dynamic>;
+    expect((latest['spaces'] as List).map((s) => (s as Map)['name']), ['After']);
+  });
+
+  test('pushes everything again when the remote has no own file', () async {
+    final (db, delegate) = _openCrdtDatabase();
+    addTearDown(db.close);
+    await SpacesRepository(db).create(name: 'Space');
+
+    final state = InMemorySyncStateStore();
+    await SyncController(delegate.crdt, FakeSyncTransport(), state: state).syncNow();
+
+    // E.g. the device folder was moved or deleted in Drive.
+    final emptied = FakeSyncTransport();
+    await SyncController(delegate.crdt, emptied, state: state).syncNow();
+
+    expect(await emptied.list(), hasLength(1));
   });
 
   test('a transport failure surfaces as an error status without throwing', () async {
