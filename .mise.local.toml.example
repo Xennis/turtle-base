@@ -1,6 +1,6 @@
 # Local, gitignored mise config - copy to `.mise.local.toml` and fill in
 # your own values. Used by mise tasks (see mise.toml) to forward the Google Drive sync OAuth config as
-# --dart-define. See README.md's "Google Drive sync configuration" for
+# --dart-define. See packages/crdt_file_sync_google_drive/README.md for
 # where these values come from - omit any of them to run/build with Drive
 # sync disabled.
 [env]

@@ -21,8 +21,8 @@ run = "dart format --output=none --set-exit-if-changed lib test"
 description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
 run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --agent claude-code -y"
 
-# Forward the Google Drive sync OAuth config from env (see README.md's
-# "Google Drive sync configuration") as --dart-define. Set the vars in a
+# Forward the Google Drive sync OAuth config from env (see
+# packages/crdt_file_sync_google_drive/README.md) as --dart-define. Set the vars in a
 # gitignored .mise.local.toml's [env] table; omitting them still builds
 # fine, just with Drive sync disabled - see client_config.dart.
 [tasks.run-linux]

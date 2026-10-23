@@ -1,18 +1,17 @@
 # turtle-base
 
-## Google Drive sync configuration
+Monorepo (Dart pub workspace) with the turtle-base Flutter app and the packages it is built from. Tool versions come from [mise](https://mise.jdx.dev/) (see `mise.toml`).
 
-Google Drive sync needs OAuth client IDs, supplied at build time via `--dart-define` rather than a committed/copied file - see `apps/turtle_base/lib/packages/crdt_file_sync/google_drive/client_config.dart`. For how to obtain the values, see [ops/infra/README.md](ops/infra/README.md).
+| Path                                                                       | What                                                                                             |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| [apps/turtle_base](apps/turtle_base)                                        | The Flutter app (Linux, macOS, Android)                                                          |
+| [packages/crdt_file_sync_transport](packages/crdt_file_sync_transport)      | `SyncTransport` interface that storage adapters implement                                        |
+| [packages/crdt_file_sync_google_drive](packages/crdt_file_sync_google_drive) | Google Drive storage adapter (optional) - incl. its OAuth configuration                          |
+| [ops/infra](ops/infra)                                                      | Google Cloud setup (OpenTofu + manual checklist)                                                 |
 
-| Variable                        | Needed on      |
-| -------------------------------- | -------------- |
-| `DRIVE_DESKTOP_CLIENT_ID`        | Linux, macOS   |
-| `DRIVE_DESKTOP_CLIENT_SECRET`    | Linux, macOS   |
-| `DRIVE_ANDROID_SERVER_CLIENT_ID` | Android        |
+Run `flutter pub get` in the repo root (one shared `pubspec.lock`), then e.g. `mise run run-linux`. Google Drive sync is optional and configured via env vars - see [its README](packages/crdt_file_sync_google_drive/README.md#configuration).
 
-None of these are required to build or run the app - if unset, Drive sync is silently disabled (a warning is logged) and its UI stays hidden in Settings.
-
-For local development, copy [.mise.local.toml.example](.mise.local.toml.example) to `.mise.local.toml` (gitignored) and fill in the values, then use `mise run run-linux` / `mise run run-android` / `mise run run-macos` (see `mise.toml`), which forward them as `--dart-define` automatically. The release pipeline ([.github/workflows/release.yml](.github/workflows/release.yml)) reads the same variable names from repo secrets.
+New storage backends (e.g. another cloud) go into their own `packages/crdt_file_sync_<storage>` package that depends on `crdt_file_sync_transport`.
 
 ## Android release signing
 
