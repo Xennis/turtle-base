@@ -11,12 +11,17 @@ class AppNavigationController extends ChangeNotifier {
   String? _selectedPageId;
   bool _isEditingCollection = false;
   bool _isShowingSettings = false;
+  bool _isShowingPlugins = false;
 
   String? get selectedSpaceId => _selectedSpaceId;
   String? get selectedCollectionId => _selectedCollectionId;
   String? get selectedPageId => _selectedPageId;
   bool get isEditingCollection => _isEditingCollection;
   bool get isShowingSettings => _isShowingSettings;
+  bool get isShowingPlugins => _isShowingPlugins;
+
+  /// Settings or Plugins - pages shown on top of the selection.
+  bool get isShowingOverlayPage => _isShowingSettings || _isShowingPlugins;
 
   void selectSpace(String id) {
     if (id == _selectedSpaceId) return;
@@ -25,6 +30,7 @@ class AppNavigationController extends ChangeNotifier {
     _selectedPageId = null;
     _isEditingCollection = false;
     _isShowingSettings = false;
+    _isShowingPlugins = false;
     notifyListeners();
   }
 
@@ -33,6 +39,7 @@ class AppNavigationController extends ChangeNotifier {
     _selectedPageId = null;
     _isEditingCollection = false;
     _isShowingSettings = false;
+    _isShowingPlugins = false;
     notifyListeners();
   }
 
@@ -41,7 +48,20 @@ class AppNavigationController extends ChangeNotifier {
     _selectedCollectionId = null;
     _isEditingCollection = false;
     _isShowingSettings = false;
+    _isShowingPlugins = false;
     notifyListeners();
+  }
+
+  /// Shows a space even if it's already the selected one - leaving any
+  /// overlay page, e.g. after adding a plugin.
+  void openSpace(String id) {
+    _isShowingSettings = false;
+    _isShowingPlugins = false;
+    if (id == _selectedSpaceId) {
+      notifyListeners();
+    } else {
+      selectSpace(id);
+    }
   }
 
   /// Shows SettingsPage in the same content area (see
@@ -50,11 +70,24 @@ class AppNavigationController extends ChangeNotifier {
   /// closing Settings returns to exactly where you were.
   void showSettings() {
     _isShowingSettings = true;
+    _isShowingPlugins = false;
     notifyListeners();
   }
 
   void hideSettings() {
     _isShowingSettings = false;
+    notifyListeners();
+  }
+
+  /// Shows PluginsPage - an overlay like [showSettings].
+  void showPlugins() {
+    _isShowingPlugins = true;
+    _isShowingSettings = false;
+    notifyListeners();
+  }
+
+  void hidePlugins() {
+    _isShowingPlugins = false;
     notifyListeners();
   }
 

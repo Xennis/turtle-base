@@ -6,6 +6,7 @@ import 'package:turtle_base/core/database/app_database.dart';
 import 'package:turtle_base/features/files/data/attachments_repository.dart';
 import 'package:turtle_base/features/pages/data/blocks_repository.dart';
 import 'package:turtle_base/features/pages/data/pages_repository.dart';
+import 'package:turtle_base/features/plugins/data/plugin_instances_repository.dart';
 import 'package:turtle_base/features/plugins/data/plugin_registry.dart';
 import 'package:turtle_base/features/spaces/data/spaces_repository.dart';
 import 'package:turtle_base/features/tables/data/collections_repository.dart';
@@ -27,6 +28,7 @@ class AppScope extends InheritedWidget {
     required super.child,
   }) : fieldTypes = fieldTypes ?? FieldTypeRegistry(),
        plugins = plugins ?? PluginRegistry(),
+       pluginInstances = PluginInstancesRepository(database),
        files = files ?? FileStore(p.join(Directory.systemTemp.path, 'turtle_base_files')),
        spaces = SpacesRepository(database),
        collections = CollectionsRepository(database),
@@ -38,6 +40,7 @@ class AppScope extends InheritedWidget {
   final AppDatabase database;
   final FieldTypeRegistry fieldTypes;
   final PluginRegistry plugins;
+  final PluginInstancesRepository pluginInstances;
   final SpacesRepository spaces;
   final CollectionsRepository collections;
   final FieldsRepository fields;

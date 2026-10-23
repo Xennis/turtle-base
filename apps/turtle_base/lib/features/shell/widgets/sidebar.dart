@@ -55,15 +55,25 @@ class Sidebar extends StatelessWidget {
             // it - it's a plain _SidebarRow like any other, so its
             // hover/selected highlight matches theirs exactly.
             const ShadSeparator.horizontal(),
-            // Fixed entry, not tied to the current space (see UI_UX.md's
-            // Sidebar section - Papierkorb follows later as a second one).
+            // Fixed entries, not tied to the current space (see UI_UX.md's
+            // Sidebar section - Papierkorb follows later as another one).
             ListenableBuilder(
               listenable: navigation,
-              builder: (context, _) => _SidebarRow(
-                leading: const Icon(Icons.settings_outlined, size: 18),
-                title: 'Settings',
-                selected: navigation.isShowingSettings,
-                onTap: navigation.showSettings,
+              builder: (context, _) => Column(
+                children: [
+                  _SidebarRow(
+                    leading: const Icon(Icons.extension_outlined, size: 18),
+                    title: 'Plugins',
+                    selected: navigation.isShowingPlugins,
+                    onTap: navigation.showPlugins,
+                  ),
+                  _SidebarRow(
+                    leading: const Icon(Icons.settings_outlined, size: 18),
+                    title: 'Settings',
+                    selected: navigation.isShowingSettings,
+                    onTap: navigation.showSettings,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 4),
