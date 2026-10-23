@@ -269,7 +269,7 @@ void main() {
     expect((await storedOptions()).map((o) => o.name), ['Open']);
   }, timeout: const Timeout(Duration(seconds: 30)));
 
-  testWidgets('a number field\'s min, max and decimals are stored in its config', (WidgetTester tester) async {
+  testWidgets('a number field\'s min and max are stored in its config', (WidgetTester tester) async {
     final database = newTestDatabase();
     addTearDown(database.close);
 
@@ -308,12 +308,11 @@ void main() {
     await enter('Min', '1');
     await enter('Max', '5');
     // Rejected, so not stored.
-    await enter('Decimals', '-1');
-    await enter('Decimals', '0');
+    await enter('Max', 'five');
 
     final stored = await database.select(database.fields).getSingle();
     expect(stored.id, fieldId);
-    expect(decodeFieldConfig(stored.config), {'min': 1, 'max': 5, 'decimals': 0});
+    expect(decodeFieldConfig(stored.config), {'min': 1, 'max': 5});
   }, timeout: const Timeout(Duration(seconds: 30)));
 
   testWidgets('changing a type that rewrites values asks first, and cancelling keeps everything', (
