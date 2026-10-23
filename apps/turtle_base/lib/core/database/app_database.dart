@@ -3,6 +3,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite_crdt/sqlite_crdt.dart';
 import 'package:turtle_base/core/database/local_user_id_store.dart';
+import 'package:turtle_base/core/database/tables/attachments_table.dart';
 import 'package:turtle_base/core/database/tables/blocks_table.dart';
 import 'package:turtle_base/core/database/tables/collections_table.dart';
 import 'package:turtle_base/core/database/tables/fields_table.dart';
@@ -15,7 +16,7 @@ import 'package:uuid/uuid.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Users, Spaces, Collections, Fields, Pages, Blocks])
+@DriftDatabase(tables: [Users, Spaces, Collections, Fields, Pages, Blocks, Attachments])
 class AppDatabase extends _$AppDatabase {
   AppDatabase({LocalUserIdStore? localUserIdStore}) : this._(_openConnection(), localUserIdStore);
 
@@ -58,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +72,9 @@ class AppDatabase extends _$AppDatabase {
         // Custom, per-collection label for the built-in title column
         // (see Collections.titleFieldLabel).
         await m.addColumn(collections, collections.titleFieldLabel);
+      }
+      if (from < 3) {
+        await m.createTable(attachments);
       }
     },
   );
