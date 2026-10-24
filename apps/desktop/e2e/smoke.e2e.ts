@@ -98,6 +98,25 @@ async function editCollection(page: Page) {
   await page.getByRole('button', { name: 'Back' }).click();
   await body.getByText('Done').waitFor();
   await body.getByText('12', { exact: true }).waitFor();
+
+  await editEntry(page);
+}
+
+/** The entry's page: its field values above, text in the block editor - stored, so it's there when reopened. */
+async function editEntry(page: Page) {
+  await page.locator('tbody').getByRole('button', { name: 'Open' }).click();
+  await page.locator('input[aria-label="Title"][value="Squats"]').waitFor();
+  await page.getByRole('term').filter({ hasText: 'Reps' }).waitFor();
+  await page.locator('.bn-editor').click();
+  await page.keyboard.type('Three sets, slow on the way down.');
+  // Written after a short pause in typing.
+  await page.waitForTimeout(1000);
+  await screenshot(page, '2d-page');
+
+  await page.getByRole('button', { name: 'Back to collection' }).click();
+  await page.locator('tbody').getByRole('button', { name: 'Open' }).click();
+  await page.locator('.bn-editor').getByText('Three sets, slow on the way down.').waitFor();
+  await page.getByRole('button', { name: 'Back to collection' }).click();
 }
 
 try {
