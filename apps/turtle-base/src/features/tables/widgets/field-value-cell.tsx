@@ -131,10 +131,10 @@ function SelectCell(props: {
     <>
       <button
         type="button"
-        aria-label={props.field.name}
         onClick={() => setPicking(true)}
-        className="flex size-full items-center gap-1 overflow-hidden text-left"
+        className="flex min-h-7 w-full items-center gap-1 overflow-hidden text-left"
       >
+        <span className="sr-only">{props.field.name}: </span>
         {selected.map((option) => (
           <SelectOptionChip key={option.id} option={option} />
         ))}
@@ -198,10 +198,12 @@ export function InlineTextEditor<T>(props: {
     return (
       <button
         type="button"
-        aria-label={props.label}
         onClick={() => setDraft(props.value)}
-        className={cn('flex size-full min-w-0 items-center text-left', props.className)}
+        // A minimum height, so an empty value still has something to click.
+        className={cn('flex min-h-7 w-full min-w-0 items-center text-left', props.className)}
       >
+        {/* Named by the value it shows, prefixed with what it is - not replaced by a label. */}
+        <span className="sr-only">{props.label}: </span>
         {props.children}
       </button>
     );

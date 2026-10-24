@@ -258,7 +258,11 @@ function TitleCell({ row, table }: CellContext<Page, unknown>) {
         onSave={(value) => pages.rename(entry.id, value)}
       >
         {entry.icon !== null && <span className="mr-1.5">{entry.icon}</span>}
-        <span className="truncate font-medium">{entry.title}</span>
+        {entry.title.length === 0 ? (
+          <span className="truncate text-muted-foreground">Untitled</span>
+        ) : (
+          <span className="truncate font-medium">{entry.title}</span>
+        )}
       </InlineTextEditor>
       <Button
         variant="ghost"
