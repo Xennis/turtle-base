@@ -1,8 +1,13 @@
-import type { PartialBlock } from '@blocknote/core';
-import { useCreateBlockNote } from '@blocknote/react';
+import { filterSuggestionItems } from '@blocknote/core/extensions';
+import {
+  getDefaultReactSlashMenuItems,
+  SuggestionMenuController,
+  useCreateBlockNote,
+  type DefaultReactSuggestionItem,
+} from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
-import { ArrowLeft, SmilePlus, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { ArrowLeft, File, Image, Paperclip, SmilePlus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 
 import { useAppServices } from '../../../core/app-scope.tsx';
 import { useDbQuery } from '../../../core/database/use-db-query.ts';
@@ -10,10 +15,18 @@ import type { Block, Page } from '../../../core/database/schema.ts';
 import { Button } from '../../../core/ui/button.tsx';
 import { Input } from '../../../core/ui/input.tsx';
 import { useIsDark } from '../../../core/theme/use-is-dark.ts';
+import { FileAccept } from '../../files/data/file-accept.ts';
+import { usePickAndAttach } from '../../files/widgets/use-pick-and-attach.ts';
 import { ConfirmDialog } from '../../shell/widgets/confirm-dialog.tsx';
 import { BlocksRepository } from '../data/blocks-repository.ts';
 import { buildDocument, hiddenBlockIds, type EditorBlock } from './block-document.ts';
-import { syncBlocksFromDocument } from './block-sync.ts';
+import { blockEditorOf, pageSchema } from './block-editor.ts';
+import {
+  attachmentBlockType,
+  attachmentIdProp,
+  syncAttachmentsFromDocument,
+  syncBlocksFromDocument,
+} from './block-sync.ts';
 import { PagePropertiesHeader } from './page-properties-header.tsx';
 
 /** How long typing pauses before the blocks are written - not every keystroke is a sync change. */
@@ -47,43 +60,97 @@ function PageEditor(props: {
   onOpenCollection: (collectionId: string) => void;
 }) {
   const { page } = props;
-  const { pages, database, theme } = useAppServices();
+  const { pages, database, theme, attachments } = useAppServices();
   const [deleting, setDeleting] = useState(false);
   const blocks = new BlocksRepository(database);
-  const editor = useCreateBlockNote({}, []);
+  const pickAndAttach = usePickAndAttach();
+  const editor = useCreateBlockNote({ schema: pageSchema }, []);
+  const blockEditor = useMemo(() => blockEditorOf(editor), [editor]);
   // BlockNote's own schema types don't satisfy its view's constraint under exactOptionalPropertyTypes.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   const viewEditor = editor as unknown as ComponentProps<typeof BlockNoteView>['editor'];
   const knownTypes = new Set(Object.keys(editor.schema.blockSchema));
   const pendingSync = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const latestStored = useRef(props.storedBlocks);
-  latestStored.current = props.storedBlocks;
-
+  // Each block written refreshes the stored blocks - half-written states that must not replace the editor's.
+  const writing = useRef(0);
   const dark = useIsDark(theme);
 
   async function syncNow() {
     pendingSync.current = undefined;
+    writing.current += 1;
+    try {
+      await writeBlocks();
+    } finally {
+      writing.current -= 1;
+    }
+  }
+
+  async function writeBlocks() {
     const current = await blocks.listActiveInPage(page.id);
     await syncBlocksFromDocument({
       blocks,
       pageId: page.id,
-      document: editor.document,
+      document: blockEditor.document(),
       currentBlocks: current,
       untouched: hiddenBlockIds(current, knownTypes),
     });
+    const replacements = await syncAttachmentsFromDocument({
+      attachments,
+      pageId: page.id,
+      document: blockEditor.document(),
+    });
+    const replace = (nodes: readonly EditorBlock[]) => {
+      for (const node of nodes) {
+        const oldId = node.props[attachmentIdProp];
+        const newId =
+          node.type === attachmentBlockType && typeof oldId === 'string' ? replacements.get(oldId) : undefined;
+        if (newId !== undefined) blockEditor.setProps(node.id, { [attachmentIdProp]: newId });
+        replace(node.children);
+      }
+    };
+    replace(blockEditor.document());
   }
+
+  /** Picks files and inserts them where the cursor is - captured first, the file dialog takes the focus. */
+  async function attach(accept: FileAccept) {
+    const at = blockEditor.cursorBlockId();
+    const ids = await pickAndAttach({ pageId: page.id, accept });
+    blockEditor.insertAfter(
+      ids.map((id) => ({ type: attachmentBlockType, props: { [attachmentIdProp]: id } })),
+      at,
+    );
+  }
+
+  const mediaItems: DefaultReactSuggestionItem[] = [
+    {
+      title: 'Image',
+      subtext: 'Add an image from this device',
+      aliases: ['image', 'photo', 'picture'],
+      group: 'Media',
+      icon: <Image size={18} />,
+      onItemClick: () => void attach(FileAccept.images),
+    },
+    {
+      title: 'File',
+      subtext: 'Attach a file from this device',
+      aliases: ['file', 'attachment', 'upload'],
+      group: 'Media',
+      icon: <File size={18} />,
+      onItemClick: () => void attach(FileAccept.any),
+    },
+  ];
 
   // The stored blocks as the editor's content - first when the page opens, then whenever they change from
   // elsewhere (e.g. a sync merged another device's edit). Never while the user types here or a local change is
-  // still to be written: that would move the cursor, and the merge per block already happened in the database.
+  // still to be written or being written: that would move the cursor or bring back a half-written state, and
+  // the merge per block already happened in the database.
   useEffect(() => {
-    if (pendingSync.current !== undefined || editor.isFocused()) return;
+    if (pendingSync.current !== undefined || writing.current > 0 || blockEditor.isFocused()) return;
     const stored = buildDocument(props.storedBlocks, new Set(Object.keys(editor.schema.blockSchema)));
-    if (JSON.stringify(stored) === JSON.stringify(editor.document.map(toEditorBlock))) return;
-    // Stored by this editor, so it's in the shape BlockNote expects - an empty page keeps its empty paragraph.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-    if (stored.length > 0) editor.replaceBlocks(editor.document, stored as unknown as PartialBlock[]);
-  }, [editor, props.storedBlocks]);
+    if (JSON.stringify(stored) === JSON.stringify(blockEditor.document().map(toEditorBlock))) return;
+    // An empty page keeps the editor's empty paragraph.
+    if (stored.length > 0) blockEditor.replaceAll(stored);
+  }, [editor, blockEditor, props.storedBlocks]);
 
   // Writes what's still pending when the page closes.
   useEffect(
@@ -110,6 +177,9 @@ function PageEditor(props: {
           </Button>
         )}
         <div className="flex-1" />
+        <Button variant="ghost" size="icon" aria-label="Attach file" onClick={() => void attach(FileAccept.any)}>
+          <Paperclip />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -126,11 +196,27 @@ function PageEditor(props: {
         <BlockNoteView
           editor={viewEditor}
           theme={dark ? 'dark' : 'light'}
+          slashMenu={false}
           onChange={() => {
             clearTimeout(pendingSync.current);
             pendingSync.current = setTimeout(() => void syncNow(), syncDelayMs);
           }}
-        />
+        >
+          <SuggestionMenuController
+            triggerCharacter="/"
+            getItems={(query) =>
+              Promise.resolve(
+                filterSuggestionItems(
+                  [
+                    ...getDefaultReactSlashMenuItems(viewEditor).filter((item) => item.group !== 'Media'),
+                    ...mediaItems,
+                  ],
+                  query,
+                ),
+              )
+            }
+          />
+        </BlockNoteView>
       </div>
       <ConfirmDialog
         open={deleting}
