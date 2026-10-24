@@ -25,9 +25,34 @@ export interface Platform {
   openExternal(url: string): Promise<void>;
 
   /**
+   * Lets the user pick files, e.g. to attach. Empty when cancelled. `accept`
+   * lists extensions (without dot) the dialog filters by, undefined for any;
+   * `imagesOnly` lets a phone offer its gallery.
+   */
+  pickFiles(options: PickFilesOptions): Promise<PickedFile[]>;
+
+  /**
+   * Opens a file of {@link files} with the system's app for it, under
+   * `displayName` (the store names files by hash). Rejects when there's no
+   * app for it.
+   */
+  openFile(name: string, displayName: string): Promise<void>;
+
+  /**
    * Undefined when no OAuth client was configured for this platform - the
    * app then hides Drive sync rather than offering a feature that can never
    * connect.
    */
   readonly googleAuth: GoogleAuthenticator | undefined;
+}
+
+export interface PickFilesOptions {
+  readonly multiple: boolean;
+  readonly extensions?: readonly string[] | undefined;
+  readonly imagesOnly?: boolean;
+}
+
+export interface PickedFile {
+  readonly name: string;
+  readonly bytes: ReadableStream<Uint8Array>;
 }

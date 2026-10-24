@@ -29,6 +29,12 @@ export async function createElectronPlatform(bridge: DesktopBridge): Promise<Pla
     files: filesOf(bridge),
     fetch: fetchOf(bridge),
     openExternal: (url) => bridge.invoke('shell:openExternal', url),
+    pickFiles: async ({ multiple, extensions }) =>
+      (await bridge.invoke('files:pick', { multiple, extensions })).map(({ name, bytes }) => ({
+        name,
+        bytes: new Blob([new Uint8Array(bytes)]).stream(),
+      })),
+    openFile: (name, displayName) => bridge.invoke('files:open', name, displayName),
     googleAuth: undefined,
   };
 }

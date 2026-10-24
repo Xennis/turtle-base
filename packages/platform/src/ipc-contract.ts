@@ -42,6 +42,13 @@ export interface IpcContract {
   'files:commitTemp': (handle: string, name: string) => void;
   'files:discardTemp': (handle: string) => void;
 
+  /** Whole files at once - IPC can't stream. */
+  'files:pick': (options: { multiple: boolean; extensions?: readonly string[] | undefined }) => {
+    name: string;
+    bytes: Uint8Array;
+  }[];
+  'files:open': (name: string, displayName: string) => void;
+
   fetch: (request: IpcRequest) => IpcResponse;
   'shell:openExternal': (url: string) => void;
 }
@@ -65,6 +72,8 @@ export const ipcChannels = Object.keys({
   'files:writeTemp': true,
   'files:commitTemp': true,
   'files:discardTemp': true,
+  'files:pick': true,
+  'files:open': true,
   fetch: true,
   'shell:openExternal': true,
 } satisfies Record<IpcChannel, true>);
