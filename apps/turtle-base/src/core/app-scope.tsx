@@ -2,6 +2,8 @@ import { booksPlugin } from '@turtle-base/books-plugin';
 import type { Platform } from '@turtle-base/platform';
 import { createContext, use, type ReactNode } from 'react';
 
+import { AiKeyStorage } from '../features/ai/data/ai-key-storage.ts';
+import { AiSettingsController } from '../features/ai/data/ai-settings-controller.ts';
 import { AttachmentsRepository } from '../features/files/data/attachments-repository.ts';
 import { PagesRepository } from '../features/pages/data/pages-repository.ts';
 import { PluginInstancesRepository } from '../features/plugins/data/plugin-instances-repository.ts';
@@ -31,6 +33,8 @@ export interface AppServices {
   readonly attachments: AttachmentsRepository;
   readonly pluginInstances: PluginInstancesRepository;
   readonly sync: AppSyncController;
+  readonly aiSettings: AiSettingsController;
+  readonly aiKeys: AiKeyStorage;
 }
 
 /** The plugins the app ships with - registered at build time. */
@@ -62,6 +66,8 @@ export function createAppServices(platform: Platform, database: AppDatabase, the
       prefs: platform.prefs,
       isMobile: platform.kind === 'android',
     }),
+    aiSettings: new AiSettingsController(platform.prefs),
+    aiKeys: new AiKeyStorage(platform.secrets),
   };
 }
 

@@ -8,6 +8,8 @@
     "build": "vp build"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "catalog:",
+    "@ai-sdk/google": "catalog:",
     "@blocknote/core": "catalog:",
     "@blocknote/react": "catalog:",
     "@blocknote/shadcn": "catalog:",
@@ -22,6 +24,7 @@
     "@turtle-base/platform": "workspace:*",
     "@turtle-base/plugin-api": "workspace:*",
     "@turtle-base/sql-crdt": "workspace:*",
+    "ai": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "kysely": "catalog:",
@@ -33,7 +36,8 @@
     "shadcn": "catalog:",
     "sonner": "catalog:",
     "tw-animate-css": "catalog:",
-    "valibot": "catalog:"
+    "valibot": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
