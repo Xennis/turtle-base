@@ -1,3 +1,4 @@
+import type { FileDirectory } from './file-directory.ts';
 import type { KeyValueStore, SecretStorage } from './key-value-store.ts';
 import type { SqlDriver } from './sql-driver.ts';
 
@@ -11,6 +12,9 @@ export interface Platform {
   readonly sql: SqlDriver;
   readonly prefs: KeyValueStore;
   readonly secrets: SecretStorage;
+
+  /** Content-addressed attachment files, see the app's FileStore. */
+  readonly files: FileDirectory;
 
   /**
    * Runs outside the web view, so requests aren't limited by CORS. Packages

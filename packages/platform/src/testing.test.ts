@@ -1,6 +1,6 @@
 import { expect, test } from 'vite-plus/test';
 
-import { createNodeSqlDriver } from './testing.ts';
+import { bytesOf, createNodeSqlDriver, MemoryFileDirectory, streamOf } from './testing.ts';
 
 test('returns rows for queries and changes for writes', async () => {
   const driver = createNodeSqlDriver();
@@ -29,4 +29,18 @@ test('rejects on invalid SQL', async () => {
   const driver = createNodeSqlDriver();
 
   await expect(driver.execute('SELEKT 1', [])).rejects.toThrow(/syntax error/);
+});
+
+test('a memory file directory names temporary files on commit', async () => {
+  const files = new MemoryFileDirectory();
+
+  const handle = await files.writeTemp(streamOf(new Uint8Array([1, 2, 3])));
+  expect(await files.list()).toEqual([]);
+  await files.commitTemp(handle, 'abc');
+
+  expect(await files.list()).toEqual(['abc']);
+  expect(await files.size('abc')).toBe(3);
+  expect(await files.readHead('abc', 2)).toEqual(new Uint8Array([1, 2]));
+  expect(await bytesOf(await files.read('abc'))).toEqual(new Uint8Array([1, 2, 3]));
+  expect(files.pendingTemps).toBe(0);
 });
