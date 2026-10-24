@@ -24,7 +24,8 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${desktopFileScheme}:`,
+  // https: for remote pictures like a lookup's covers - only shown, never sent anything.
+  `img-src 'self' data: blob: https: ${desktopFileScheme}:`,
   `media-src 'self' blob: ${desktopFileScheme}:`,
   // Requests to the internet go through the main process (Platform.fetch), never from the page.
   "connect-src 'self'",
