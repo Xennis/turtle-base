@@ -25,10 +25,14 @@ const database = await AppDatabase.open({
   onTablesChanged: (tables) => invalidateTables(queryClient, tables),
 });
 
+const services = createAppServices(platform, database, theme);
+// Not awaited - the first render doesn't wait on the sign-in.
+void services.sync.restoreConnection();
+
 const root = document.getElementById('root');
 if (root === null) throw new Error('No #root element');
 createRoot(root).render(
   <StrictMode>
-    <App services={createAppServices(platform, database, theme)} queryClient={queryClient} />
+    <App services={services} queryClient={queryClient} />
   </StrictMode>,
 );

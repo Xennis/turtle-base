@@ -7,11 +7,12 @@ import { Label } from '../../../core/ui/label.tsx';
 import { ToggleGroup, ToggleGroupItem } from '../../../core/ui/toggle-group.tsx';
 import { useNotifier } from '../../../core/use-notifier.ts';
 import { OverlayPage } from '../../shell/widgets/overlay-page.tsx';
+import { SyncSettingsSection } from './sync-settings-section.tsx';
 
 const modeLabels: Record<ThemeMode, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 const modeIcons: Record<ThemeMode, typeof Sun> = { system: Monitor, light: Sun, dark: Moon };
 
-/** Device settings. For now only the appearance - sync and AI follow with their features. */
+/** Device settings: the appearance, Drive sync and AI. */
 export function SettingsPage({ onDone }: { onDone: () => void }) {
   const { theme } = useAppServices();
   const mode = useNotifier(theme, () => theme.mode);
@@ -19,40 +20,43 @@ export function SettingsPage({ onDone }: { onDone: () => void }) {
 
   return (
     <OverlayPage title="Settings" onDone={onDone}>
-      <section className="grid gap-6">
-        <h2 className="text-sm font-medium text-muted-foreground">Appearance</h2>
-        <div className="grid gap-2">
-          <Label id="theme-mode">Theme</Label>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            aria-labelledby="theme-mode"
-            value={mode}
-            onValueChange={(value) => {
-              const picked = themeModes.find((m) => m === value);
-              if (picked !== undefined) void theme.setMode(picked);
-            }}
-          >
-            {themeModes.map((m) => {
-              const Icon = modeIcons[m];
-              return (
-                <ToggleGroupItem key={m} value={m}>
-                  <Icon />
-                  {modeLabels[m]}
-                </ToggleGroupItem>
-              );
-            })}
-          </ToggleGroup>
-        </div>
-        <div className="grid gap-2">
-          <Label id="theme-preset">Accent color</Label>
-          <div role="radiogroup" aria-labelledby="theme-preset" className="flex flex-wrap gap-2">
-            {themePresets.map((p) => (
-              <PresetSwatch key={p} preset={p} selected={p === preset} onSelect={() => void theme.setPreset(p)} />
-            ))}
+      <div className="grid gap-10">
+        <section className="grid gap-6">
+          <h2 className="text-sm font-medium text-muted-foreground">Appearance</h2>
+          <div className="grid gap-2">
+            <Label id="theme-mode">Theme</Label>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              aria-labelledby="theme-mode"
+              value={mode}
+              onValueChange={(value) => {
+                const picked = themeModes.find((m) => m === value);
+                if (picked !== undefined) void theme.setMode(picked);
+              }}
+            >
+              {themeModes.map((m) => {
+                const Icon = modeIcons[m];
+                return (
+                  <ToggleGroupItem key={m} value={m}>
+                    <Icon />
+                    {modeLabels[m]}
+                  </ToggleGroupItem>
+                );
+              })}
+            </ToggleGroup>
           </div>
-        </div>
-      </section>
+          <div className="grid gap-2">
+            <Label id="theme-preset">Accent color</Label>
+            <div role="radiogroup" aria-labelledby="theme-preset" className="flex flex-wrap gap-2">
+              {themePresets.map((p) => (
+                <PresetSwatch key={p} preset={p} selected={p === preset} onSelect={() => void theme.setPreset(p)} />
+              ))}
+            </div>
+          </div>
+        </section>
+        <SyncSettingsSection />
+      </div>
     </OverlayPage>
   );
 }
