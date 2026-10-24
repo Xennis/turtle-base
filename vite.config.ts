@@ -31,6 +31,9 @@ export default defineConfig({
       'typescript/consistent-type-imports': 'error',
       'typescript/require-await': 'error',
       'import/no-cycle': 'error',
+      // Blind to exhaustive switches over unions; TypeScript's noImplicitReturns covers it type-aware.
+      'consistent-return': 'off',
+      'typescript/consistent-return': 'off',
     },
   },
   fmt: {
