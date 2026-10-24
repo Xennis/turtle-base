@@ -173,6 +173,9 @@ catalogs:
     kysely:
       specifier: ^0.29.7
       version: 0.29.7
+    mime:
+      specifier: ^4.1.0
+      version: 4.1.1
     typescript:
       specifier: ^7.0.2
       version: 7.0.2
@@ -206,12 +209,18 @@ importers:
       '@turtle-base/platform':
         specifier: workspace:*
         version: link:../../packages/platform
+      '@turtle-base/plugin-api':
+        specifier: workspace:*
+        version: link:../../packages/plugin-api
       '@turtle-base/sql-crdt':
         specifier: workspace:*
         version: link:../../packages/sql-crdt
       kysely:
         specifier: 'catalog:'
         version: 0.29.7
+      mime:
+        specifier: 'catalog:'
+        version: 4.1.1
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1121,6 +1130,11 @@ packages:
   magic-string@1.4.3:
     resolution: {integrity: sha512-z12OxmaPGE0F4xlpGdjuAUckipLpQlTAuAmyGhNoD7ODpYUzvDfvtxUbjM/jwznyP178oju/KDdyi220wNJ0RQ==}
 
+  mime@4.1.1:
+    resolution: {integrity: sha512-YAApRsTpM2+gnUFHhRNGfkX8NK0V5xj1nyQLufGlwEI+eX4xRsTcel2IXDuMEGSGjBvzykNW4VuoEACgwYe7BQ==}
+    engines: {node: '>=16'}
+    hasBin: true
+
   mrmime@2.0.1:
     resolution: {integrity: sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ==}
     engines: {node: '>=10'}
@@ -1893,6 +1907,8 @@ snapshots:
   magic-string@1.4.3:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  mime@4.1.1: {}
 
   mrmime@2.0.1: {}
 

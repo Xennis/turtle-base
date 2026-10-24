@@ -5,8 +5,10 @@
   "type": "module",
   "dependencies": {
     "@turtle-base/platform": "workspace:*",
+    "@turtle-base/plugin-api": "workspace:*",
     "@turtle-base/sql-crdt": "workspace:*",
-    "kysely": "catalog:"
+    "kysely": "catalog:",
+    "mime": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
