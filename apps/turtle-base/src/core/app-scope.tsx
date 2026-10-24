@@ -13,6 +13,7 @@ import { FieldsRepository } from '../features/tables/data/fields-repository.ts';
 import { FileStore } from '../packages/file-store/file-store.ts';
 import { browserThumbnailMaker } from '../packages/file-store/thumbnails.ts';
 import type { AppDatabase } from './database/app-database.ts';
+import { AppSyncController } from './sync/app-sync-controller.ts';
 import type { ThemeController } from './theme/theme-controller.ts';
 
 /** App-wide services, provided once at the root - like the Flutter app's AppScope. */
@@ -29,6 +30,7 @@ export interface AppServices {
   readonly pages: PagesRepository;
   readonly attachments: AttachmentsRepository;
   readonly pluginInstances: PluginInstancesRepository;
+  readonly sync: AppSyncController;
 }
 
 /** The plugins the app ships with - registered at build time. */
@@ -36,19 +38,30 @@ const shippedPlugins = new PluginRegistry([booksPlugin]);
 
 export function createAppServices(platform: Platform, database: AppDatabase, theme: ThemeController): AppServices {
   const fieldTypes = new FieldTypeRegistry(shippedPlugins.variants);
+  const files = new FileStore(platform.files, browserThumbnailMaker);
+  const attachments = new AttachmentsRepository(database);
   return {
     platform,
     database,
     theme,
     plugins: shippedPlugins,
     fieldTypes,
-    files: new FileStore(platform.files, browserThumbnailMaker),
+    files,
     spaces: new SpacesRepository(database),
     collections: new CollectionsRepository(database),
     fields: new FieldsRepository(database, fieldTypes),
     pages: new PagesRepository(database),
-    attachments: new AttachmentsRepository(database),
+    attachments,
     pluginInstances: new PluginInstancesRepository(database),
+    sync: new AppSyncController({
+      crdt: database.crdt,
+      auth: platform.googleAuth,
+      fetch: platform.fetch,
+      files,
+      attachments,
+      prefs: platform.prefs,
+      isMobile: platform.kind === 'android',
+    }),
   };
 }
 
