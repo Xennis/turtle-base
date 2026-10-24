@@ -235,8 +235,14 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Edge to edge on Android: the page lies behind the system bars and keeps their insets free (0 elsewhere). */
   body {
-    @apply bg-background text-foreground;
+    @apply h-dvh bg-background text-foreground;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  #root {
+    @apply h-full;
   }
 
   html {

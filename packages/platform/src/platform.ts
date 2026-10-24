@@ -39,6 +39,13 @@ export interface Platform {
   openFile(name: string, displayName: string): Promise<void>;
 
   /**
+   * Matches the system's bars around the app (Android's status and navigation
+   * bar, which the page lies behind) to a dark or light page. Nothing on the
+   * desktop, whose window frame follows the system.
+   */
+  setSystemBarsDark(dark: boolean): Promise<void>;
+
+  /**
    * Undefined when no OAuth client was configured for this platform - the
    * app then hides Drive sync rather than offering a feature that can never
    * connect.

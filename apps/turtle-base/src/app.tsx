@@ -1,4 +1,5 @@
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 
 import { AppScope, type AppServices } from './core/app-scope.tsx';
@@ -7,10 +8,13 @@ import { useIsDark } from './core/theme/use-is-dark.ts';
 import { TooltipProvider } from './core/ui/tooltip.tsx';
 import { AppShell } from './features/shell/widgets/app-shell.tsx';
 
-/** The app's root, the same on every platform - the entry points only differ in how they get their Platform. */
+/** The app's root, the same on every platform. */
 export function App({ services, queryClient }: { services: AppServices; queryClient: QueryClient }) {
   useAppliedTheme(services.theme);
   const dark = useIsDark(services.theme);
+  useEffect(() => {
+    void services.platform.setSystemBarsDark(dark);
+  }, [services.platform, dark]);
   return (
     <QueryClientProvider client={queryClient}>
       <AppScope services={services}>

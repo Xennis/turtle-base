@@ -36,6 +36,7 @@ export async function createElectronPlatform(bridge: DesktopBridge): Promise<Pla
         bytes: new Blob([new Uint8Array(bytes)]).stream(),
       })),
     openFile: (name, displayName) => bridge.invoke('files:open', name, displayName),
+    setSystemBarsDark: () => Promise.resolve(),
     googleAuth: (await bridge.invoke('googleAuth:available')) ? googleAuthOf(bridge) : undefined,
   };
 }

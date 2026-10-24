@@ -30,7 +30,7 @@ export function AppShell() {
 
 function WideShell({ navigation }: { navigation: AppNavigationController }) {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-full">
       <aside className="m-2 mr-0 w-[300px] shrink-0 overflow-hidden rounded-xl border bg-sidebar text-sidebar-foreground">
         <Sidebar navigation={navigation} />
       </aside>
@@ -60,7 +60,7 @@ function NarrowShell({ navigation }: { navigation: AppNavigationController }) {
   );
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full flex-col">
       {!showsOverlay && (
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2">
           {hasSelection ? (
@@ -79,7 +79,7 @@ function NarrowShell({ navigation }: { navigation: AppNavigationController }) {
         <MainContent navigation={navigation} />
       </main>
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="left" className="w-[300px] p-0" showCloseButton={false}>
+        <SheetContent side="left" className="w-[300px]" showCloseButton={false}>
           <SheetTitle className="sr-only">Sidebar</SheetTitle>
           <Sidebar navigation={navigation} />
         </SheetContent>
