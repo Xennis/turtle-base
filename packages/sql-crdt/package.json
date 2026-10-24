@@ -8,10 +8,12 @@
   },
   "dependencies": {
     "@turtle-base/platform": "workspace:*",
-    "kysely": "catalog:"
+    "kysely": "catalog:",
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "fast-check": "catalog:",
     "vite-plus": "catalog:"
   }
 }
