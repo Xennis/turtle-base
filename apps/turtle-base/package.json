@@ -8,7 +8,8 @@
     "@turtle-base/plugin-api": "workspace:*",
     "@turtle-base/sql-crdt": "workspace:*",
     "kysely": "catalog:",
-    "mime": "catalog:"
+    "mime": "catalog:",
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
