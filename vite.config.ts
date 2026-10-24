@@ -31,10 +31,25 @@ export default defineConfig({
       'typescript/consistent-type-imports': 'error',
       'typescript/require-await': 'error',
       'import/no-cycle': 'error',
+      // Stylesheets are imported for their side effect.
+      'import/no-unassigned-import': ['error', { allow: ['**/*.css'] }],
       // Blind to exhaustive switches over unions; TypeScript's noImplicitReturns covers it type-aware.
       'consistent-return': 'off',
       'typescript/consistent-return': 'off',
     },
+    overrides: [
+      {
+        files: ['apps/turtle-base/**/*.tsx'],
+        plugins: ['react'],
+        rules: {
+          'react/rules-of-hooks': 'error',
+          'react/exhaustive-deps': 'error',
+          'react/jsx-key': 'error',
+          // The automatic JSX runtime needs no React in scope.
+          'react/react-in-jsx-scope': 'off',
+        },
+      },
+    ],
   },
   fmt: {
     printWidth: 120,

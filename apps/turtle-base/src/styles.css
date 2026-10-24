@@ -1,0 +1,53 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  --background: #ffffff;
+  --foreground: #18181b;
+  --muted: #71717a;
+  --border: #e4e4e7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --muted: #a1a1aa;
+    --border: #27272a;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.spaces-page {
+  max-width: 40rem;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+.spaces-page ul {
+  list-style: none;
+  padding: 0;
+}
+
+.spaces-page li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.spaces-page .icon {
+  margin-right: 0.5rem;
+}
+
+.spaces-page .empty {
+  color: var(--muted);
+}
+
+.spaces-page form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

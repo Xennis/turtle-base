@@ -68,6 +68,35 @@ run = "pnpm exec vp check --fix"
 description = "Run the tests of the TypeScript workspace (Vite+)"
 run = "pnpm exec vp test"
 
+[tasks.run-desktop]
+description = "Build the TypeScript app and start it in Electron"
+run = """
+set -e
+pnpm --dir apps/turtle-base exec vp build
+pnpm --dir apps/desktop exec vp pack
+pnpm --dir apps/desktop exec electron .
+"""
+
+[tasks.dev-desktop]
+description = "Start the TypeScript app in Electron with the renderer from Vite's dev server (hot reload)"
+run = """
+set -e
+pnpm --dir apps/desktop exec vp pack
+pnpm --dir apps/turtle-base exec vp dev --port 5173 --strictPort &
+trap 'kill $!' EXIT
+until curl -sf http://localhost:5173/ >/dev/null; do sleep 0.2; done
+TURTLE_DEV_SERVER_URL=http://localhost:5173/ pnpm --dir apps/desktop exec electron .
+"""
+
+[tasks.desktop-smoke]
+description = "Build the TypeScript app and smoke-test it in Electron (needs a display)"
+run = """
+set -e
+pnpm --dir apps/turtle-base exec vp build
+pnpm --dir apps/desktop exec vp pack
+pnpm --dir apps/desktop exec vpx e2e/smoke.e2e.ts
+"""
+
 [tasks.skills-install]
 description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
 run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --agent claude-code -y"

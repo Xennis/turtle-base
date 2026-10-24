@@ -7,7 +7,8 @@
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
     "build": "vp pack",
-    "start": "electron ."
+    "start": "electron .",
+    "smoke": "vpx e2e/smoke.e2e.ts"
   },
   "dependencies": {
     "@turtle-base/platform": "workspace:*"
@@ -15,6 +16,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "electron": "catalog:",
+    "playwright": "catalog:",
     "vite-plus": "catalog:"
   },
   "productName": "turtle-base"

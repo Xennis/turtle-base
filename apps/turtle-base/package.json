@@ -3,8 +3,13 @@
   "private": true,
   "description": "The turtle-base app - React UI and app logic, rendered by the Electron and Capacitor shells.",
   "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build"
+  },
   "dependencies": {
     "@noble/hashes": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "@turtle-base/crdt-file-sync-google-drive": "workspace:*",
     "@turtle-base/crdt-file-sync-transport": "workspace:*",
     "@turtle-base/platform": "workspace:*",
@@ -12,11 +17,16 @@
     "@turtle-base/sql-crdt": "workspace:*",
     "kysely": "catalog:",
     "mime": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {
     "@turtle-base/books-plugin": "workspace:*",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "vite-plus": "catalog:"
   }
 }
