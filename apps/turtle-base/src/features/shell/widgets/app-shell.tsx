@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, LayoutDashboard, Layers, Menu } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, Layers, Menu } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { useAppServices } from '../../../core/app-scope.tsx';
@@ -7,6 +7,7 @@ import { Button } from '../../../core/ui/button.tsx';
 import { Sheet, SheetContent, SheetTitle } from '../../../core/ui/sheet.tsx';
 import { useMediaQuery } from '../../../core/use-media-query.ts';
 import { useNotifier } from '../../../core/use-notifier.ts';
+import { PageDetailView } from '../../pages/widgets/page-detail-view.tsx';
 import { PluginsPage } from '../../plugins/widgets/plugins-page.tsx';
 import { SettingsPage } from '../../settings/widgets/settings-page.tsx';
 import { CollectionEditPage } from '../../tables/widgets/collection-edit-page.tsx';
@@ -106,7 +107,15 @@ function MainContent({ navigation }: { navigation: AppNavigationController }) {
       />
     );
   }
-  if (state.selectedPageId !== undefined) return <PagePlaceholder pageId={state.selectedPageId} />;
+  if (state.selectedPageId !== undefined) {
+    return (
+      <PageDetailView
+        pageId={state.selectedPageId}
+        onDeleted={() => navigation.clearSelection()}
+        onOpenCollection={(collectionId) => navigation.selectCollection(collectionId)}
+      />
+    );
+  }
   return <NothingSelected navigation={navigation} />;
 }
 
@@ -142,19 +151,6 @@ function NothingSelected({ navigation }: { navigation: AppNavigationController }
         onOpenChange={setCreating}
         onSubmit={async (name) => navigation.selectSpace(await spaces.create({ name }))}
       />
-    </Centered>
-  );
-}
-
-/** Stands in for the page view until it's ported. */
-function PagePlaceholder({ pageId }: { pageId: string }) {
-  const { pages } = useAppServices();
-  const { data } = useDbQuery({ tables: ['pages'], key: [pageId], query: () => pages.byId(pageId) });
-  const title = data?.title ?? '';
-  return (
-    <Centered icon={data?.icon ?? <FileText />}>
-      <p className="text-lg text-foreground">{title.length === 0 ? 'Untitled' : title}</p>
-      <p>The page editor is ported next.</p>
     </Centered>
   );
 }
