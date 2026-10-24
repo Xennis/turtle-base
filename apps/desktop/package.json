@@ -1,0 +1,21 @@
+{
+  "name": "@turtle-base/desktop",
+  "private": true,
+  "description": "The Electron shell of turtle-base - main process and preload, implementing the platform for the app's renderer.",
+  "type": "module",
+  "main": "dist/main.mjs",
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
+    "build": "vp pack",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@turtle-base/platform": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "electron": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "productName": "turtle-base"
+}
