@@ -8,6 +8,7 @@ packages:
 catalogMode: prefer
 
 catalog:
+  '@noble/hashes': ^2.4.0
   '@types/node': ^24.0.0
   fast-check: ^4.10.2
   kysely: ^0.29.7

@@ -4,6 +4,7 @@
   "description": "The turtle-base app - React UI and app logic, rendered by the Electron and Capacitor shells.",
   "type": "module",
   "dependencies": {
+    "@noble/hashes": "catalog:",
     "@turtle-base/platform": "workspace:*",
     "@turtle-base/plugin-api": "workspace:*",
     "@turtle-base/sql-crdt": "workspace:*",
