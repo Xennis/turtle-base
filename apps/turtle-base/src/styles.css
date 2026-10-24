@@ -2,6 +2,10 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/inter';
+@import '@blocknote/shadcn/style.css';
+
+/* BlockNote's shadcn UI is styled with Tailwind classes in its own code. */
+@source '../node_modules/@blocknote/shadcn';
 
 /* Dark mode follows the `dark` class on <html> (see core/theme), not only the
    system setting - the user can pick light or dark explicitly. */
@@ -216,6 +220,14 @@
 :is(.dark[data-preset='zinc'], .dark [data-preset='zinc']) {
   --primary: oklch(0.92 0.004 286.32);
   --primary-foreground: oklch(0.21 0.006 285.885);
+}
+
+/* The block editor sits on the page's own background, in the app's text and font - BlockNote brings its
+   own white or dark one otherwise. */
+.bn-container[data-color-scheme] {
+  --bn-colors-editor-background: transparent;
+  --bn-colors-editor-text: var(--foreground);
+  --bn-font-family: var(--font-sans);
 }
 
 @layer base {

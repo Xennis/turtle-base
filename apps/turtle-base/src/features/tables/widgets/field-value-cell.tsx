@@ -28,6 +28,8 @@ export function FieldValueCell(props: {
   relatedTitles?: ReadonlyMap<string, string>;
   /** The entry's attachments in this field, for files fields. */
   attachments?: readonly Attachment[];
+  /** Shown for an empty value, e.g. "Empty" in a page's properties - a table cell stays blank. */
+  placeholder?: string;
 }) {
   const { pages } = useAppServices();
   const { entryId, field, raw } = props;
@@ -68,7 +70,7 @@ export function FieldValueCell(props: {
         </span>
       );
     case 'unsupported':
-      return <ValueText field={field} raw={raw} />;
+      return <ValueText field={field} raw={raw} placeholder={props.placeholder} />;
     default:
       return (
         <InlineTextEditor<Json>
@@ -80,17 +82,26 @@ export function FieldValueCell(props: {
           }}
           onSave={save}
         >
-          <ValueText field={field} raw={raw} />
+          <ValueText field={field} raw={raw} placeholder={props.placeholder} />
         </InlineTextEditor>
       );
   }
 }
 
 /** The display text - in red when it doesn't fit the field's type, as a link when it is one. */
-function ValueText({ field, raw }: { field: ResolvedField; raw: unknown }) {
+function ValueText({
+  field,
+  raw,
+  placeholder,
+}: {
+  field: ResolvedField;
+  raw: unknown;
+  placeholder: string | undefined;
+}) {
   const { platform } = useAppServices();
   const text = field.display(raw);
-  if (text.length === 0) return null;
+  if (text.length === 0)
+    return placeholder === undefined ? null : <span className="text-muted-foreground">{placeholder}</span>;
   const error = field.errorFor(raw);
   if (error !== undefined) {
     return (
@@ -123,6 +134,7 @@ function SelectCell(props: {
   raw: unknown;
   options: readonly SelectOption[];
   multiple: boolean;
+  placeholder?: string | undefined;
   onSave: (stored: Json) => Promise<void>;
 }) {
   const [picking, setPicking] = useState(false);
@@ -135,6 +147,9 @@ function SelectCell(props: {
         className="flex min-h-7 w-full items-center gap-1 overflow-hidden text-left"
       >
         <span className="sr-only">{props.field.name}: </span>
+        {selected.length === 0 && props.placeholder !== undefined && (
+          <span className="text-muted-foreground">{props.placeholder}</span>
+        )}
         {selected.map((option) => (
           <SelectOptionChip key={option.id} option={option} />
         ))}

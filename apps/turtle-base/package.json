@@ -8,6 +8,9 @@
     "build": "vp build"
   },
   "dependencies": {
+    "@blocknote/core": "catalog:",
+    "@blocknote/react": "catalog:",
+    "@blocknote/shadcn": "catalog:",
     "@fontsource-variable/inter": "catalog:",
     "@noble/hashes": "catalog:",
     "@tanstack/react-query": "catalog:",
