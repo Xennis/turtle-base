@@ -201,6 +201,25 @@ importers:
         specifier: 'catalog:'
         version: 1.4.0(@types/node@24.19.2)(@vitest/ui@5.0.5)(typescript@7.0.2)
 
+  apps/turtle-base:
+    dependencies:
+      '@turtle-base/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      '@turtle-base/sql-crdt':
+        specifier: workspace:*
+        version: link:../../packages/sql-crdt
+      kysely:
+        specifier: 'catalog:'
+        version: 0.29.7
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 1.4.0(@types/node@24.19.2)(@vitest/ui@5.0.5)(typescript@7.0.2)
+
   packages/books-plugin:
     dependencies:
       '@turtle-base/plugin-api':
