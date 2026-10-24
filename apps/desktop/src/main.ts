@@ -87,21 +87,22 @@ function createWindow(): void {
   void window.loadURL(devServerUrl ?? `${appOrigin}/index.html`);
 }
 
-await app.whenReady();
-
-const userData = app.getPath('userData');
-mkdirSync(userData, { recursive: true });
-const files = new DiskFileDirectory(join(userData, 'files'));
-registerIpcHandlers({
-  sql: createNodeSqlDriver(join(userData, 'turtle-base.sqlite')),
-  prefs: new PrefsFile(join(userData, 'prefs.json')),
-  secrets: new SecretsFile(join(userData, 'secrets.json')),
-  files,
-  isTrusted,
+// Not a top-level await: Electron holds back `ready` until the main module has finished evaluating.
+void app.whenReady().then(() => {
+  const userData = app.getPath('userData');
+  mkdirSync(userData, { recursive: true });
+  const files = new DiskFileDirectory(join(userData, 'files'));
+  registerIpcHandlers({
+    sql: createNodeSqlDriver(join(userData, 'turtle-base.sqlite')),
+    prefs: new PrefsFile(join(userData, 'prefs.json')),
+    secrets: new SecretsFile(join(userData, 'secrets.json')),
+    files,
+    isTrusted,
+  });
+  serveRenderer();
+  serveFiles(files);
+  createWindow();
 });
-serveRenderer();
-serveFiles(files);
-createWindow();
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
