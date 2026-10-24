@@ -1,4 +1,5 @@
 import type { CrdtColumns } from '@turtle-base/sql-crdt';
+import type { Selectable } from 'kysely';
 
 /**
  * Standard audit and soft-delete columns shared by every business table.
@@ -164,3 +165,11 @@ export const crdtTables = [
   'blocks',
   'attachments',
 ] as const satisfies readonly (keyof Database)[];
+
+export type User = Selectable<UsersTable>;
+export type Space = Selectable<SpacesTable>;
+export type Collection = Selectable<CollectionsTable>;
+export type Field = Selectable<FieldsTable>;
+export type Page = Selectable<PagesTable>;
+export type Block = Selectable<BlocksTable>;
+export type Attachment = Selectable<AttachmentsTable>;

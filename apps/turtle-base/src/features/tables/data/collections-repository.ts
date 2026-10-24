@@ -1,10 +1,6 @@
-import type { Selectable } from 'kysely';
-
 import type { AppDatabase } from '../../../core/database/app-database.ts';
 import { createdBy, updatedBy } from '../../../core/database/audit.ts';
-import type { CollectionsTable } from '../../../core/database/schema.ts';
-
-export type Collection = Selectable<CollectionsTable>;
+import type { Collection } from '../../../core/database/schema.ts';
 
 type Changes = Partial<Pick<Collection, 'name' | 'icon' | 'title_field_label' | 'space_id' | 'deleted_at'>>;
 
@@ -70,7 +66,7 @@ export class CollectionsRepository {
 
   /**
    * Label for the built-in title column (shown as "Name" if null or empty) -
-   * not a field, see {@link CollectionsTable.title_field_label}.
+   * not a field, see `CollectionsTable.title_field_label`.
    */
   setTitleFieldLabel(id: string, label: string | null): Promise<void> {
     return this.#update(id, { title_field_label: label });
