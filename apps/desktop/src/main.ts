@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { join, normalize, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { LoopbackGoogleAuthenticator } from '@turtle-base/crdt-file-sync-google-drive/desktop';
 import { desktopFileScheme } from '@turtle-base/platform';
 import { createNodeSqlDriver } from '@turtle-base/platform/node';
 import { app, BrowserWindow, net, protocol, shell } from 'electron';
@@ -86,16 +87,37 @@ function createWindow(): void {
   void window.loadURL(devServerUrl ?? `${appOrigin}/index.html`);
 }
 
+/** The Drive sync's sign-in, when an OAuth client is configured - see packages/crdt-file-sync-google-drive. */
+function createGoogleAuth(secrets: SecretsFile): LoopbackGoogleAuthenticator | undefined {
+  const clientId = process.env['DRIVE_DESKTOP_CLIENT_ID'] ?? '';
+  const clientSecret = process.env['DRIVE_DESKTOP_CLIENT_SECRET'] ?? '';
+  if (clientId.length === 0 || clientSecret.length === 0) return undefined;
+  return new LoopbackGoogleAuthenticator({
+    clientId,
+    clientSecret,
+    secrets: {
+      get: (key) => Promise.resolve(secrets.get(key)),
+      set: (key, value) => Promise.resolve(secrets.set(key, value)),
+      remove: (key) => Promise.resolve(secrets.remove(key)),
+    },
+    // net.fetch looked up per call, so a stub of it (see e2e/smoke.e2e.ts) answers this too.
+    fetch: (input, init) => net.fetch(input instanceof URL ? input.href : input, init),
+    openBrowser: (url) => shell.openExternal(url),
+  });
+}
+
 // Not a top-level await: Electron holds back `ready` until the main module has finished evaluating.
 void app.whenReady().then(() => {
   const userData = app.getPath('userData');
   mkdirSync(userData, { recursive: true });
   const files = new DiskFileDirectory(join(userData, 'files'));
+  const secrets = new SecretsFile(join(userData, 'secrets.json'));
   registerIpcHandlers({
     sql: createNodeSqlDriver(join(userData, 'turtle-base.sqlite')),
     prefs: new PrefsFile(join(userData, 'prefs.json')),
-    secrets: new SecretsFile(join(userData, 'secrets.json')),
+    secrets,
     files,
+    googleAuth: createGoogleAuth(secrets),
     isTrusted,
   });
   serveRenderer();

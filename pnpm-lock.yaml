@@ -278,6 +278,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@turtle-base/crdt-file-sync-google-drive':
+        specifier: workspace:*
+        version: link:../../packages/crdt-file-sync-google-drive
       '@turtle-base/platform':
         specifier: workspace:*
         version: link:../../packages/platform
