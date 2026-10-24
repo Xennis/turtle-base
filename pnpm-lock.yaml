@@ -212,6 +212,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.4.0
+      '@turtle-base/crdt-file-sync-transport':
+        specifier: workspace:*
+        version: link:../../packages/crdt-file-sync-transport
       '@turtle-base/platform':
         specifier: workspace:*
         version: link:../../packages/platform
