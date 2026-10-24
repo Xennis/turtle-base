@@ -89,7 +89,8 @@ export class CrdtPlugin implements KyselyPlugin {
         const table = tableName(node.table);
         if (table === undefined || !this.#tables.has(table)) return node;
         this.#written.set(queryId, table);
-        return { ...node, updates: [...(node.updates ?? []), ...this.#stampUpdates()] } satisfies UpdateQueryNode;
+        const updates = stampUpdates(this.#nextStamp());
+        return { ...node, updates: [...(node.updates ?? []), ...updates] } satisfies UpdateQueryNode;
       }
       case 'DeleteQueryNode': {
         const tables = node.from.froms.map(tableName);
@@ -114,7 +115,9 @@ export class CrdtPlugin implements KyselyPlugin {
     if (columns === undefined || values === undefined || !ValuesNode.is(values)) {
       throw new Error('CRDT inserts need explicit columns and values (no defaults, no INSERT ... SELECT)');
     }
-    const [hlc, nodeId, modified] = this.#stampValues();
+    // One timestamp for the whole statement - an upsert's update included.
+    const stamp = this.#nextStamp();
+    const [hlc, nodeId, modified] = stamp;
     const rows = values.values.map((row): ValuesItemNode => {
       if (PrimitiveValueListNode.is(row)) return { ...row, values: [...row.values, hlc, nodeId, modified] };
       if (ValueListNode.is(row)) {
@@ -129,24 +132,25 @@ export class CrdtPlugin implements KyselyPlugin {
       values: stamped,
       ...(onConflict?.updates === undefined
         ? {}
-        : { onConflict: { ...onConflict, updates: [...onConflict.updates, ...this.#stampUpdates()] } }),
+        : { onConflict: { ...onConflict, updates: [...onConflict.updates, ...stampUpdates(stamp)] } }),
     };
   }
 
-  /** A fresh timestamp per statement, written as `hlc` and `modified`. */
-  #stampValues(): [string, string, string] {
+  /** The values of the {@link crdtColumns} for a statement, from the next timestamp. */
+  #nextStamp(): Stamp {
     const hlc = this.#clock.next();
     return [hlc.toString(), hlc.nodeId, hlc.toString()];
   }
+}
 
-  #stampUpdates(): ColumnUpdateNode[] {
-    const values = this.#stampValues();
-    return crdtColumns.map((column, i) => ({
-      kind: 'ColumnUpdateNode',
-      column: columnNode(column),
-      value: valueNode(values[i] ?? ''),
-    }));
-  }
+type Stamp = readonly [hlc: string, nodeId: string, modified: string];
+
+function stampUpdates(stamp: Stamp): ColumnUpdateNode[] {
+  return crdtColumns.map((column, i) => ({
+    kind: 'ColumnUpdateNode',
+    column: columnNode(column),
+    value: valueNode(stamp[i] ?? ''),
+  }));
 }
 
 function tableName(node: OperationNode | undefined): string | undefined {
