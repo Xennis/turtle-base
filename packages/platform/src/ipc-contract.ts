@@ -49,6 +49,13 @@ export interface IpcContract {
   }[];
   'files:open': (name: string, displayName: string) => void;
 
+  /** Whether the shell has an OAuth client for Google sign-in - false hides Drive sync. */
+  'googleAuth:available': () => boolean;
+  'googleAuth:signInSilently': () => boolean;
+  'googleAuth:signIn': () => void;
+  'googleAuth:signOut': () => void;
+  'googleAuth:accessToken': () => string;
+
   fetch: (request: IpcRequest) => IpcResponse;
   'shell:openExternal': (url: string) => void;
 }
@@ -74,6 +81,11 @@ export const ipcChannels = Object.keys({
   'files:discardTemp': true,
   'files:pick': true,
   'files:open': true,
+  'googleAuth:available': true,
+  'googleAuth:signInSilently': true,
+  'googleAuth:signIn': true,
+  'googleAuth:signOut': true,
+  'googleAuth:accessToken': true,
   fetch: true,
   'shell:openExternal': true,
 } satisfies Record<IpcChannel, true>);

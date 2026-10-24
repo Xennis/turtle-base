@@ -11,6 +11,7 @@
     "smoke": "vpx e2e/smoke.e2e.ts"
   },
   "dependencies": {
+    "@turtle-base/crdt-file-sync-google-drive": "workspace:*",
     "@turtle-base/platform": "workspace:*"
   },
   "devDependencies": {

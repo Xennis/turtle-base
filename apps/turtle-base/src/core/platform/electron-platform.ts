@@ -2,6 +2,7 @@ import {
   desktopFileScheme,
   type DesktopBridge,
   type FileDirectory,
+  type GoogleAuthenticator,
   type KeyValueStore,
   type Platform,
   type SecretStorage,
@@ -35,7 +36,17 @@ export async function createElectronPlatform(bridge: DesktopBridge): Promise<Pla
         bytes: new Blob([new Uint8Array(bytes)]).stream(),
       })),
     openFile: (name, displayName) => bridge.invoke('files:open', name, displayName),
-    googleAuth: undefined,
+    googleAuth: (await bridge.invoke('googleAuth:available')) ? googleAuthOf(bridge) : undefined,
+  };
+}
+
+/** The sign-in runs in the main process - it needs a local server for the redirect and keeps the token there. */
+function googleAuthOf(bridge: DesktopBridge): GoogleAuthenticator {
+  return {
+    signInSilently: () => bridge.invoke('googleAuth:signInSilently'),
+    signIn: () => bridge.invoke('googleAuth:signIn'),
+    signOut: () => bridge.invoke('googleAuth:signOut'),
+    accessToken: () => bridge.invoke('googleAuth:accessToken'),
   };
 }
 

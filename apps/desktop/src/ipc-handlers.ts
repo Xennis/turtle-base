@@ -1,4 +1,4 @@
-import type { IpcChannel, IpcContract, SqlDriver } from '@turtle-base/platform';
+import type { GoogleAuthenticator, IpcChannel, IpcContract, SqlDriver } from '@turtle-base/platform';
 import { mkdtemp, copyFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -23,9 +23,11 @@ export function registerIpcHandlers(options: {
   prefs: PrefsFile;
   secrets: SecretsFile;
   files: DiskFileDirectory;
+  /** Undefined without an OAuth client configured. */
+  googleAuth: GoogleAuthenticator | undefined;
   isTrusted: (url: string) => boolean;
 }): void {
-  const { sql, prefs, secrets, files, isTrusted } = options;
+  const { sql, prefs, secrets, files, googleAuth, isTrusted } = options;
 
   function handle<C extends IpcChannel>(channel: C, handler: Handler<C>): void {
     ipcMain.handle(channel, (event: IpcMainInvokeEvent, ...args: unknown[]) => {
@@ -77,6 +79,16 @@ export function registerIpcHandlers(options: {
     const error = await shell.openPath(copy);
     if (error.length > 0) throw new Error(error);
   });
+
+  function signedIn(): GoogleAuthenticator {
+    if (googleAuth === undefined) throw new Error('Google sign-in is not configured');
+    return googleAuth;
+  }
+  handle('googleAuth:available', () => googleAuth !== undefined);
+  handle('googleAuth:signInSilently', () => signedIn().signInSilently());
+  handle('googleAuth:signIn', () => signedIn().signIn());
+  handle('googleAuth:signOut', () => signedIn().signOut());
+  handle('googleAuth:accessToken', () => signedIn().accessToken());
 
   handle('fetch', async (request) => {
     const response = await net.fetch(request.url, {
