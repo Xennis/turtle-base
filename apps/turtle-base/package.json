@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@noble/hashes": "catalog:",
+    "@turtle-base/crdt-file-sync-google-drive": "workspace:*",
     "@turtle-base/crdt-file-sync-transport": "workspace:*",
     "@turtle-base/platform": "workspace:*",
     "@turtle-base/plugin-api": "workspace:*",
