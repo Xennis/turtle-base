@@ -10,6 +10,7 @@ catalogMode: prefer
 catalog:
   '@noble/hashes': ^2.4.0
   '@types/node': ^24.0.0
+  electron: 44.9.3
   fast-check: ^4.10.2
   kysely: ^0.29.7
   mime: ^4.1.0
