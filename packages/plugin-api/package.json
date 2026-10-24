@@ -1,0 +1,12 @@
+{
+  "name": "@turtle-base/plugin-api",
+  "private": true,
+  "description": "API for turtle-base plugins - collection templates and lookups of entries from external sources.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@turtle-base/field-types": "workspace:*"
+  }
+}
