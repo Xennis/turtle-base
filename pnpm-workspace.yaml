@@ -10,6 +10,7 @@ catalogMode: prefer
 catalog:
   '@types/node': ^24.0.0
   typescript: ^7.0.2
+  valibot: ^1.5.0
   vite-plus: 1.4.0
 
 # Vite+ ships its own Vite core and pins Vitest - every other consumer
