@@ -17,6 +17,7 @@ import {
   LayoutGrid,
   Plus,
   Rows3,
+  Search,
   SlidersHorizontal,
   Type,
 } from 'lucide-react';
@@ -30,6 +31,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ToggleGroup, ToggleGroupItem } from '../../../core/ui/toggle-group.tsx';
 import { isImage } from '../../files/data/attachments-repository.ts';
 import { decodePageProperties } from '../../pages/data/pages-repository.ts';
+import { EntryLookupDialog } from '../../plugins/widgets/entry-lookup-dialog.tsx';
 import type { ResolvedField } from '../data/resolved-field.ts';
 import { CollectionTilesView } from './collection-tiles-view.tsx';
 import { FieldTypeIcon } from './field-type-icon.tsx';
@@ -52,7 +54,9 @@ export function CollectionView(props: {
   onEdit: () => void;
   onOpenEntry: (pageId: string) => void;
 }) {
-  const { collections, fields, fieldTypes, pages, attachments } = useAppServices();
+  const { collections, fields, fieldTypes, pages, attachments, plugins } = useAppServices();
+  const lookup = plugins.templateOf(props.collectionId)?.lookup;
+  const [lookingUp, setLookingUp] = useState(false);
   const { collectionId } = props;
   const [layout, setLayout] = useState<Layout>('table');
   const { data: collection } = useDbQuery({
@@ -151,10 +155,25 @@ export function CollectionView(props: {
           <SlidersHorizontal />
           <span className="hidden sm:inline">Edit collection</span>
         </Button>
-        <Button onClick={() => void addEntry()}>
+        {/* With a plugin's lookup, adding through it is the main action and a blank entry the secondary one. */}
+        <Button variant={lookup === undefined ? 'default' : 'ghost'} onClick={() => void addEntry()}>
           <Plus />
           New entry
         </Button>
+        {lookup !== undefined && (
+          <Button onClick={() => setLookingUp(true)}>
+            <Search />
+            {lookup.actionLabel}
+          </Button>
+        )}
+        {lookup !== undefined && lookingUp && (
+          <EntryLookupDialog
+            collectionId={props.collectionId}
+            lookup={lookup}
+            onOpenChange={setLookingUp}
+            onOpenEntry={props.onOpenEntry}
+          />
+        )}
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {entries.length === 0 ? (
