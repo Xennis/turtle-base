@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -147,6 +147,55 @@ async function editEntry(page: Page) {
   await page.getByRole('button', { name: 'Back to collection' }).click();
 }
 
+/**
+ * Requests go out through the main process (Platform.fetch); answering them there keeps the test off the
+ * network: Open Library's search finds "Dune", and every cover is the test PNG.
+ */
+async function answerOpenLibrary(app: ElectronApplication) {
+  await app.evaluate(({ net }, png) => {
+    // The app's own files come through net.fetch too - those still load.
+    const original = net.fetch.bind(net);
+    net.fetch = (input: string | Request, init?: RequestInit) => {
+      const url = new URL(typeof input === 'string' ? input : input.url);
+      if (!url.hostname.endsWith('openlibrary.org')) return original(input, init);
+      if (url.hostname === 'covers.openlibrary.org') {
+        return Promise.resolve(new Response(Buffer.from(png, 'base64'), { headers: { 'Content-Type': 'image/png' } }));
+      }
+      const dune = {
+        key: '/works/OL893415W',
+        title: 'Dune',
+        author_name: ['Frank Herbert'],
+        first_publish_year: 1965,
+        cover_i: 1,
+        editions: { docs: [{ title: 'Dune', cover_i: 1 }] },
+      };
+      return Promise.resolve(Response.json({ docs: [dune] }));
+    };
+  }, readFileSync(picture).toString('base64'));
+}
+
+/** The Books plugin: added as a space, a book looked up, added - and opened, not added again, the second time. */
+async function addBook(app: ElectronApplication, page: Page) {
+  await answerOpenLibrary(app);
+  await page.getByRole('button', { name: 'Plugins' }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('button', { name: 'Reading list' }).click();
+  for (const time of ['first', 'second']) {
+    await page.getByRole('button', { name: 'Add book' }).click();
+    await page.getByRole('textbox', { name: 'Search' }).fill('dune');
+    await page.getByRole('button', { name: /^Dune/ }).click();
+    await page.locator('input[aria-label="Title"][value="Dune"]').waitFor();
+    await page.getByText('Frank Herbert').waitFor();
+    if (time === 'first') {
+      // The cover is downloaded after the entry is there.
+      await page.getByRole('button', { name: 'Open 1-L.jpg' }).locator('img').waitFor();
+      await screenshot(page, '6-book');
+    }
+    await page.getByRole('button', { name: 'Back to collection' }).click();
+  }
+  await page.getByText('1 entry').waitFor();
+}
+
 try {
   const first = await launch();
   await first.page.getByText('No spaces yet').waitFor();
@@ -174,6 +223,10 @@ try {
   await second.page.getByRole('button', { name: 'Workouts' }).click();
   await second.page.locator('html.dark[data-preset="violet"]').waitFor({ state: 'attached' });
   await screenshot(second.page, '4-restarted');
+  await addBook(second.app, second.page);
+  await second.page.getByRole('combobox', { name: 'Space' }).click();
+  await second.page.getByRole('option', { name: 'Fitness' }).click();
+  await second.page.getByRole('button', { name: 'Workouts' }).click();
 
   await second.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(400, 760));
   await second.page.getByRole('button', { name: 'Back' }).click();
