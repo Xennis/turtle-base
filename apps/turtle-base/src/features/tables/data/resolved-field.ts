@@ -1,7 +1,14 @@
 import type { FieldVariant, InputHint } from '@turtle-base/plugin-api';
 
 import type { Field } from '../../../core/database/schema.ts';
-import { erased, plainOfRaw, type AnyFieldType, type BaseFieldType, type Json } from './base-field-type.ts';
+import {
+  erased,
+  plainOfRaw,
+  type AnyFieldType,
+  type BaseFieldType,
+  type Json,
+  type TypedConfig,
+} from './base-field-type.ts';
 
 /** Key of a field's variant id in `fields.config`, next to its base type's own config - see FIELD_TYPES.md. */
 export const fieldVariantKey = 'variant';
@@ -38,16 +45,20 @@ export class ResolvedField {
   /** Undefined when the field has none, or this device doesn't know it. */
   readonly variant: FieldVariant | undefined;
 
-  /** What `base.decodeConfig` made of the field's config. */
-  readonly config: unknown;
+  /** What `base.decodeConfig` made of the field's config - narrow `typed.kind` to read it typed. */
+  readonly typed: TypedConfig;
   readonly #type: BaseFieldType<unknown, unknown>;
 
-  constructor(row: Field, base: AnyFieldType, variant: FieldVariant | undefined, config: unknown) {
+  constructor(row: Field, base: AnyFieldType, variant: FieldVariant | undefined, typed: TypedConfig) {
     this.row = row;
     this.base = base;
     this.variant = variant;
-    this.config = config;
+    this.typed = typed;
     this.#type = erased(base);
+  }
+
+  get config(): unknown {
+    return this.typed.config;
   }
 
   get id(): string {
@@ -96,6 +107,12 @@ export class ResolvedField {
     const value = this.#type.decode(raw, this.config);
     if (value === undefined) return plainOfRaw(raw);
     return this.#variantFormat(value) ?? this.#type.display(value, this.config);
+  }
+
+  /** Canonical text of a stored value (see `toPlain`) - its plain text when it can't be decoded. */
+  plain(raw: unknown): string {
+    const value = this.valueOf(raw);
+    return value === undefined ? plainOfRaw(raw) : this.#type.toPlain(value, this.config);
   }
 
   linkFor(raw: unknown): URL | undefined {

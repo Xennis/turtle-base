@@ -1,7 +1,13 @@
 import { commonVariants, urlVariant, type FieldVariant } from '@turtle-base/plugin-api';
 
 import type { Field } from '../../../core/database/schema.ts';
-import { baseFieldTypes, textFieldType, unsupportedFieldType, type AnyFieldType } from './base-field-type.ts';
+import {
+  baseFieldTypes,
+  decodeTypedConfig,
+  textFieldType,
+  unsupportedFieldType,
+  type AnyFieldType,
+} from './base-field-type.ts';
 import { decodeFieldConfig, fieldVariantKey, ResolvedField } from './resolved-field.ts';
 
 /** One entry of the type picker: a base type, optionally with a variant. */
@@ -70,7 +76,7 @@ export class FieldTypeRegistry {
       // A variant registered for another base type than the field has (e.g. after its type changed on a
       // device without this variant) is ignored rather than misapplied.
       variant?.baseTypeId === base.id ? variant : undefined,
-      base.decodeConfig(json),
+      decodeTypedConfig(base, json),
     );
   }
 }
