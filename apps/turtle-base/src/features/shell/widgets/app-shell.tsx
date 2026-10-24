@@ -91,7 +91,10 @@ function NarrowShell({ navigation }: { navigation: AppNavigationController }) {
 function MainContent({ navigation }: { navigation: AppNavigationController }) {
   const state = useNotifier(navigation, () => navigation.state);
   if (state.isShowingSettings) return <SettingsPage onDone={() => navigation.hideSettings()} />;
-  if (state.isShowingPlugins) return <PluginsPage onDone={() => navigation.hidePlugins()} />;
+  if (state.isShowingPlugins)
+    return (
+      <PluginsPage onDone={() => navigation.hidePlugins()} onOpenSpace={(spaceId) => navigation.openSpace(spaceId)} />
+    );
   if (state.selectedCollectionId !== undefined) {
     return state.isEditingCollection ? (
       <CollectionEditPage

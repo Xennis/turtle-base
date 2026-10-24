@@ -4,6 +4,7 @@ import { createContext, use, type ReactNode } from 'react';
 
 import { AttachmentsRepository } from '../features/files/data/attachments-repository.ts';
 import { PagesRepository } from '../features/pages/data/pages-repository.ts';
+import { PluginInstancesRepository } from '../features/plugins/data/plugin-instances-repository.ts';
 import { PluginRegistry } from '../features/plugins/data/plugin-registry.ts';
 import { SpacesRepository } from '../features/spaces/data/spaces-repository.ts';
 import { CollectionsRepository } from '../features/tables/data/collections-repository.ts';
@@ -27,6 +28,7 @@ export interface AppServices {
   readonly fields: FieldsRepository;
   readonly pages: PagesRepository;
   readonly attachments: AttachmentsRepository;
+  readonly pluginInstances: PluginInstancesRepository;
 }
 
 /** The plugins the app ships with - registered at build time. */
@@ -46,6 +48,7 @@ export function createAppServices(platform: Platform, database: AppDatabase, the
     fields: new FieldsRepository(database, fieldTypes),
     pages: new PagesRepository(database),
     attachments: new AttachmentsRepository(database),
+    pluginInstances: new PluginInstancesRepository(database),
   };
 }
 
