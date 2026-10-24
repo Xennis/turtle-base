@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Input } from '../../../core/ui/input.tsx';
 import { Label } from '../../../core/ui/label.tsx';
 import { ConfirmDialog } from '../../shell/widgets/confirm-dialog.tsx';
+import { EmojiIconButton } from '../../shell/widgets/emoji-picker.tsx';
 import { FieldsEditor } from './fields-editor.tsx';
 
 /**
@@ -70,15 +71,8 @@ export function CollectionEditPage(props: { collectionId: string; onDone: () => 
 function CollectionCard({ collection }: { collection: Collection }) {
   const { collections } = useAppServices();
   const id = useId();
-  const [icon, setIcon] = useState(collection.icon ?? '');
   const [name, setName] = useState(collection.name);
   const [titleLabel, setTitleLabel] = useState(collection.title_field_label ?? '');
-
-  function saveIcon() {
-    const trimmed = icon.trim();
-    if (trimmed !== (collection.icon ?? ''))
-      void collections.setIcon(collection.id, trimmed.length === 0 ? null : trimmed);
-  }
 
   function saveName() {
     const trimmed = name.trim();
@@ -102,14 +96,11 @@ function CollectionCard({ collection }: { collection: Collection }) {
         <div className="grid gap-1.5">
           <Label htmlFor={`${id}-name`}>Icon and name</Label>
           <div className="flex gap-2">
-            <Input
-              aria-label="Icon"
-              placeholder="🙂"
-              className="w-12 text-center text-lg"
-              value={icon}
-              onChange={(event) => setIcon(event.target.value)}
-              onBlur={saveIcon}
-              onKeyDown={(event) => event.key === 'Enter' && saveIcon()}
+            <EmojiIconButton
+              label="Icon"
+              value={collection.icon}
+              onChange={(icon) => void collections.setIcon(collection.id, icon)}
+              className="size-9 text-xl"
             />
             <Input
               id={`${id}-name`}

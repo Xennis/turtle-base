@@ -6,7 +6,7 @@ import {
   type DefaultReactSuggestionItem,
 } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
-import { ArrowLeft, File, Image, Paperclip, SmilePlus, Trash2 } from 'lucide-react';
+import { ArrowLeft, File, Image, Paperclip, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 
 import { useAppServices } from '../../../core/app-scope.tsx';
@@ -18,6 +18,7 @@ import { useIsDark } from '../../../core/theme/use-is-dark.ts';
 import { FileAccept } from '../../files/data/file-accept.ts';
 import { usePickAndAttach } from '../../files/widgets/use-pick-and-attach.ts';
 import { ConfirmDialog } from '../../shell/widgets/confirm-dialog.tsx';
+import { EmojiIconButton } from '../../shell/widgets/emoji-picker.tsx';
 import { BlocksRepository } from '../data/blocks-repository.ts';
 import { buildDocument, hiddenBlockIds, type EditorBlock } from './block-document.ts';
 import { blockEditorOf, pageSchema } from './block-editor.ts';
@@ -240,16 +241,10 @@ function toEditorBlock(block: EditorBlock): EditorBlock {
   return { id, type, props, ...(content === undefined ? {} : { content }), children: children.map(toEditorBlock) };
 }
 
-/** The icon (an emoji, typed or picked from the system's emoji keyboard) and the title. */
+/** The icon (an emoji) and the title. */
 function TitleRow({ page }: { page: Page }) {
   const { pages } = useAppServices();
-  const [icon, setIcon] = useState(page.icon ?? '');
   const [title, setTitle] = useState(page.title);
-
-  function saveIcon() {
-    const trimmed = icon.trim();
-    if (trimmed !== (page.icon ?? '')) void pages.setIcon(page.id, trimmed.length === 0 ? null : trimmed);
-  }
 
   function saveTitle() {
     if (title.trim() !== page.title) void pages.rename(page.id, title.trim());
@@ -257,20 +252,7 @@ function TitleRow({ page }: { page: Page }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="relative">
-        {/* An emoji placeholder would look like a set icon, so an empty icon shows a muted symbol instead. */}
-        {icon.length === 0 && (
-          <SmilePlus className="pointer-events-none absolute top-3.5 left-3.5 size-5 text-muted-foreground" />
-        )}
-        <Input
-          aria-label="Icon"
-          className="size-12 border-transparent text-center text-3xl shadow-none hover:border-input"
-          value={icon}
-          onChange={(event) => setIcon(event.target.value)}
-          onBlur={saveIcon}
-          onKeyDown={(event) => event.key === 'Enter' && saveIcon()}
-        />
-      </div>
+      <EmojiIconButton label="Icon" value={page.icon} onChange={(icon) => void pages.setIcon(page.id, icon)} />
       <Input
         aria-label="Title"
         placeholder="Untitled"

@@ -11,6 +11,7 @@
     "@blocknote/core": "catalog:",
     "@blocknote/react": "catalog:",
     "@blocknote/shadcn": "catalog:",
+    "@emoji-mart/data": "catalog:",
     "@fontsource-variable/inter": "catalog:",
     "@noble/hashes": "catalog:",
     "@tanstack/react-query": "catalog:",
