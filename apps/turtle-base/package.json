@@ -8,6 +8,7 @@
     "build": "vp build"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "catalog:",
     "@noble/hashes": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@turtle-base/crdt-file-sync-google-drive": "workspace:*",
@@ -15,18 +16,26 @@
     "@turtle-base/platform": "workspace:*",
     "@turtle-base/plugin-api": "workspace:*",
     "@turtle-base/sql-crdt": "workspace:*",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
     "kysely": "catalog:",
+    "lucide-react": "catalog:",
     "mime": "catalog:",
+    "radix-ui": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "shadcn": "catalog:",
+    "tw-animate-css": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
     "@turtle-base/books-plugin": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "tailwindcss": "catalog:",
     "vite-plus": "catalog:"
   }
 }
