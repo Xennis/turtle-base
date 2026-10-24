@@ -42,7 +42,7 @@ try {
 
   await createNamed(first.page, 'New collection', 'Workouts');
   await first.page.getByRole('button', { name: 'Workouts' }).waitFor();
-  await first.page.getByText('The table view is ported next.').waitFor();
+  await first.page.getByText('No entries yet').waitFor();
   await first.page.getByRole('button', { name: 'New page' }).click();
   await first.page.getByRole('button', { name: 'Untitled' }).waitFor();
   await screenshot(first.page, '2-shell');

@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, LayoutDashboard, Layers, Menu, Table2 } from 'lucide-react';
+import { ArrowLeft, FileText, LayoutDashboard, Layers, Menu } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { useAppServices } from '../../../core/app-scope.tsx';
@@ -9,6 +9,8 @@ import { useMediaQuery } from '../../../core/use-media-query.ts';
 import { useNotifier } from '../../../core/use-notifier.ts';
 import { PluginsPage } from '../../plugins/widgets/plugins-page.tsx';
 import { SettingsPage } from '../../settings/widgets/settings-page.tsx';
+import { CollectionEditPage } from '../../tables/widgets/collection-edit-page.tsx';
+import { CollectionView } from '../../tables/widgets/collection-view.tsx';
 import { AppNavigationController } from './app-navigation-controller.ts';
 import { NamePromptDialog } from './name-prompt-dialog.tsx';
 import { Sidebar } from './sidebar.tsx';
@@ -89,8 +91,21 @@ function MainContent({ navigation }: { navigation: AppNavigationController }) {
   const state = useNotifier(navigation, () => navigation.state);
   if (state.isShowingSettings) return <SettingsPage onDone={() => navigation.hideSettings()} />;
   if (state.isShowingPlugins) return <PluginsPage onDone={() => navigation.hidePlugins()} />;
-  if (state.selectedCollectionId !== undefined)
-    return <CollectionPlaceholder collectionId={state.selectedCollectionId} />;
+  if (state.selectedCollectionId !== undefined) {
+    return state.isEditingCollection ? (
+      <CollectionEditPage
+        collectionId={state.selectedCollectionId}
+        onDone={() => navigation.stopEditingCollection()}
+        onDeleted={() => navigation.clearSelection()}
+      />
+    ) : (
+      <CollectionView
+        collectionId={state.selectedCollectionId}
+        onEdit={() => navigation.startEditingCollection()}
+        onOpenEntry={(pageId) => navigation.selectPage(pageId)}
+      />
+    );
+  }
   if (state.selectedPageId !== undefined) return <PagePlaceholder pageId={state.selectedPageId} />;
   return <NothingSelected navigation={navigation} />;
 }
@@ -127,22 +142,6 @@ function NothingSelected({ navigation }: { navigation: AppNavigationController }
         onOpenChange={setCreating}
         onSubmit={async (name) => navigation.selectSpace(await spaces.create({ name }))}
       />
-    </Centered>
-  );
-}
-
-/** Stands in for the collection view until it's ported. */
-function CollectionPlaceholder({ collectionId }: { collectionId: string }) {
-  const { collections } = useAppServices();
-  const { data } = useDbQuery({
-    tables: ['collections'],
-    key: [collectionId],
-    query: () => collections.byId(collectionId),
-  });
-  return (
-    <Centered icon={data?.icon ?? <Table2 />}>
-      <p className="text-lg text-foreground">{data?.name}</p>
-      <p>The table view is ported next.</p>
     </Centered>
   );
 }
