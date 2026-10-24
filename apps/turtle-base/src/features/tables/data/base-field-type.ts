@@ -418,6 +418,34 @@ export type AnyFieldType =
   | FilesFieldType
   | UnsupportedFieldType;
 
+/** A field's config together with its type's kind - narrowing `kind` types `config`. */
+export type TypedConfig =
+  | { readonly kind: 'text'; readonly config: TextConfig }
+  | { readonly kind: 'number'; readonly config: NumberConfig }
+  | { readonly kind: 'select' | 'multiSelect'; readonly config: SelectConfig }
+  | { readonly kind: 'relation'; readonly config: RelationConfig }
+  | { readonly kind: 'files'; readonly config: FilesConfig }
+  | { readonly kind: 'date' | 'checkbox' | 'location' | 'unsupported'; readonly config: null };
+
+export function decodeTypedConfig(base: AnyFieldType, json: ConfigJson): TypedConfig {
+  switch (base.kind) {
+    case 'text':
+      return { kind: base.kind, config: base.decodeConfig(json) };
+    case 'number':
+      return { kind: base.kind, config: base.decodeConfig(json) };
+    case 'select':
+    case 'multiSelect':
+      return { kind: base.kind, config: base.decodeConfig(json) };
+    case 'relation':
+      return { kind: base.kind, config: base.decodeConfig(json) };
+    case 'files':
+      return { kind: base.kind, config: base.decodeConfig(json) };
+    // Only kinds without a config get here - a new kind with one fails to type check against TypedConfig.
+    default:
+      return { kind: base.kind, config: null };
+  }
+}
+
 /** In the order the type picker offers them. */
 export const baseFieldTypes: readonly AnyFieldType[] = [
   textFieldType,
