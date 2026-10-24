@@ -97,6 +97,28 @@ pnpm --dir apps/desktop exec vp pack
 pnpm --dir apps/desktop exec vpx e2e/smoke.e2e.ts
 """
 
+[tasks.run-android-ts]
+description = "Build the TypeScript app and run it in the Capacitor Android shell (asks for the device)"
+run = """
+set -e
+export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
+pnpm --dir apps/turtle-base exec vp build
+pnpm --dir apps/mobile exec cap run android
+"""
+
+[tasks.mobile-smoke]
+description = "Build the TypeScript app, install it on ANDROID_SERIAL (an emulator - its app data is cleared) and smoke-test it"
+run = """
+set -e
+: "${ANDROID_SERIAL:?set ANDROID_SERIAL to the emulator to test on, e.g. emulator-5554}"
+export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
+pnpm --dir apps/turtle-base exec vp build
+pnpm --dir apps/mobile exec cap sync android
+(cd apps/mobile/android && ./gradlew assembleDebug -q)
+"$ANDROID_HOME/platform-tools/adb" -s "$ANDROID_SERIAL" install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+pnpm --dir apps/mobile exec vpx e2e/smoke.e2e.ts
+"""
+
 [tasks.skills-install]
 description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
 run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --agent claude-code -y"
