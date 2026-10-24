@@ -1,6 +1,7 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 
 import type { FileDirectory } from './file-directory.ts';
+import type { GoogleAuthenticator } from './google-authenticator.ts';
 import type { KeyValueStore, SecretStorage } from './key-value-store.ts';
 import type { SqlDriver, SqlResult, SqlRow, SqlValue } from './sql-driver.ts';
 
@@ -141,4 +142,32 @@ export function streamOf(bytes: Uint8Array): ReadableStream<Uint8Array> {
 /** All of a stream, in one array. */
 export async function bytesOf(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/** A {@link GoogleAuthenticator} that never reaches Google - signing in always succeeds, with token `token`. */
+export class FakeGoogleAuthenticator implements GoogleAuthenticator {
+  signedIn: boolean;
+
+  /** `signedIn` is what a silent sign-in finds, e.g. after an earlier session. */
+  constructor(signedIn = false) {
+    this.signedIn = signedIn;
+  }
+
+  signInSilently(): Promise<boolean> {
+    return Promise.resolve(this.signedIn);
+  }
+
+  signIn(): Promise<void> {
+    this.signedIn = true;
+    return Promise.resolve();
+  }
+
+  signOut(): Promise<void> {
+    this.signedIn = false;
+    return Promise.resolve();
+  }
+
+  accessToken(): Promise<string> {
+    return this.signedIn ? Promise.resolve('token') : Promise.reject(new Error('Not signed in'));
+  }
 }

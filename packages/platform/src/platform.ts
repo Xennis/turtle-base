@@ -1,4 +1,5 @@
 import type { FileDirectory } from './file-directory.ts';
+import type { GoogleAuthenticator } from './google-authenticator.ts';
 import type { KeyValueStore, SecretStorage } from './key-value-store.ts';
 import type { SqlDriver } from './sql-driver.ts';
 
@@ -22,4 +23,11 @@ export interface Platform {
    */
   readonly fetch: typeof fetch;
   openExternal(url: string): Promise<void>;
+
+  /**
+   * Undefined when no OAuth client was configured for this platform - the
+   * app then hides Drive sync rather than offering a feature that can never
+   * connect.
+   */
+  readonly googleAuth: GoogleAuthenticator | undefined;
 }
