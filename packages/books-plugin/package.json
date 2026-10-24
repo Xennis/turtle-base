@@ -1,0 +1,16 @@
+{
+  "name": "@turtle-base/books-plugin",
+  "private": true,
+  "description": "The Books plugin for turtle-base - a reading list with books from Open Library.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@turtle-base/plugin-api": "workspace:*",
+    "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  }
+}
