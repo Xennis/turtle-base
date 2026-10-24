@@ -1,4 +1,6 @@
+import { Capacitor } from '@capacitor/core';
 import { QueryClient } from '@tanstack/react-query';
+import type { Platform } from '@turtle-base/platform';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -6,14 +8,20 @@ import { App } from './app.tsx';
 import { createAppServices } from './core/app-scope.tsx';
 import { AppDatabase } from './core/database/app-database.ts';
 import { invalidateTables } from './core/database/use-db-query.ts';
-import { createElectronPlatform } from './core/platform/electron-platform.ts';
 import { applyTheme, ThemeController } from './core/theme/theme-controller.ts';
 import './styles.css';
 
-const bridge = window.turtleDesktop;
-if (bridge === undefined) throw new Error('Not running in the desktop shell (no window.turtleDesktop)');
+/** The shell's platform - only its module is loaded, the other shell's plugins never are. */
+async function createPlatform(): Promise<Platform> {
+  const bridge = window.turtleDesktop;
+  if (bridge !== undefined)
+    return (await import('./core/platform/electron-platform.ts')).createElectronPlatform(bridge);
+  if (Capacitor.isNativePlatform())
+    return (await import('./core/platform/capacitor-platform.ts')).createCapacitorPlatform();
+  throw new Error('Not running in a shell - neither Electron nor Capacitor');
+}
 
-const platform = await createElectronPlatform(bridge);
+const platform = await createPlatform();
 const theme = new ThemeController(platform.prefs);
 // Before the first render, so the window doesn't flash in the wrong theme.
 applyTheme(document.documentElement, theme, matchMedia('(prefers-color-scheme: dark)').matches);
