@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { _electron as electron, type Page } from 'playwright';
+import { _electron as electron, type ElectronApplication, type Page } from 'playwright';
 
 // Starts the built shell with the built renderer on a fresh profile and walks
 // through the app shell: a space from the empty state, a collection and a
@@ -15,14 +15,36 @@ const appDir = join(import.meta.dirname, '..');
 const userData = mkdtempSync(join(tmpdir(), 'turtle-base-smoke-'));
 const screenshots = process.argv[2];
 
+/** A 16×16 red PNG, the file picked whenever the app asks for one (see pickFilesFrom). */
+const picture = join(userData, 'red.png');
+writeFileSync(
+  picture,
+  Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR4nGO4o6ZGEmIY1TCqYfhqAAATqigQ9JeO5gAAAABJRU5ErkJggg==',
+    'base64',
+  ),
+);
+
+/** The file dialog is native - Playwright can't click it, so the main process gets one that picks `path`. */
+async function pickFilesFrom(app: ElectronApplication, path: string) {
+  await app.evaluate(({ dialog }, filePath) => {
+    dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [filePath] });
+  }, path);
+}
+
 /** The window last launched - screenshotted when a step fails. */
 let current: Page | undefined;
 
 async function launch() {
   const app = await electron.launch({ args: [appDir, `--user-data-dir=${userData}`] });
+  await pickFilesFrom(app, picture);
   const page = await app.firstWindow();
   current = page;
   page.on('pageerror', (error) => console.log(`[renderer error] ${error.message}`));
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning')
+      console.log(`[renderer ${message.type()}] ${message.text()}`);
+  });
   return { app, page };
 }
 
@@ -55,6 +77,7 @@ async function editCollection(page: Page) {
   await page.getByRole('button', { name: 'Edit collection' }).click();
   await addField(page, 'Reps', 'Number');
   await addField(page, 'Status', 'Select');
+  await addField(page, 'Photo', 'Files');
   // A new select's settings open right away, to add its options.
   await page.getByLabel('New option').fill('Done');
   await page.getByLabel('New option').press('Enter');
@@ -107,8 +130,12 @@ async function editEntry(page: Page) {
   await page.locator('tbody').getByRole('button', { name: 'Open' }).click();
   await page.locator('input[aria-label="Title"][value="Squats"]').waitFor();
   await page.getByRole('term').filter({ hasText: 'Reps' }).waitFor();
+  await page.getByRole('button', { name: 'Add file' }).click();
+  await page.getByRole('button', { name: 'Open red.png' }).locator('img').waitFor();
   await page.locator('.bn-editor').click();
   await page.keyboard.type('Three sets, slow on the way down.');
+  await page.getByRole('button', { name: 'Attach file' }).click();
+  await page.locator('.bn-editor').getByRole('button', { name: 'Open red.png' }).waitFor();
   // Written after a short pause in typing.
   await page.waitForTimeout(1000);
   await screenshot(page, '2d-page');
@@ -116,6 +143,7 @@ async function editEntry(page: Page) {
   await page.getByRole('button', { name: 'Back to collection' }).click();
   await page.locator('tbody').getByRole('button', { name: 'Open' }).click();
   await page.locator('.bn-editor').getByText('Three sets, slow on the way down.').waitFor();
+  await page.locator('.bn-editor').getByRole('button', { name: 'Open red.png' }).waitFor();
   await page.getByRole('button', { name: 'Back to collection' }).click();
 }
 
