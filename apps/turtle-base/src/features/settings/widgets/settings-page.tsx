@@ -6,6 +6,7 @@ import { themePresetLabel, themePresets, type ThemePreset } from '../../../core/
 import { Label } from '../../../core/ui/label.tsx';
 import { ToggleGroup, ToggleGroupItem } from '../../../core/ui/toggle-group.tsx';
 import { useNotifier } from '../../../core/use-notifier.ts';
+import { AiSettingsSection } from '../../ai/widgets/ai-settings-section.tsx';
 import { OverlayPage } from '../../shell/widgets/overlay-page.tsx';
 import { SyncSettingsSection } from './sync-settings-section.tsx';
 
@@ -55,6 +56,7 @@ export function SettingsPage({ onDone }: { onDone: () => void }) {
             </div>
           </div>
         </section>
+        <AiSettingsSection />
         <SyncSettingsSection />
       </div>
     </OverlayPage>
