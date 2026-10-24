@@ -10,9 +10,18 @@ catalogMode: prefer
 catalog:
   '@ai-sdk/anthropic': 4.0.78
   '@ai-sdk/google': 4.0.93
+  '@aparajita/capacitor-secure-storage': 8.0.1
   '@blocknote/core': 0.56.0
   '@blocknote/react': 0.56.0
   '@blocknote/shadcn': 0.56.0
+  '@capacitor-community/file-opener': 8.0.1
+  '@capacitor/android': 8.5.3
+  '@capacitor/app-launcher': 8.0.1
+  '@capacitor/cli': 8.5.3
+  '@capacitor/core': 8.5.3
+  '@capacitor/filesystem': 8.1.4
+  '@capacitor/preferences': 8.0.1
+  '@capawesome/capacitor-file-picker': 8.1.0
   '@emoji-mart/data': ^1.2.1
   '@fontsource-variable/inter': ^5.3.0
   '@noble/hashes': ^2.4.0

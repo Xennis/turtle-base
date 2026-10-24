@@ -1,0 +1,14 @@
+package org.xennis.apps.turtlebase;
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(SqlPlugin.class);
+        registerPlugin(HttpPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}

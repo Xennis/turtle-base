@@ -1,0 +1,22 @@
+{
+  "name": "@turtle-base/mobile",
+  "private": true,
+  "description": "The Capacitor shell of turtle-base (Android) - native project and plugins around the app's built renderer.",
+  "type": "module",
+  "dependencies": {
+    "@aparajita/capacitor-secure-storage": "catalog:",
+    "@capacitor-community/file-opener": "catalog:",
+    "@capacitor/android": "catalog:",
+    "@capacitor/app-launcher": "catalog:",
+    "@capacitor/core": "catalog:",
+    "@capacitor/filesystem": "catalog:",
+    "@capacitor/preferences": "catalog:",
+    "@capawesome/capacitor-file-picker": "catalog:"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "catalog:",
+    "@types/node": "catalog:",
+    "playwright": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}
