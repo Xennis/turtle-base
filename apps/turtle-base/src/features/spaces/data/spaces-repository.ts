@@ -1,10 +1,6 @@
-import type { Selectable } from 'kysely';
-
 import type { AppDatabase } from '../../../core/database/app-database.ts';
 import { createdBy, updatedBy } from '../../../core/database/audit.ts';
-import type { SpacesTable } from '../../../core/database/schema.ts';
-
-export type Space = Selectable<SpacesTable>;
+import type { Space } from '../../../core/database/schema.ts';
 
 export class SpacesRepository {
   readonly #database: AppDatabase;
