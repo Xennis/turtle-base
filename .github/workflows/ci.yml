@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@v5
 
       - name: Install Flutter dependencies
         run: flutter pub get
@@ -34,3 +34,22 @@ jobs:
 
       - name: Test
         run: mise run test
+
+  ts-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Only the TypeScript tools - Flutter isn't needed for this job.
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: node pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting, lint and types
+        run: mise run ts-check
+
+      - name: Test
+        run: mise run ts-test
