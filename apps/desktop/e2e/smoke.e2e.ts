@@ -15,9 +15,13 @@ const appDir = join(import.meta.dirname, '..');
 const userData = mkdtempSync(join(tmpdir(), 'turtle-base-smoke-'));
 const screenshots = process.argv[2];
 
+/** The window last launched - screenshotted when a step fails. */
+let current: Page | undefined;
+
 async function launch() {
   const app = await electron.launch({ args: [appDir, `--user-data-dir=${userData}`] });
   const page = await app.firstWindow();
+  current = page;
   page.on('pageerror', (error) => console.log(`[renderer error] ${error.message}`));
   return { app, page };
 }
@@ -33,6 +37,69 @@ async function createNamed(page: Page, button: string, name: string) {
   await page.getByRole('button', { name: 'Create' }).click();
 }
 
+async function addField(page: Page, name: string, type: string) {
+  await page.getByLabel('New field name').fill(name);
+  await page.getByRole('combobox', { name: 'Field type' }).last().click();
+  await page.getByRole('option', { name: type, exact: true }).click();
+  await page.getByRole('button', { name: 'Add field' }).click();
+  await page.locator(`input[aria-label="Field name"][value="${name}"]`).waitFor();
+}
+
+async function changeFieldType(page: Page, index: number, type: string) {
+  await page.getByRole('combobox', { name: 'Field type' }).nth(index).click();
+  await page.getByRole('option', { name: type, exact: true }).click();
+}
+
+/** Fields, values, the option picker, tiles and type changes of the open, empty collection. */
+async function editCollection(page: Page) {
+  await page.getByRole('button', { name: 'Edit collection' }).click();
+  await addField(page, 'Reps', 'Number');
+  await addField(page, 'Status', 'Select');
+  // A new select's settings open right away, to add its options.
+  await page.getByLabel('New option').fill('Done');
+  await page.getByLabel('New option').press('Enter');
+  await page.locator('input[aria-label="Option name"][value="Done"]').waitFor();
+  await screenshot(page, '2a-edit-page');
+  await page.getByRole('button', { name: 'Back' }).click();
+
+  await page.getByRole('button', { name: 'New entry' }).click();
+  const body = page.locator('tbody');
+  await body.getByRole('button', { name: /^Name:/ }).click();
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Squats');
+  await page.getByRole('textbox', { name: 'Name', exact: true }).press('Enter');
+  await body.getByText('Squats').waitFor();
+
+  await body.getByRole('button', { name: /^Reps:/ }).click();
+  const reps = page.getByRole('textbox', { name: 'Reps', exact: true });
+  await reps.fill('a dozen');
+  await reps.press('Enter');
+  // Not a number: the input stays, flagged, and nothing is saved.
+  await page.locator('input[aria-label="Reps"][aria-invalid="true"]').waitFor();
+  await reps.fill('12');
+  await reps.press('Enter');
+  await body.getByText('12', { exact: true }).waitFor();
+
+  await body.getByRole('button', { name: /^Status:/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
+  await body.getByText('Done').waitFor();
+  await screenshot(page, '2b-table');
+
+  await page.getByRole('radio', { name: 'Tiles' }).click();
+  await page.getByRole('button', { name: 'Squats' }).waitFor();
+  await screenshot(page, '2c-tiles');
+  await page.getByRole('radio', { name: 'Table' }).click();
+
+  // Number to text keeps the values as they are; select to text rewrites option ids as names - after asking.
+  await page.getByRole('button', { name: 'Edit collection' }).click();
+  await changeFieldType(page, 0, 'Text');
+  await changeFieldType(page, 1, 'Text');
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Change type' }).click();
+  await page.getByRole('combobox', { name: 'Field type' }).nth(1).filter({ hasText: 'Text' }).waitFor();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await body.getByText('Done').waitFor();
+  await body.getByText('12', { exact: true }).waitFor();
+}
+
 try {
   const first = await launch();
   await first.page.getByText('No spaces yet').waitFor();
@@ -43,6 +110,7 @@ try {
   await createNamed(first.page, 'New collection', 'Workouts');
   await first.page.getByRole('button', { name: 'Workouts' }).waitFor();
   await first.page.getByText('No entries yet').waitFor();
+  await editCollection(first.page);
   await first.page.getByRole('button', { name: 'New page' }).click();
   await first.page.getByRole('button', { name: 'Untitled' }).waitFor();
   await screenshot(first.page, '2-shell');
@@ -67,6 +135,9 @@ try {
   await screenshot(second.page, '5-narrow-drawer');
   await second.app.close();
   console.log('Smoke test passed');
+} catch (error) {
+  if (current !== undefined) await screenshot(current, 'failure').catch(() => undefined);
+  throw error;
 } finally {
   rmSync(userData, { recursive: true, force: true });
 }
