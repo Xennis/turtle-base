@@ -1,5 +1,9 @@
 import type { IpcChannel, IpcContract, SqlDriver } from '@turtle-base/platform';
-import { ipcMain, net, shell, type IpcMainInvokeEvent } from 'electron';
+import { mkdtemp, copyFile, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { basename, join } from 'node:path';
+
+import { BrowserWindow, dialog, ipcMain, net, shell, type IpcMainInvokeEvent } from 'electron';
 
 import type { DiskFileDirectory } from './file-directory.ts';
 import type { PrefsFile } from './prefs-file.ts';
@@ -51,6 +55,28 @@ export function registerIpcHandlers(options: {
   handle('files:writeTemp', (bytes) => files.writeTemp(bytes));
   handle('files:commitTemp', (handle_, name) => files.commitTemp(handle_, name));
   handle('files:discardTemp', (handle_) => files.discardTemp(handle_));
+
+  handle('files:pick', async ({ multiple, extensions }) => {
+    const window = BrowserWindow.getFocusedWindow();
+    const dialogOptions: Electron.OpenDialogOptions = {
+      properties: multiple ? ['openFile', 'multiSelections'] : ['openFile'],
+      ...(extensions === undefined ? {} : { filters: [{ name: 'Files', extensions: [...extensions] }] }),
+    };
+    const { canceled, filePaths } = await (window === null
+      ? dialog.showOpenDialog(dialogOptions)
+      : dialog.showOpenDialog(window, dialogOptions));
+    if (canceled) return [];
+    return Promise.all(filePaths.map(async (path) => ({ name: basename(path), bytes: await readFile(path) })));
+  });
+
+  // A copy under its real name in a fresh temporary folder - the store names files by hash, without extension,
+  // and the system picks the app by the name.
+  handle('files:open', async (name, displayName) => {
+    const copy = join(await mkdtemp(join(tmpdir(), 'turtle-base-open-')), basename(displayName));
+    await copyFile(files.fileOf(name), copy);
+    const error = await shell.openPath(copy);
+    if (error.length > 0) throw new Error(error);
+  });
 
   handle('fetch', async (request) => {
     const response = await net.fetch(request.url, {
