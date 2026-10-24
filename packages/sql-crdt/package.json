@@ -1,0 +1,12 @@
+{
+  "name": "@turtle-base/sql-crdt",
+  "private": true,
+  "description": "Last-writer-wins CRDT on SQLite through Kysely - hybrid logical clock, write tracking, changesets and merge.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  }
+}

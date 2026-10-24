@@ -231,6 +231,12 @@ importers:
         specifier: workspace:*
         version: link:../field-types
 
+  packages/sql-crdt:
+    devDependencies:
+      vite-plus:
+        specifier: 'catalog:'
+        version: 1.4.0(@types/node@24.19.2)(@vitest/ui@5.0.5)(typescript@7.0.2)
+
 packages:
 
   '@babel/code-frame@7.29.7':
