@@ -1,0 +1,12 @@
+{
+  "name": "@turtle-base/field-types",
+  "private": true,
+  "description": "API for field type variants (e.g. ISBN on top of text) that packages contribute to turtle-base.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  }
+}
