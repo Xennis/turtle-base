@@ -29,6 +29,6 @@ const root = document.getElementById('root');
 if (root === null) throw new Error('No #root element');
 createRoot(root).render(
   <StrictMode>
-    <App services={createAppServices(database, theme)} queryClient={queryClient} />
+    <App services={createAppServices(platform, database, theme)} queryClient={queryClient} />
   </StrictMode>,
 );

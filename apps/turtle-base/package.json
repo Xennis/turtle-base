@@ -11,6 +11,8 @@
     "@fontsource-variable/inter": "catalog:",
     "@noble/hashes": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
+    "@turtle-base/books-plugin": "workspace:*",
     "@turtle-base/crdt-file-sync-google-drive": "workspace:*",
     "@turtle-base/crdt-file-sync-transport": "workspace:*",
     "@turtle-base/platform": "workspace:*",
@@ -30,7 +32,6 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
-    "@turtle-base/books-plugin": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
