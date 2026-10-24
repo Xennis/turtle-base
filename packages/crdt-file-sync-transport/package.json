@@ -1,0 +1,9 @@
+{
+  "name": "@turtle-base/crdt-file-sync-transport",
+  "private": true,
+  "description": "Storage interface that crdt-file-sync adapters (e.g. Google Drive) implement.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
