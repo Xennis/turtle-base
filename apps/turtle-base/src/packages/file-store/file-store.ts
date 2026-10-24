@@ -72,6 +72,11 @@ export class FileStore {
     return this.#directory.read(name);
   }
 
+  /** In bytes. */
+  size(name: string): Promise<number> {
+    return this.#directory.size(name);
+  }
+
   /** The names of all files (originals and thumbnails) present. */
   async names(): Promise<Set<string>> {
     return new Set((await this.#directory.list()).filter((name) => FileStore.isValidName(name)));
