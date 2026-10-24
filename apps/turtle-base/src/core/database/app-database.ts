@@ -18,12 +18,29 @@ export class AppDatabase {
   readonly db: Kysely<Database>;
   readonly crdt: Crdt<Database>;
   readonly #prefs: KeyValueStore | undefined;
-  #userId: string | undefined;
+  /** Shared with the instances {@link transaction} hands out. */
+  readonly #identity: { userId?: string };
 
-  private constructor(db: Kysely<Database>, crdt: Crdt<Database>, prefs: KeyValueStore | undefined) {
+  private constructor(
+    db: Kysely<Database>,
+    crdt: Crdt<Database>,
+    prefs: KeyValueStore | undefined,
+    identity: { userId?: string } = {},
+  ) {
     this.db = db;
     this.crdt = crdt;
     this.#prefs = prefs;
+    this.#identity = identity;
+  }
+
+  /**
+   * Runs `work` in one transaction: everything it writes through the
+   * database it's handed lands together or not at all. Repositories created
+   * on that database take part; the outer one must not be used meanwhile -
+   * it waits for the transaction's connection.
+   */
+  transaction<T>(work: (database: AppDatabase) => Promise<T>): Promise<T> {
+    return this.db.transaction().execute((trx) => work(new AppDatabase(trx, this.crdt, this.#prefs, this.#identity)));
   }
 
   /**
@@ -73,9 +90,9 @@ export class AppDatabase {
    * merges in other devices' users.
    */
   async currentUserId(): Promise<string> {
-    const known = this.#userId ?? this.#prefs?.get(localUserIdKey);
+    const known = this.#identity.userId ?? this.#prefs?.get(localUserIdKey);
     if (known !== undefined) {
-      this.#userId = known;
+      this.#identity.userId = known;
       return known;
     }
     // First time this device resolves its identity: creating the database
@@ -84,7 +101,7 @@ export class AppDatabase {
     // there is no telling which row is - the first one is adopted.
     const row = await this.db.selectFrom('users').select('id').orderBy('created_at').executeTakeFirstOrThrow();
     await this.#prefs?.set(localUserIdKey, row.id);
-    this.#userId = row.id;
+    this.#identity.userId = row.id;
     return row.id;
   }
 

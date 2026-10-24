@@ -55,3 +55,17 @@ test('reports writes to the tables changed', async () => {
 
   expect(changed).toEqual(['users', 'users']);
 });
+
+test('writes a transaction together or not at all', async () => {
+  const database = await AppDatabase.open({ sql: createNodeSqlDriver() });
+
+  const failing = database.transaction(async (tx) => {
+    await tx.db.updateTable('users').set({ name: 'Renamed' }).execute();
+    throw new Error('abort');
+  });
+
+  await expect(failing).rejects.toThrow('abort');
+  expect((await database.db.selectFrom('users').select('name').executeTakeFirst())?.name).toBe('You');
+  await database.transaction((tx) => tx.db.updateTable('users').set({ name: 'Renamed' }).execute());
+  expect((await database.db.selectFrom('users').select('name').executeTakeFirst())?.name).toBe('Renamed');
+});
