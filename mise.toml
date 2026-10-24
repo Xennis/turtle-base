@@ -1,19 +1,23 @@
 [tools]
 flutter = "3.47.7"
+node = "24.22.1"
 opentofu = "1.12.0"
+pnpm = "12.15.0"
 
 [tasks.generate]
 dir = "{{config_root}}/apps/turtle_base"
 description = "Run code generation (build_runner) - requires `flutter pub get` to have run first"
 run = "dart run build_runner build"
 
-# The format/analyze/test tasks run in every workspace member (apps/* and
-# packages/*), so new packages are picked up automatically.
+# The format/analyze/test tasks run in every Dart workspace member (apps/*
+# and packages/* with a pubspec.yaml), so new packages are picked up
+# automatically. The TypeScript members have their own ts-* tasks.
 [tasks.format]
 description = "Format the Dart code of all workspace members (line length is set in analysis_options.yaml)"
 run = """
 set -e
 for d in apps/* packages/*; do
+  [ -f "$d/pubspec.yaml" ] || continue
   (cd "$d" && dart format $(ls -d lib test 2>/dev/null))
 done
 """
@@ -23,6 +27,7 @@ description = "Fail if the Dart code of any workspace member isn't formatted - u
 run = """
 set -e
 for d in apps/* packages/*; do
+  [ -f "$d/pubspec.yaml" ] || continue
   (cd "$d" && dart format --output=none --set-exit-if-changed $(ls -d lib test 2>/dev/null))
 done
 """
@@ -32,6 +37,7 @@ description = "Run flutter analyze in all workspace members - requires `mise run
 run = """
 set -e
 for d in apps/* packages/*; do
+  [ -f "$d/pubspec.yaml" ] || continue
   (cd "$d" && flutter analyze)
 done
 """
@@ -41,9 +47,26 @@ description = "Run flutter test in all workspace members that have tests - requi
 run = """
 set -e
 for d in apps/* packages/*; do
+  [ -f "$d/pubspec.yaml" ] || continue
   if [ -d "$d/test" ]; then (cd "$d" && flutter test); fi
 done
 """
+
+[tasks.ts-install]
+description = "Install the dependencies of the TypeScript workspace"
+run = "pnpm install"
+
+[tasks.ts-check]
+description = "Format check, lint and type check the TypeScript workspace (Vite+)"
+run = "pnpm exec vp check"
+
+[tasks.ts-fix]
+description = "Format the TypeScript workspace and apply lint autofixes (Vite+)"
+run = "pnpm exec vp check --fix"
+
+[tasks.ts-test]
+description = "Run the tests of the TypeScript workspace (Vite+)"
+run = "pnpm exec vp test"
 
 [tasks.skills-install]
 description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"

@@ -1,0 +1,15 @@
+{
+  "name": "turtle-base-workspace",
+  "private": true,
+  "description": "Workspace root of the turtle-base monorepo - holds the shared tooling and lockfile of the TypeScript members.",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "packageManager": "pnpm@12.15.0"
+}
