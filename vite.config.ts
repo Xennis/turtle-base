@@ -25,7 +25,8 @@ export default defineConfig({
       'typescript/no-unsafe-call': 'error',
       'typescript/no-unsafe-member-access': 'error',
       'typescript/no-unsafe-return': 'error',
-      'typescript/switch-exhaustiveness-check': 'error',
+      // A `default` branch is an explicit "everything else", not a forgotten case.
+      'typescript/switch-exhaustiveness-check': ['error', { considerDefaultExhaustiveForUnions: true }],
       'typescript/strict-boolean-expressions': 'error',
       'typescript/consistent-type-imports': 'error',
       'typescript/require-await': 'error',
