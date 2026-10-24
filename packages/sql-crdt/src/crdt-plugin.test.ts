@@ -85,6 +85,7 @@ test("stamps an upsert's update", async () => {
   const [after] = await rows();
   expect(after?.name).toBe('B');
   expect(after?.hlc).not.toBe(before?.hlc);
+  expect(after?.hlc).toBe(clock.canonicalTime.toString());
 });
 
 test('rejects deletes on CRDT tables', async () => {
