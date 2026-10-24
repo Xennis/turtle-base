@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAppServices } from '../../../core/app-scope.tsx';
@@ -14,10 +15,17 @@ export function useOpenAttachment(): (attachment: Attachment, showImage: (attach
   return (attachment, showImage) => (isImage(attachment) ? showImage(attachment) : void openExternally(attachment));
 }
 
-/** Opens the original with the system's app - it may be a thumbnail only on this device (not synced yet). */
+/**
+ * Opens the original with the system's app. It may be a thumbnail only on
+ * this device (not synced yet) - then it's downloaded first, when connected.
+ */
 export function useOpenExternally(): (attachment: Attachment) => Promise<void> {
-  const { platform, files } = useAppServices();
+  const { platform, files, sync } = useAppServices();
   return async (attachment) => {
+    if (!(await files.has(attachment.file_hash)) && sync.isConnected) {
+      toast(`Downloading ${attachment.name}…`);
+      await sync.fetchFile(attachment.file_hash);
+    }
     if (!(await files.has(attachment.file_hash))) {
       toast.error(`${attachment.name} is not available offline`);
       return;
@@ -28,11 +36,27 @@ export function useOpenExternally(): (attachment: Attachment) => Promise<void> {
   };
 }
 
-/** An image attachment full size, falling back to its thumbnail where the original isn't on this device. */
+/**
+ * An image attachment full size. Where the original isn't on this device, its
+ * thumbnail shows while the original is downloaded (when connected), or for good.
+ */
 export function AttachmentViewer({ attachment, onClose }: { attachment: Attachment; onClose: () => void }) {
-  const { files } = useAppServices();
+  const { files, sync } = useAppServices();
   const openExternally = useOpenExternally();
   const thumbnail = files.urlOf(FileStore.thumbnailNameOf(attachment.file_hash));
+  const [fetched, setFetched] = useState(false);
+
+  useEffect(() => {
+    let current = true;
+    void (async () => {
+      if (await files.has(attachment.file_hash)) return;
+      if ((await sync.fetchFile(attachment.file_hash)) && current) setFetched(true);
+    })();
+    return () => {
+      current = false;
+    };
+  }, [files, sync, attachment.file_hash]);
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex max-h-[90vh] flex-col gap-3 sm:max-w-[90vw]">
@@ -44,6 +68,8 @@ export function AttachmentViewer({ attachment, onClose }: { attachment: Attachme
           </Button>
         </div>
         <img
+          // Loaded again once a missing original has arrived.
+          key={String(fetched)}
           alt={attachment.name}
           src={files.urlOf(attachment.file_hash)}
           className="min-h-0 flex-1 object-contain"
