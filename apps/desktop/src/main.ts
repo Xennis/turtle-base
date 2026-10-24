@@ -54,13 +54,11 @@ function serveRenderer(): void {
 }
 
 function serveFiles(files: DiskFileDirectory): void {
-  protocol.handle(desktopFileScheme, (request) => {
+  protocol.handle(desktopFileScheme, async (request) => {
     const name = decodeURIComponent(new URL(request.url).pathname.slice(1));
-    try {
-      return net.fetch(pathToFileURL(files.fileOf(name)).href);
-    } catch {
-      return new Response('Not found', { status: 404 });
-    }
+    // A missing file (e.g. a thumbnail not synced yet) is a 404 the page handles, not an error.
+    if (!(await files.exists(name).catch(() => false))) return new Response('Not found', { status: 404 });
+    return net.fetch(pathToFileURL(files.fileOf(name)).href);
   });
 }
 
