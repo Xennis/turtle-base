@@ -5,6 +5,7 @@ import { useAppServices } from '../../../core/app-scope.tsx';
 import { useDbQuery } from '../../../core/database/use-db-query.ts';
 import type { Page } from '../../../core/database/schema.ts';
 import { Button } from '../../../core/ui/button.tsx';
+import { FilesFieldValue } from '../../files/widgets/files-field-value.tsx';
 import { decodeRelationValue } from '../../tables/data/relation-field.ts';
 import type { ResolvedField } from '../../tables/data/resolved-field.ts';
 import { FieldTypeIcon } from '../../tables/widgets/field-type-icon.tsx';
@@ -17,23 +18,18 @@ import { RelationPickerDialog } from './relation-picker-dialog.tsx';
  * table, plus relations, which are picked here.
  */
 export function PagePropertiesHeader({ page, collectionId }: { page: Page; collectionId: string }) {
-  const { fields, fieldTypes, attachments } = useAppServices();
+  const { fields, fieldTypes } = useAppServices();
   const { data: rows = [] } = useDbQuery({
     tables: ['fields'],
     key: ['collection', collectionId],
     query: () => fields.listActiveInCollection(collectionId),
-  });
-  const { data: pageAttachments = [] } = useDbQuery({
-    tables: ['attachments'],
-    key: ['page', page.id, ...rows.map((row) => row.id)],
-    query: () => Promise.all(rows.map((row) => attachments.listInField(page.id, row.id))),
   });
   if (rows.length === 0) return null;
   const properties = decodePageProperties(page.properties);
 
   return (
     <dl className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] items-center gap-x-4 gap-y-1">
-      {rows.map((row, index) => {
+      {rows.map((row) => {
         const field = fieldTypes.resolve(row);
         return (
           <div key={field.id} className="contents">
@@ -44,14 +40,15 @@ export function PagePropertiesHeader({ page, collectionId }: { page: Page; colle
             <dd className="flex min-h-8 min-w-0 items-center text-sm">
               {field.typed.kind === 'relation' ? (
                 <RelationValue page={page} field={field} raw={properties[field.id]} />
-              ) : (
-                <FieldValueCell
-                  entryId={page.id}
-                  field={field}
-                  raw={properties[field.id]}
-                  attachments={pageAttachments[index] ?? []}
-                  placeholder="Empty"
+              ) : field.typed.kind === 'files' ? (
+                <FilesFieldValue
+                  pageId={page.id}
+                  fieldId={field.id}
+                  accept={field.typed.config.accept}
+                  maxFiles={field.typed.config.maxFiles}
                 />
+              ) : (
+                <FieldValueCell entryId={page.id} field={field} raw={properties[field.id]} placeholder="Empty" />
               )}
             </dd>
           </div>

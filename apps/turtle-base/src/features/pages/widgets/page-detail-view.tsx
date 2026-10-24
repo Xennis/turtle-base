@@ -9,8 +9,7 @@ import { useDbQuery } from '../../../core/database/use-db-query.ts';
 import type { Block, Page } from '../../../core/database/schema.ts';
 import { Button } from '../../../core/ui/button.tsx';
 import { Input } from '../../../core/ui/input.tsx';
-import { useMediaQuery } from '../../../core/use-media-query.ts';
-import { useNotifier } from '../../../core/use-notifier.ts';
+import { useIsDark } from '../../../core/theme/use-is-dark.ts';
 import { ConfirmDialog } from '../../shell/widgets/confirm-dialog.tsx';
 import { BlocksRepository } from '../data/blocks-repository.ts';
 import { buildDocument, hiddenBlockIds, type EditorBlock } from './block-document.ts';
@@ -60,9 +59,7 @@ function PageEditor(props: {
   const latestStored = useRef(props.storedBlocks);
   latestStored.current = props.storedBlocks;
 
-  const mode = useNotifier(theme, () => theme.mode);
-  const systemDark = useMediaQuery('(prefers-color-scheme: dark)');
-  const dark = mode === 'dark' || (mode === 'system' && systemDark);
+  const dark = useIsDark(theme);
 
   async function syncNow() {
     pendingSync.current = undefined;
