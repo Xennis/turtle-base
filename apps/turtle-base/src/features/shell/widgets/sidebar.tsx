@@ -32,13 +32,13 @@ export function Sidebar({ navigation }: { navigation: AppNavigationController })
   const state = useNotifier(navigation, () => navigation.state);
   const { data: activeSpaces = [] } = useDbQuery({ tables: ['spaces'], key: [], query: () => spaces.listActive() });
 
-  // Select the first space once spaces are loaded, if none is selected yet (or the selected one is gone).
+  // Select the first space once spaces are loaded, if none is selected yet (or the selected one is gone). Only
+  // when the spaces change: a space just created is selected before the list has caught up with it.
   useEffect(() => {
     const [first] = activeSpaces;
-    if (first !== undefined && !activeSpaces.some((space) => space.id === state.selectedSpaceId)) {
-      navigation.selectSpace(first.id);
-    }
-  }, [activeSpaces, navigation, state.selectedSpaceId]);
+    const selected = navigation.state.selectedSpaceId;
+    if (first !== undefined && !activeSpaces.some((space) => space.id === selected)) navigation.selectSpace(first.id);
+  }, [activeSpaces, navigation]);
 
   return (
     <div className="flex h-full flex-col">
