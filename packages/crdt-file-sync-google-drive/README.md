@@ -2,7 +2,22 @@
 
 Google Drive storage adapter for turtle-base's CRDT file sync. Implements the `SyncTransport` (changesets) and `FileTransport` (attachment files) interfaces from [crdt-file-sync-transport](../crdt-file-sync-transport) on top of a Google Drive folder, using only the `drive.file` scope.
 
-It talks to the Drive REST API through plain `fetch` - the official client library is far too big for a web view - and takes the access token from outside: the OAuth flows are platform-specific and live in the shells (a loopback consent flow in Electron, native Google Sign-In in Capacitor), behind the app's `Platform` interface. The token function is called for every request, so the shell can refresh it. For how to obtain the OAuth client IDs, see [ops/infra/README.md](../../ops/infra/README.md).
+It talks to the Drive REST API through plain `fetch` - the official client library is far too big for a web view - and takes the access token from outside, through the app's `Platform` interface. The token function is called for every request, so the sign-in can refresh it.
+
+## Sign-in
+
+The sign-in is platform-specific. For Linux and macOS this package has `LoopbackGoogleAuthenticator` under `@turtle-base/crdt-file-sync-google-drive/desktop`: the "installed app" loopback flow (RFC 8252) with PKCE, for Node - Electron's main process runs it and hands the access token to the app over IPC. It keeps only the refresh token, in the platform's `SecretStorage`. Android uses native Google Sign-In in the Capacitor shell.
+
+## Configuration
+
+Drive sync needs a "Desktop app" OAuth client. The desktop shell reads it from the environment when it starts; without it, Drive sync is disabled and its UI stays hidden in Settings:
+
+| Variable                      | Needed on    |
+| ----------------------------- | ------------ |
+| `DRIVE_DESKTOP_CLIENT_ID`     | Linux, macOS |
+| `DRIVE_DESKTOP_CLIENT_SECRET` | Linux, macOS |
+
+For local development, put them into `.mise.local.toml` in the repo root (see [.mise.local.toml.example](../../.mise.local.toml.example)) - `mise run run-desktop` then has them. For how to obtain the values, see [ops/infra/README.md](../../ops/infra/README.md).
 
 ## Layout in Drive
 

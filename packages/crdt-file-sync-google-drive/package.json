@@ -5,13 +5,16 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./desktop": "./src/desktop.ts",
     "./testing": "./src/testing.ts"
   },
   "dependencies": {
     "@turtle-base/crdt-file-sync-transport": "workspace:*",
+    "@turtle-base/platform": "workspace:*",
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "vite-plus": "catalog:"
   }
 }
