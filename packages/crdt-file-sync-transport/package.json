@@ -4,6 +4,7 @@
   "description": "Storage interface that crdt-file-sync adapters (e.g. Google Drive) implement.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
   }
 }
