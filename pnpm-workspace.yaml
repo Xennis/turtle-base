@@ -1,0 +1,26 @@
+# Only folders with a package.json are members, so the Dart members
+# (with a pubspec.yaml instead) living next to them are ignored.
+packages:
+  - apps/*
+  - packages/*
+
+# Shared versions - members refer to them as "catalog:".
+catalogMode: prefer
+
+catalog:
+  '@types/node': ^24.0.0
+  typescript: ^7.0.2
+  vite-plus: 1.4.0
+
+# Vite+ ships its own Vite core and pins Vitest - every other consumer
+# (Vitest's peers, plugins) gets the same copies, see Vite+'s
+# "Vite and Overrides" migration rules.
+overrides:
+  vite@*: npm:@voidzero-dev/vite-plus-core@1.4.0
+  vitest@*: 5.0.5
+
+# The Vite+ core carries its own version number (not Vite's), which
+# Vitest's `vite` peer range doesn't know.
+peerDependencyRules:
+  allowedVersions:
+    vite: 1.4.0

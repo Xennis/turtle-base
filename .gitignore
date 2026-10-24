@@ -65,3 +65,8 @@ ops/infra/*.tfstate
 ops/infra/*.tfstate.*
 ops/infra/terraform.tfvars
 ops/infra/crash.log
+
+# TypeScript workspace (pnpm, Vite+)
+node_modules/
+dist/
+*.tsbuildinfo
