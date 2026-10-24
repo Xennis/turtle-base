@@ -12,6 +12,7 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@turtle-base/books-plugin": "workspace:*",
     "@types/node": "catalog:",
     "vite-plus": "catalog:"
   }

@@ -225,6 +225,9 @@ importers:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
+      '@turtle-base/books-plugin':
+        specifier: workspace:*
+        version: link:../../packages/books-plugin
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
