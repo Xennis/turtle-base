@@ -96,13 +96,14 @@
 }
 
 /* Accent per theme preset (see core/theme/theme-preset.ts) - Tailwind's 600
-   shade in light mode, 500 in dark; the neutral presets use their 900/200. */
+   shade in light mode, 500 in dark; the neutral presets use their 900/200.
+   Also below <html>, so e.g. a preset swatch shows its own accent. */
 [data-preset='blue'] {
   --primary: oklch(0.546 0.245 262.881);
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='blue'] {
+:is(.dark[data-preset='blue'], .dark [data-preset='blue']) {
   --primary: oklch(0.623 0.214 259.815);
   --primary-foreground: oklch(0.985 0 0);
 }
@@ -112,7 +113,7 @@
   --primary-foreground: oklch(0.985 0.002 247.839);
 }
 
-.dark[data-preset='gray'] {
+:is(.dark[data-preset='gray'], .dark [data-preset='gray']) {
   --primary: oklch(0.928 0.006 264.531);
   --primary-foreground: oklch(0.21 0.034 264.665);
 }
@@ -122,7 +123,7 @@
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='green'] {
+:is(.dark[data-preset='green'], .dark [data-preset='green']) {
   --primary: oklch(0.723 0.219 149.579);
   --primary-foreground: oklch(0.21 0.006 285.885);
 }
@@ -132,7 +133,7 @@
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='neutral'] {
+:is(.dark[data-preset='neutral'], .dark [data-preset='neutral']) {
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
 }
@@ -142,7 +143,7 @@
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='orange'] {
+:is(.dark[data-preset='orange'], .dark [data-preset='orange']) {
   --primary: oklch(0.705 0.213 47.604);
   --primary-foreground: oklch(0.985 0 0);
 }
@@ -152,7 +153,7 @@
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='red'] {
+:is(.dark[data-preset='red'], .dark [data-preset='red']) {
   --primary: oklch(0.637 0.237 25.331);
   --primary-foreground: oklch(0.985 0 0);
 }
@@ -162,7 +163,7 @@
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='rose'] {
+:is(.dark[data-preset='rose'], .dark [data-preset='rose']) {
   --primary: oklch(0.645 0.246 16.439);
   --primary-foreground: oklch(0.985 0 0);
 }
@@ -172,7 +173,7 @@
   --primary-foreground: oklch(0.984 0.003 247.858);
 }
 
-.dark[data-preset='slate'] {
+:is(.dark[data-preset='slate'], .dark [data-preset='slate']) {
   --primary: oklch(0.929 0.013 255.508);
   --primary-foreground: oklch(0.208 0.042 265.755);
 }
@@ -182,7 +183,7 @@
   --primary-foreground: oklch(0.985 0.001 106.423);
 }
 
-.dark[data-preset='stone'] {
+:is(.dark[data-preset='stone'], .dark [data-preset='stone']) {
   --primary: oklch(0.923 0.003 48.717);
   --primary-foreground: oklch(0.216 0.006 56.043);
 }
@@ -192,7 +193,7 @@
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='violet'] {
+:is(.dark[data-preset='violet'], .dark [data-preset='violet']) {
   --primary: oklch(0.606 0.25 292.717);
   --primary-foreground: oklch(0.985 0 0);
 }
@@ -202,7 +203,7 @@
   --primary-foreground: oklch(0.216 0.006 56.043);
 }
 
-.dark[data-preset='yellow'] {
+:is(.dark[data-preset='yellow'], .dark [data-preset='yellow']) {
   --primary: oklch(0.795 0.184 86.047);
   --primary-foreground: oklch(0.216 0.006 56.043);
 }
@@ -212,7 +213,7 @@
   --primary-foreground: oklch(0.985 0 0);
 }
 
-.dark[data-preset='zinc'] {
+:is(.dark[data-preset='zinc'], .dark [data-preset='zinc']) {
   --primary: oklch(0.92 0.004 286.32);
   --primary-foreground: oklch(0.21 0.006 285.885);
 }
