@@ -36,8 +36,16 @@ async function pickFilesFrom(app: ElectronApplication, path: string) {
 let current: Page | undefined;
 
 async function launch() {
-  const app = await electron.launch({ args: [appDir, `--user-data-dir=${userData}`] });
+  const app = await electron.launch({
+    // No OS keyring for the secrets - there may be none where this runs (see below).
+    args: [appDir, `--user-data-dir=${userData}`, '--password-store=basic'],
+    // An OAuth client, so Drive sync is offered - Google itself is answered by answerRequests.
+    env: { ...process.env, DRIVE_DESKTOP_CLIENT_ID: 'smoke-client', DRIVE_DESKTOP_CLIENT_SECRET: 'smoke-secret' },
+  });
   await pickFilesFrom(app, picture);
+  await answerRequests(app);
+  // Secrets stored with Chromium's built-in key - the app itself refuses that without being told to.
+  await app.evaluate(({ safeStorage }) => safeStorage.setUsePlainTextEncryption(true));
   const page = await app.firstWindow();
   current = page;
   page.on('pageerror', (error) => console.log(`[renderer error] ${error.message}`));
@@ -130,6 +138,12 @@ async function editEntry(page: Page) {
   await page.locator('tbody').getByRole('button', { name: 'Open' }).click();
   await page.locator('input[aria-label="Title"][value="Squats"]').waitFor();
   await page.getByRole('term').filter({ hasText: 'Reps' }).waitFor();
+  await page.getByRole('button', { name: 'Icon' }).click();
+  await page.getByRole('button', { name: 'Grinning Face', exact: true }).waitFor();
+  await screenshot(page, '2d-emoji-picker');
+  await page.getByRole('textbox', { name: 'Search emoji' }).fill('biceps');
+  await page.getByRole('button', { name: 'Flexed Biceps' }).click();
+  await page.getByRole('button', { name: 'Icon' }).filter({ hasText: '💪' }).waitFor();
   await page.getByRole('button', { name: 'Add file' }).click();
   await page.getByRole('button', { name: 'Open red.png' }).locator('img').waitFor();
   await page.locator('.bn-editor').click();
@@ -143,40 +157,74 @@ async function editEntry(page: Page) {
   await page.getByRole('button', { name: 'Back to collection' }).click();
   await page.locator('tbody').getByRole('button', { name: 'Open' }).click();
   await page.locator('.bn-editor').getByText('Three sets, slow on the way down.').waitFor();
+  await page.getByRole('button', { name: 'Icon' }).filter({ hasText: '💪' }).waitFor();
   await page.locator('.bn-editor').getByRole('button', { name: 'Open red.png' }).waitFor();
   await page.getByRole('button', { name: 'Back to collection' }).click();
 }
 
 /**
  * Requests go out through the main process (Platform.fetch); answering them there keeps the test off the
- * network: Open Library's search finds "Dune", and every cover is the test PNG.
+ * network: Open Library's search finds "Dune" and every cover is the test PNG, Anthropic answers the test
+ * prompt, and Google's token endpoint hands out tokens. The browser for Google's consent page agrees right
+ * away, following the redirect back.
  */
-async function answerOpenLibrary(app: ElectronApplication) {
-  await app.evaluate(({ net }, png) => {
+async function answerRequests(app: ElectronApplication) {
+  await app.evaluate(({ net, shell }, png) => {
     // The app's own files come through net.fetch too - those still load.
     const original = net.fetch.bind(net);
     net.fetch = (input: string | Request, init?: RequestInit) => {
       const url = new URL(typeof input === 'string' ? input : input.url);
-      if (!url.hostname.endsWith('openlibrary.org')) return original(input, init);
       if (url.hostname === 'covers.openlibrary.org') {
         return Promise.resolve(new Response(Buffer.from(png, 'base64'), { headers: { 'Content-Type': 'image/png' } }));
       }
-      const dune = {
-        key: '/works/OL893415W',
-        title: 'Dune',
-        author_name: ['Frank Herbert'],
-        first_publish_year: 1965,
-        cover_i: 1,
-        editions: { docs: [{ title: 'Dune', cover_i: 1 }] },
-      };
-      return Promise.resolve(Response.json({ docs: [dune] }));
+      if (url.hostname === 'openlibrary.org') {
+        const dune = {
+          key: '/works/OL893415W',
+          title: 'Dune',
+          author_name: ['Frank Herbert'],
+          first_publish_year: 1965,
+          cover_i: 1,
+          editions: { docs: [{ title: 'Dune', cover_i: 1 }] },
+        };
+        return Promise.resolve(Response.json({ docs: [dune] }));
+      }
+      if (url.hostname === 'api.anthropic.com') {
+        const headers = new Headers(typeof input === 'string' ? init?.headers : input.headers);
+        if (headers.get('x-api-key') !== 'sk-smoke') return Promise.resolve(new Response(null, { status: 401 }));
+        return Promise.resolve(
+          Response.json({
+            id: 'msg_smoke',
+            type: 'message',
+            role: 'assistant',
+            model: 'claude-sonnet-5-5',
+            content: [{ type: 'text', text: 'All good here.' }],
+            stop_reason: 'end_turn',
+            stop_sequence: null,
+            usage: { input_tokens: 3, output_tokens: 4 },
+          }),
+        );
+      }
+      if (url.hostname === 'oauth2.googleapis.com') {
+        return Promise.resolve(Response.json({ access_token: 'access', expires_in: 3600, refresh_token: 'refresh' }));
+      }
+      return original(input, init);
+    };
+    const openExternal = shell.openExternal.bind(shell);
+    shell.openExternal = async (url: string) => {
+      const consent = new URL(url);
+      if (consent.hostname !== 'accounts.google.com') return openExternal(url);
+      const redirect = new URL(consent.searchParams.get('redirect_uri') ?? '');
+      redirect.search = new URLSearchParams({
+        code: 'code',
+        state: consent.searchParams.get('state') ?? '',
+      }).toString();
+      await fetch(redirect);
     };
   }, readFileSync(picture).toString('base64'));
 }
 
 /** The Books plugin: added as a space, a book looked up, added - and opened, not added again, the second time. */
-async function addBook(app: ElectronApplication, page: Page) {
-  await answerOpenLibrary(app);
+async function addBook(page: Page) {
   await page.getByRole('button', { name: 'Plugins' }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('button', { name: 'Reading list' }).click();
@@ -215,6 +263,19 @@ try {
   await first.page.getByRole('radio', { name: 'Dark' }).click();
   await first.page.getByRole('radio', { name: 'Violet' }).click();
   await first.page.locator('html.dark[data-preset="violet"]').waitFor({ state: 'attached' });
+  await first.page.getByLabel('Anthropic (Claude)').fill('sk-smoke');
+  await first.page.getByLabel('Anthropic (Claude)').press('Enter');
+  await first.page.getByText('Key saved').waitFor();
+  await first.page.getByRole('combobox', { name: 'Default model' }).click();
+  await first.page.getByRole('option', { name: 'Claude Sonnet 5.5' }).click();
+  await first.page.getByRole('button', { name: 'Send test prompt' }).click();
+  await first.page.getByText('All good here.').waitFor();
+  await first.page.getByRole('status').filter({ hasText: 'Not connected' }).waitFor();
+  await first.page.getByRole('button', { name: 'Connect' }).click();
+  await first.page
+    .getByRole('status')
+    .filter({ hasText: /^Connected$/ })
+    .waitFor();
   await screenshot(first.page, '3-settings-dark');
   await first.app.close();
 
@@ -223,7 +284,15 @@ try {
   await second.page.getByRole('button', { name: 'Workouts' }).click();
   await second.page.locator('html.dark[data-preset="violet"]').waitFor({ state: 'attached' });
   await screenshot(second.page, '4-restarted');
-  await addBook(second.app, second.page);
+  // Still connected after the restart - the refresh token was kept.
+  await second.page.getByRole('button', { name: 'Settings' }).click();
+  await second.page
+    .getByRole('status')
+    .filter({ hasText: /^Connected$/ })
+    .waitFor();
+  await second.page.getByRole('button', { name: 'Disconnect' }).click();
+  await second.page.getByRole('status').filter({ hasText: 'Not connected' }).waitFor();
+  await addBook(second.page);
   await second.page.getByRole('combobox', { name: 'Space' }).click();
   await second.page.getByRole('option', { name: 'Fitness' }).click();
   await second.page.getByRole('button', { name: 'Workouts' }).click();
