@@ -2,10 +2,11 @@ import { resolve } from 'node:path';
 
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite-plus';
+import { contentSecurityPolicy } from '@turtle-base/platform';
+import { defineConfig, type Plugin } from 'vite-plus';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), contentSecurityPolicyMeta()],
   resolve: {
     // Only for the shadcn/ui components in src/core/ui, which import each other this way.
     alias: { '@': resolve(import.meta.dirname, 'src') },
@@ -19,3 +20,18 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
   },
 });
+
+/** The content security policy as a meta tag in built pages - Capacitor sends no headers of its own. */
+function contentSecurityPolicyMeta(): Plugin {
+  return {
+    name: 'turtle-base:content-security-policy',
+    apply: 'build',
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: contentSecurityPolicy },
+        injectTo: 'head-prepend',
+      },
+    ],
+  };
+}
