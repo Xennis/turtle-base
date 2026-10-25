@@ -7,6 +7,16 @@ import { defineConfig, type Plugin } from 'vite-plus';
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), contentSecurityPolicyMeta()],
+  // A "Desktop app" OAuth client isn't confidential (RFC 8252) - release builds carry it, see
+  // packages/crdt-file-sync-google-drive/README.md.
+  define: {
+    bundledDriveClientId: JSON.stringify(process.env['DRIVE_DESKTOP_CLIENT_ID'] ?? ''),
+    bundledDriveClientSecret: JSON.stringify(process.env['DRIVE_DESKTOP_CLIENT_SECRET'] ?? ''),
+  },
+  server: {
+    // `tauri android dev` loads the page from this machine's address on the network.
+    host: process.env['TAURI_DEV_HOST'] ?? false,
+  },
   resolve: {
     // Only for the shadcn/ui components in src/core/ui, which import each other this way.
     alias: { '@': resolve(import.meta.dirname, 'src') },

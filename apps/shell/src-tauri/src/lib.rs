@@ -1,3 +1,4 @@
+mod loopback;
 mod secrets;
 mod sql;
 
@@ -22,6 +23,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             sql::sql_execute,
+            loopback::loopback_listen,
             secrets::secrets_get,
             secrets::secrets_set,
             secrets::secrets_remove,

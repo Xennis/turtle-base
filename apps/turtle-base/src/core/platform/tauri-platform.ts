@@ -19,6 +19,7 @@ import type {
 } from '@turtle-base/platform';
 
 import { filesIn } from './tauri-files.ts';
+import { desktopGoogleAuth } from './tauri-google-auth.ts';
 
 /**
  * The {@link Platform} of the Tauri shell (apps/shell) on the desktop and on
@@ -45,7 +46,7 @@ export async function createTauriPlatform(): Promise<Platform> {
     findFlutterAppData: () => Promise.resolve(undefined),
     // The title bar (Linux) and the window's buttons (macOS) follow the window's theme.
     matchWindowChrome: ({ dark }) => getCurrentWindow().setTheme(dark ? 'dark' : 'light'),
-    googleAuth: undefined,
+    googleAuth: os === 'android' ? undefined : desktopGoogleAuth(secrets),
   };
 }
 
