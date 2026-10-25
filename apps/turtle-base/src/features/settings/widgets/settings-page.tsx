@@ -7,13 +7,14 @@ import { Label } from '../../../core/ui/label.tsx';
 import { ToggleGroup, ToggleGroupItem } from '../../../core/ui/toggle-group.tsx';
 import { useNotifier } from '../../../core/use-notifier.ts';
 import { AiSettingsSection } from '../../ai/widgets/ai-settings-section.tsx';
+import { FlutterImportSection } from '../../flutter-import/widgets/flutter-import-section.tsx';
 import { OverlayPage } from '../../shell/widgets/overlay-page.tsx';
 import { SyncSettingsSection } from './sync-settings-section.tsx';
 
 const modeLabels: Record<ThemeMode, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 const modeIcons: Record<ThemeMode, typeof Sun> = { system: Monitor, light: Sun, dark: Moon };
 
-/** Device settings: the appearance, Drive sync and AI. */
+/** Device settings: the appearance, AI, Drive sync and the import from the Flutter app. */
 export function SettingsPage({ onDone }: { onDone: () => void }) {
   const { theme } = useAppServices();
   const mode = useNotifier(theme, () => theme.mode);
@@ -58,6 +59,7 @@ export function SettingsPage({ onDone }: { onDone: () => void }) {
         </section>
         <AiSettingsSection />
         <SyncSettingsSection />
+        <FlutterImportSection />
       </div>
     </OverlayPage>
   );
