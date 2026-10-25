@@ -14,7 +14,7 @@ import { SpacesRepository } from '../../features/spaces/data/spaces-repository.t
 import { FileStore } from '../../packages/file-store/file-store.ts';
 import type { AppDatabase } from '../database/app-database.ts';
 import { openTestDatabase } from '../database/test-database.ts';
-import { AppSyncController } from './app-sync-controller.ts';
+import { AppSyncController, syncFolderName } from './app-sync-controller.ts';
 import { SyncFormatTooNewError } from './sync-format.ts';
 
 interface Device {
@@ -129,6 +129,7 @@ test('refuses sync data of a newer app version', async () => {
   await new GoogleDriveSyncFolder({
     fetch: drive.fetch,
     accessToken: () => Promise.resolve('token'),
+    name: syncFolderName,
   }).writeFormatVersion(99);
 
   await a.sync.syncNow();
