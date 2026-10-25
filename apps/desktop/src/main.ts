@@ -3,7 +3,7 @@ import { join, normalize, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { LoopbackGoogleAuthenticator } from '@turtle-base/crdt-file-sync-google-drive/desktop';
-import { desktopFileScheme } from '@turtle-base/platform';
+import { contentSecurityPolicy, desktopFileScheme } from '@turtle-base/platform';
 import { createNodeSqlDriver } from '@turtle-base/platform/node';
 import { app, BrowserWindow, net, protocol, shell } from 'electron';
 
@@ -21,18 +21,6 @@ const devServerUrl = process.env['TURTLE_DEV_SERVER_URL'];
 
 /** The built renderer (`apps/turtle-base/dist`), unless packaged elsewhere. */
 const rendererDir = resolve(process.env['TURTLE_RENDERER_DIR'] ?? join(import.meta.dirname, '../../turtle-base/dist'));
-
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  // https: for remote pictures like a lookup's covers - only shown, never sent anything.
-  `img-src 'self' data: blob: https: ${desktopFileScheme}:`,
-  `media-src 'self' blob: ${desktopFileScheme}:`,
-  // Requests to the internet go through the main process (Platform.fetch), never from the page.
-  "connect-src 'self'",
-].join('; ');
-
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } },
   { scheme: desktopFileScheme, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
