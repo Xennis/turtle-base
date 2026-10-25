@@ -85,7 +85,7 @@ pub struct SqlResult {
     last_insert_rowid: i64,
 }
 
-fn json_of(value: ValueRef<'_>) -> Value {
+pub fn json_of(value: ValueRef<'_>) -> Value {
     match value {
         ValueRef::Null => Value::Null,
         ValueRef::Integer(value) => value.into(),
