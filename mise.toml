@@ -43,6 +43,18 @@ pnpm --dir apps/desktop exec vp pack
 pnpm --dir apps/desktop exec electron .
 """
 
+[tasks.run-tauri]
+description = "Build the app and start it in the Tauri shell (debug build)"
+run = """
+set -e
+pnpm --dir apps/shell exec tauri build --debug --no-bundle
+apps/shell/src-tauri/target/debug/turtle-base
+"""
+
+[tasks.dev-tauri]
+description = "Start the app in the Tauri shell with the page from Vite's dev server (hot reload)"
+run = "pnpm --dir apps/shell exec tauri dev"
+
 [tasks.dev-desktop]
 description = "Start the app in Electron with the renderer from Vite's dev server (hot reload)"
 run = """
