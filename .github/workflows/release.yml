@@ -28,60 +28,52 @@ jobs:
           echo "build_number=${TAG##*+}" >> "$GITHUB_OUTPUT"
           echo "full_version=$TAG" >> "$GITHUB_OUTPUT"
 
-  build-linux:
+  build-desktop:
     needs: resolve-version
-    runs-on: ubuntu-latest
+    strategy:
+      # A failing macOS build mustn't cancel the Linux one.
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: --linux
+          # Unsigned like the Flutter app's builds - optional, see the release job.
+          - os: macos-latest
+            target: --mac
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: node pnpm
 
-      - name: Install Linux build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            ninja-build libgtk-3-dev cmake pkg-config clang liblzma-dev \
-            libsecret-1-dev libjsoncpp-dev \
-            file
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Install Flutter dependencies
-        run: flutter pub get
-        working-directory: apps/turtle_base
+      - name: Build the app
+        run: pnpm --dir apps/turtle-base exec vp build
 
-      - name: Generate code
-        run: mise run generate
-
-      - name: Build Linux release bundle
-        working-directory: apps/turtle_base
+      # The Drive sync's "Desktop app" OAuth client is bundled into the main process, see
+      # packages/crdt-file-sync-google-drive/README.md.
+      - name: Build the shell
         env:
           DRIVE_DESKTOP_CLIENT_ID: ${{ secrets.DRIVE_DESKTOP_CLIENT_ID }}
           DRIVE_DESKTOP_CLIENT_SECRET: ${{ secrets.DRIVE_DESKTOP_CLIENT_SECRET }}
-        run: |
-          flutter build linux --release \
-            --build-name="${{ needs.resolve-version.outputs.build_name }}" \
-            --build-number="${{ needs.resolve-version.outputs.build_number }}" \
-            --dart-define=DRIVE_DESKTOP_CLIENT_ID="$DRIVE_DESKTOP_CLIENT_ID" \
-            --dart-define=DRIVE_DESKTOP_CLIENT_SECRET="$DRIVE_DESKTOP_CLIENT_SECRET"
+        run: pnpm --dir apps/desktop exec vp pack
 
-      - name: Assemble AppDir
-        run: |
-          mkdir -p AppDir/usr/bin
-          cp -r apps/turtle_base/build/linux/x64/release/bundle/* AppDir/usr/bin/
-          ln -s usr/bin/turtle_base AppDir/AppRun
-          cp .github/workflows/turtle-base.desktop AppDir/turtle-base.desktop
-          cp apps/turtle_base/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png AppDir/turtle-base.png
-
-      - name: Build AppImage
-        run: |
-          wget -q -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-          chmod +x appimagetool
-          ./appimagetool --appimage-extract-and-run AppDir \
-            "turtle-base-${{ needs.resolve-version.outputs.full_version }}-linux-x86_64.AppImage"
+      - name: Package
+        working-directory: apps/desktop
+        run: >
+          pnpm exec electron-builder ${{ matrix.target }} --publish never
+          --config.extraMetadata.version=${{ needs.resolve-version.outputs.build_name }}
 
       - uses: actions/upload-artifact@v7
         with:
-          name: linux-appimage
-          path: turtle-base-*.AppImage
+          name: desktop-${{ runner.os }}
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.dmg
           if-no-files-found: error
 
   build-android:
@@ -90,20 +82,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: node pnpm
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: gradle
 
-      - name: Install Flutter dependencies
-        run: flutter pub get
-        working-directory: apps/turtle_base
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Generate code
-        run: mise run generate
+      - name: Build the app into the Android project
+        run: |
+          pnpm --dir apps/turtle-base exec vp build
+          pnpm --dir apps/mobile exec cap sync android
 
       - name: Configure release signing
         env:
@@ -112,73 +107,31 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > apps/turtle_base/android/release.keystore
-          cat > apps/turtle_base/android/key.properties <<EOF
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > apps/mobile/android/release.keystore
+          cat > apps/mobile/android/key.properties <<EOF
           storeFile=release.keystore
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
           keyPassword=$ANDROID_KEY_PASSWORD
           EOF
 
-      - name: Build Android release APK
-        working-directory: apps/turtle_base
-        env:
-          DRIVE_ANDROID_SERVER_CLIENT_ID: ${{ secrets.DRIVE_ANDROID_SERVER_CLIENT_ID }}
-        run: |
-          flutter build apk --release \
-            --build-name="${{ needs.resolve-version.outputs.build_name }}" \
-            --build-number="${{ needs.resolve-version.outputs.build_number }}" \
-            --dart-define=DRIVE_ANDROID_SERVER_CLIENT_ID="$DRIVE_ANDROID_SERVER_CLIENT_ID"
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        run: >
+          ./gradlew assembleRelease
+          -PversionCode=${{ needs.resolve-version.outputs.build_number }}
+          -PversionName=${{ needs.resolve-version.outputs.build_name }}
 
       - uses: actions/upload-artifact@v7
         with:
           name: android-apk
-          path: apps/turtle_base/build/app/outputs/flutter-apk/app-release.apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
-  # build-macos is disabled: the Runner target now requires signing with an
-  # Apple development team/certificate, which isn't set up on this runner yet.
-  # build-macos:
-  #   needs: resolve-version
-  #   runs-on: macos-latest
-  #   steps:
-  #     - uses: actions/checkout@v7
-  #
-  #     - uses: jdx/mise-action@v4
-  #
-  #     - name: Install Flutter dependencies
-  #       run: flutter pub get
-  #       working-directory: apps/turtle_base
-  #
-  #     - name: Generate code
-  #       run: mise run generate
-  #
-  #     - name: Build macOS release bundle
-  #       working-directory: apps/turtle_base
-  #       env:
-  #         DRIVE_DESKTOP_CLIENT_ID: ${{ secrets.DRIVE_DESKTOP_CLIENT_ID }}
-  #         DRIVE_DESKTOP_CLIENT_SECRET: ${{ secrets.DRIVE_DESKTOP_CLIENT_SECRET }}
-  #       run: |
-  #         flutter build macos --release \
-  #           --build-name="${{ needs.resolve-version.outputs.build_name }}" \
-  #           --build-number="${{ needs.resolve-version.outputs.build_number }}" \
-  #           --dart-define=DRIVE_DESKTOP_CLIENT_ID="$DRIVE_DESKTOP_CLIENT_ID" \
-  #           --dart-define=DRIVE_DESKTOP_CLIENT_SECRET="$DRIVE_DESKTOP_CLIENT_SECRET"
-  #
-  #     - name: Zip app bundle
-  #       run: |
-  #         ditto -c -k --sequesterRsrc --keepParent \
-  #           "apps/turtle_base/build/macos/Build/Products/Release/turtle_base.app" \
-  #           "turtle-base-${{ needs.resolve-version.outputs.full_version }}-macos.zip"
-  #
-  #     - uses: actions/upload-artifact@v7
-  #       with:
-  #         name: macos-app
-  #         path: turtle-base-*.zip
-  #         if-no-files-found: error
-
   release:
-    needs: [resolve-version, build-linux, build-android]
+    needs: [resolve-version, build-desktop, build-android]
+    # Published once Linux and Android are built; the macOS build is added when it succeeded.
+    if: ${{ !cancelled() && needs.build-android.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -187,23 +140,17 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: linux-appimage
           path: artifacts
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: android-apk
-          path: artifacts
+          merge-multiple: true
 
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.resolve-version.outputs.full_version }}
         run: |
-          mv "artifacts/app-release.apk" "artifacts/turtle-base-${VERSION}-android.apk"
-          gh release create "${{ github.ref_name }}" \
-            "artifacts/turtle-base-${VERSION}-linux-x86_64.AppImage" \
-            "artifacts/turtle-base-${VERSION}-android.apk" \
+          ls artifacts/*.AppImage > /dev/null || { echo "::error::No Linux build"; exit 1; }
+          mv artifacts/app-release.apk "artifacts/turtle-base-${VERSION}-android.apk"
+          gh release create "${{ github.ref_name }}" artifacts/* \
             --title "${{ github.ref_name }}" \
             --generate-notes \
             --prerelease
