@@ -62,6 +62,8 @@ export interface IpcContract {
   'flutter:listFiles': () => string[];
   'flutter:readFile': (name: string) => Uint8Array;
 
+  'window:matchChrome': (colors: { background: string; foreground: string }) => void;
+
   fetch: (request: IpcRequest) => IpcResponse;
   'shell:openExternal': (url: string) => void;
 }
@@ -96,6 +98,7 @@ export const ipcChannels = Object.keys({
   'flutter:query': true,
   'flutter:listFiles': true,
   'flutter:readFile': true,
+  'window:matchChrome': true,
   fetch: true,
   'shell:openExternal': true,
 } satisfies Record<IpcChannel, true>);

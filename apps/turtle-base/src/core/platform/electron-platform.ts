@@ -46,7 +46,7 @@ export async function createElectronPlatform(bridge: DesktopBridge): Promise<Pla
         readFile: async (name) => new Blob([new Uint8Array(await bridge.invoke('flutter:readFile', name))]).stream(),
       };
     },
-    setSystemBarsDark: () => Promise.resolve(),
+    matchWindowChrome: ({ background, foreground }) => bridge.invoke('window:matchChrome', { background, foreground }),
     googleAuth: (await bridge.invoke('googleAuth:available')) ? googleAuthOf(bridge) : undefined,
   };
 }
