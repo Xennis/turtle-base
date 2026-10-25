@@ -28,8 +28,11 @@ import { filesIn } from './tauri-files.ts';
 export async function createTauriPlatform(): Promise<Platform> {
   const data = await appDataDir();
   const cache = await appCacheDir();
+  const os = platform();
   return {
-    kind: platform() === 'android' ? 'android' : 'desktop',
+    kind: os === 'android' ? 'android' : 'desktop',
+    // macOS lays the window's buttons over the page (see tauri.macos.conf.json), Linux draws its own title bar.
+    pageTitleBar: os === 'macos',
     sql,
     prefs: await loadPrefs(),
     secrets,
@@ -40,6 +43,7 @@ export async function createTauriPlatform(): Promise<Platform> {
     pickFiles,
     openFile: (name, displayName) => openFile(`${data}/files/${name}`, `${cache}/open`, displayName),
     findFlutterAppData: () => Promise.resolve(undefined),
+    // The title bar (Linux) and the window's buttons (macOS) follow the window's theme.
     matchWindowChrome: ({ dark }) => getCurrentWindow().setTheme(dark ? 'dark' : 'light'),
     googleAuth: undefined,
   };

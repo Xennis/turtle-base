@@ -24,6 +24,7 @@ export async function createElectronPlatform(bridge: DesktopBridge): Promise<Pla
   const prefs = new Map(Object.entries(await bridge.invoke('prefs:load')));
   return {
     kind: 'desktop',
+    pageTitleBar: true,
     sql: sqlOf(bridge),
     prefs: prefsOf(bridge, prefs),
     secrets: secretsOf(bridge),

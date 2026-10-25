@@ -72,6 +72,7 @@ export async function createCapacitorPlatform(): Promise<Platform> {
   const prefs = await loadPrefs();
   return {
     kind: 'android',
+    pageTitleBar: false,
     sql: sql,
     prefs,
     secrets,
