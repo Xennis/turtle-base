@@ -1,7 +1,4 @@
 import type { GoogleAuthenticator, SecretStorage } from '@turtle-base/platform';
-import { createHash, randomBytes } from 'node:crypto';
-import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 
 import * as v from 'valibot';
 
@@ -43,13 +40,26 @@ export interface LoopbackGoogleAuthenticatorOptions {
   readonly fetch: typeof fetch;
   /** Opens the consent page in the user's browser. */
   readonly openBrowser: (url: string) => Promise<void>;
+  /** Catches the redirect back from the consent page - a server only the platform can run. */
+  readonly listenForRedirect: ListenForRedirect;
 }
+
+/**
+ * Starts a server on a free port of 127.0.0.1 for the redirect after the
+ * consent. It answers the first request carrying `state` (anything else gets
+ * a 404), settles `query` with that request's query and stops - or stops
+ * after `timeoutMs`, settling it with undefined.
+ */
+export type ListenForRedirect = (
+  state: string,
+  timeoutMs: number,
+) => Promise<{ readonly redirectUri: string; readonly query: Promise<URLSearchParams | undefined> }>;
 
 /**
  * Google sign-in on Linux and macOS, which have no native Google Sign-In:
  * the "installed app" loopback flow (RFC 8252) with PKCE. A server on a free
  * port of 127.0.0.1 catches the redirect after the user agreed in their own
- * browser. Runs in Node - Electron's main process.
+ * browser.
  */
 export class LoopbackGoogleAuthenticator implements GoogleAuthenticator {
   readonly #options: LoopbackGoogleAuthenticatorOptions;
@@ -65,35 +75,37 @@ export class LoopbackGoogleAuthenticator implements GoogleAuthenticator {
   }
 
   async signIn(): Promise<void> {
-    const verifier = randomBytes(32).toString('base64url');
-    const state = randomBytes(16).toString('base64url');
-    const { server, redirectUri, code } = await listenForRedirect(state);
-    try {
-      const url = new URL(authorizeEndpoint);
-      url.search = new URLSearchParams({
-        client_id: this.#options.clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: driveFileScope,
-        code_challenge: createHash('sha256').update(verifier).digest('base64url'),
-        code_challenge_method: 'S256',
-        state,
-        // A refresh token every time, also when the app was allowed before (e.g. after signing out).
-        access_type: 'offline',
-        prompt: 'consent',
-      }).toString();
-      await this.#options.openBrowser(url.href);
-      const token = await this.#requestToken({
-        grant_type: 'authorization_code',
-        code: await code,
-        redirect_uri: redirectUri,
-        code_verifier: verifier,
-      });
-      if (token.refresh_token === undefined) throw new GoogleAuthError('no_refresh_token', undefined);
-      await this.#options.secrets.set(refreshTokenKey, token.refresh_token);
-    } finally {
-      server.close();
-    }
+    const verifier = randomBase64Url(32);
+    const state = randomBase64Url(16);
+    const { redirectUri, query } = await this.#options.listenForRedirect(state, consentTimeoutMs);
+    const url = new URL(authorizeEndpoint);
+    url.search = new URLSearchParams({
+      client_id: this.#options.clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: driveFileScope,
+      code_challenge: base64Url(
+        new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))),
+      ),
+      code_challenge_method: 'S256',
+      state,
+      // A refresh token every time, also when the app was allowed before (e.g. after signing out).
+      access_type: 'offline',
+      prompt: 'consent',
+    }).toString();
+    await this.#options.openBrowser(url.href);
+    const redirect = await query;
+    if (redirect === undefined) throw new GoogleAuthError('timeout', undefined);
+    const code = redirect.get('code');
+    if (code === null) throw new GoogleAuthError(redirect.get('error') ?? 'no_code', undefined);
+    const token = await this.#requestToken({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+      code_verifier: verifier,
+    });
+    if (token.refresh_token === undefined) throw new GoogleAuthError('no_refresh_token', undefined);
+    await this.#options.secrets.set(refreshTokenKey, token.refresh_token);
   }
 
   async signOut(): Promise<void> {
@@ -139,35 +151,13 @@ export class LoopbackGoogleAuthenticator implements GoogleAuthenticator {
   }
 }
 
-/** Starts the redirect server; `code` settles with the first redirect that carries `state`. */
-async function listenForRedirect(
-  state: string,
-): Promise<{ server: Server; redirectUri: string; code: Promise<string> }> {
-  let settle: { resolve: (code: string) => void; reject: (error: Error) => void } | undefined;
-  const code = new Promise<string>((resolve, reject) => {
-    settle = { resolve, reject };
-  });
-  const server = createServer((request, response) => {
-    const params = new URL(request.url ?? '/', 'http://127.0.0.1').searchParams;
-    if (params.get('state') !== state) {
-      response.writeHead(404).end();
-      return;
-    }
-    const received = params.get('code');
-    const error = params.get('error');
-    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    response.end(
-      received === null
-        ? '<p>Signing in to turtle-base was cancelled. You can close this tab.</p>'
-        : '<p>Signed in to turtle-base. You can close this tab.</p>',
-    );
-    if (received === null) settle?.reject(new GoogleAuthError(error ?? 'no_code', undefined));
-    else settle?.resolve(received);
-  });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- listening on a TCP port, never a pipe
-  const { port } = server.address() as AddressInfo;
-  const timeout = setTimeout(() => settle?.reject(new GoogleAuthError('timeout', undefined)), consentTimeoutMs);
-  server.on('close', () => clearTimeout(timeout));
-  return { server, redirectUri: `http://127.0.0.1:${port}`, code };
+function randomBase64Url(length: number): string {
+  return base64Url(crypto.getRandomValues(new Uint8Array(length)));
+}
+
+function base64Url(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');
 }

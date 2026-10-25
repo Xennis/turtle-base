@@ -6,7 +6,7 @@ It talks to the Drive REST API through plain `fetch` - the official client libra
 
 ## Sign-in
 
-The sign-in is platform-specific. For Linux and macOS this package has `LoopbackGoogleAuthenticator` under `@turtle-base/crdt-file-sync-google-drive/desktop`: the "installed app" loopback flow (RFC 8252) with PKCE, for Node - Electron's main process runs it and hands the access token to the app over IPC. It keeps only the refresh token, in the platform's `SecretStorage`. Android uses Play services' authorization in the Capacitor shell (`GoogleAuthPlugin.java` in `apps/mobile`), which needs no configuration in the app.
+The sign-in is platform-specific. For Linux and macOS this package has `LoopbackGoogleAuthenticator`: the "installed app" loopback flow (RFC 8252) with PKCE, on WebCrypto and `fetch`. The server that catches the redirect is the platform's (`ListenForRedirect`) - a web view can't listen on a port; `@turtle-base/crdt-file-sync-google-drive/desktop` has one on Node. It keeps only the refresh token, in the platform's `SecretStorage`. Android uses Play services' authorization in the Capacitor shell (`GoogleAuthPlugin.java` in `apps/mobile`), which needs no configuration in the app.
 
 ## Configuration
 
