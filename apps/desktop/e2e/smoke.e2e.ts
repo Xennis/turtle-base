@@ -32,6 +32,7 @@ writeFileSync(
  * tables as the Flutter app created them (drift's columns plus sql_crdt's), only those the import reads.
  */
 const flutterData = join(userData, 'flutter');
+const seedCount = 1500;
 {
   const hash = `sha256-${createHash('sha256').update(readFileSync(picture)).digest('hex')}`;
   mkdirSync(join(flutterData, 'files'), { recursive: true });
@@ -54,7 +55,13 @@ const flutterData = join(userData, 'flutter');
     INSERT INTO blocks VALUES (${row}, 'b1', 'tomatoes', NULL, 'heading', 0, '{"delta":[{"insert":"Planting"}],"level":2}', ${stamp});
     INSERT INTO blocks VALUES (${row}, 'b2', 'tomatoes', NULL, 'attachment', 1, '{"attachmentId":"a1"}', ${stamp});
     INSERT INTO attachments VALUES (${row}, 'a1', 'tomatoes', NULL, '${hash}', 'seedling.png', 'image/png', 79, 16, 16, 0, ${stamp});
+    INSERT INTO collections VALUES (${row}, 'seeds', 'garden', 'Seeds', NULL, NULL, ${stamp});
   `);
+  // Enough entries that only a part of them can be rendered at once.
+  const entry = database.prepare(
+    `INSERT INTO pages VALUES (${row}, ?, 'garden', 'seeds', NULL, ?, NULL, '{}', ?, ${stamp})`,
+  );
+  for (let i = 1; i <= seedCount; i++) entry.run(`seed-${i}`, `Seed ${String(i).padStart(4, '0')}`, i);
   database.close();
 }
 
@@ -261,6 +268,25 @@ async function answerRequests(app: ElectronApplication) {
   }, readFileSync(picture).toString('base64'));
 }
 
+/** A big collection renders only what's in view - in the table and the tiles - and scrolls to its end. */
+async function scrollThroughSeeds(page: Page) {
+  await page.getByRole('button', { name: 'Seeds' }).click();
+  await page.getByText(`${seedCount} entries`).waitFor();
+  const last = `Seed ${String(seedCount).padStart(4, '0')}`;
+  for (const layout of ['Table', 'Tiles']) {
+    await page.getByRole('radio', { name: layout }).click();
+    await page.getByText('Seed 0001').waitFor();
+    await screenshot(page, `8-seeds-${layout.toLowerCase()}`);
+    const rendered = await page.getByText(/^Seed \d{4}$/).count();
+    if (rendered > 200) throw new Error(`${layout}: ${rendered} of ${seedCount} entries rendered`);
+    await page.getByText('Seed 0001').hover();
+    for (let i = 0; i < 200 && !(await page.getByText(last).isVisible()); i++) await page.mouse.wheel(0, 4000);
+    await page.getByText(last).waitFor();
+    await page.mouse.wheel(0, -10_000_000);
+  }
+  await page.getByRole('radio', { name: 'Table' }).click();
+}
+
 /** The Books plugin: added as a space, a book looked up, added - and opened, not added again, the second time. */
 async function addBook(page: Page) {
   await page.getByRole('button', { name: 'Plugins' }).click();
@@ -285,6 +311,14 @@ async function addBook(page: Page) {
 try {
   const first = await launch();
   await first.page.getByText('No spaces yet').waitFor();
+  // The page draws the title bar; the system's window buttons lie over it.
+  // Not in TypeScript's DOM types yet.
+  const overlay = await first.page.evaluate(
+    () => Reflect.get(Reflect.get(navigator, 'windowControlsOverlay') ?? {}, 'visible') === true,
+  );
+  if (!overlay) {
+    throw new Error('The window has a system title bar');
+  }
   await screenshot(first.page, '1-empty');
   await createNamed(first.page, 'Create your first space', 'Fitness');
   await first.page.getByRole('combobox', { name: 'Space' }).filter({ hasText: 'Fitness' }).waitFor();
@@ -316,7 +350,7 @@ try {
     .waitFor();
   await first.page.getByRole('button', { name: 'Import from the Flutter app' }).click();
   // No file counted: the picture is the one attached earlier - already in the store, stored once.
-  await first.page.getByText('Imported 1 space, 1 page.').waitFor();
+  await first.page.getByText(`Imported 1 space, 1 collection, ${seedCount + 1} pages.`).waitFor();
   await screenshot(first.page, '3-settings-dark');
   await first.app.close();
 
@@ -341,6 +375,7 @@ try {
   await second.page.locator('.bn-editor').getByRole('heading', { name: 'Planting' }).waitFor();
   await second.page.locator('.bn-editor').getByRole('button', { name: 'Open seedling.png' }).locator('img').waitFor();
   await screenshot(second.page, '7-imported');
+  await scrollThroughSeeds(second.page);
   await second.page.getByRole('combobox', { name: 'Space' }).click();
   await second.page.getByRole('option', { name: 'Fitness' }).click();
   await second.page.getByRole('button', { name: 'Workouts' }).click();
