@@ -1,56 +1,7 @@
 [tools]
-flutter = "3.47.7"
 node = "24.22.1"
 opentofu = "1.12.0"
 pnpm = "12.15.0"
-
-[tasks.generate]
-dir = "{{config_root}}/apps/turtle_base"
-description = "Run code generation (build_runner) - requires `flutter pub get` to have run first"
-run = "dart run build_runner build"
-
-# The format/analyze/test tasks run in every Dart workspace member (apps/*
-# and packages/* with a pubspec.yaml), so new packages are picked up
-# automatically. The TypeScript members have their own ts-* tasks.
-[tasks.format]
-description = "Format the Dart code of all workspace members (line length is set in analysis_options.yaml)"
-run = """
-set -e
-for d in apps/* packages/*; do
-  [ -f "$d/pubspec.yaml" ] || continue
-  (cd "$d" && dart format $(ls -d lib test 2>/dev/null))
-done
-"""
-
-[tasks.format-check]
-description = "Fail if the Dart code of any workspace member isn't formatted - used by CI"
-run = """
-set -e
-for d in apps/* packages/*; do
-  [ -f "$d/pubspec.yaml" ] || continue
-  (cd "$d" && dart format --output=none --set-exit-if-changed $(ls -d lib test 2>/dev/null))
-done
-"""
-
-[tasks.analyze]
-description = "Run flutter analyze in all workspace members - requires `mise run generate` to have run first"
-run = """
-set -e
-for d in apps/* packages/*; do
-  [ -f "$d/pubspec.yaml" ] || continue
-  (cd "$d" && flutter analyze)
-done
-"""
-
-[tasks.test]
-description = "Run flutter test in all workspace members that have tests - requires `mise run generate` to have run first"
-run = """
-set -e
-for d in apps/* packages/*; do
-  [ -f "$d/pubspec.yaml" ] || continue
-  if [ -d "$d/test" ]; then (cd "$d" && flutter test); fi
-done
-"""
 
 [tasks.ts-install]
 description = "Install the dependencies of the TypeScript workspace"
@@ -118,26 +69,3 @@ pnpm --dir apps/mobile exec cap sync android
 "$ANDROID_HOME/platform-tools/adb" -s "$ANDROID_SERIAL" install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 pnpm --dir apps/mobile exec vpx e2e/smoke.e2e.ts
 """
-
-[tasks.skills-install]
-description = "Install Claude Code skills used in this repo (see skills-lock.json) - content isn't checked in, only the lock metadata"
-run = "npx -y skills add nank1ro/flutter-shadcn-ui --skill shadcn-ui-flutter --agent claude-code -y"
-
-# Forward the Google Drive sync OAuth config from env (see
-# packages/crdt_file_sync_google_drive/README.md) as --dart-define. Set the vars in a
-# gitignored .mise.local.toml's [env] table; omitting them still builds
-# fine, just with Drive sync disabled - see client_config.dart.
-[tasks.run-linux]
-dir = "{{config_root}}/apps/turtle_base"
-description = "flutter run on Linux with Google Drive sync config from env"
-run = "flutter run -d linux --dart-define=DRIVE_DESKTOP_CLIENT_ID=$DRIVE_DESKTOP_CLIENT_ID --dart-define=DRIVE_DESKTOP_CLIENT_SECRET=$DRIVE_DESKTOP_CLIENT_SECRET"
-
-[tasks.run-android]
-dir = "{{config_root}}/apps/turtle_base"
-description = "flutter run on Android with Google Drive sync config from env"
-run = "flutter run -d android --dart-define=DRIVE_ANDROID_SERVER_CLIENT_ID=$DRIVE_ANDROID_SERVER_CLIENT_ID"
-
-[tasks.run-macos]
-dir = "{{config_root}}/apps/turtle_base"
-description = "flutter run on macOS with Google Drive sync config from env"
-run = "flutter run -d macos --dart-define=DRIVE_DESKTOP_CLIENT_ID=$DRIVE_DESKTOP_CLIENT_ID --dart-define=DRIVE_DESKTOP_CLIENT_SECRET=$DRIVE_DESKTOP_CLIENT_SECRET"

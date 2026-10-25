@@ -50,7 +50,7 @@
 /* The neutrals are warm, softened grays instead of a preset's near-black and
    near-white - too harsh for an app that's mostly text. The preset only
    brings the accent (primary), so it stays the one saturated thing on
-   screen. Same values as the Flutter app's app_color_scheme.dart. */
+   screen. The Flutter app's values, kept. */
 :root {
   --background: #faf9f7;
   --foreground: #1f1e1d;

@@ -1,5 +1,3 @@
-# Only folders with a package.json are members, so the Dart members
-# (with a pubspec.yaml instead) living next to them are ignored.
 packages:
   - apps/*
   - packages/*

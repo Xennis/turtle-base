@@ -1,6 +1,6 @@
 /**
  * Small device-local values, never synced - settings like the theme, or what
- * sync remembers between runs. Like `shared_preferences` in the Flutter app.
+ * sync remembers between runs.
  */
 export interface KeyValueStore {
   get(key: string): string | undefined;

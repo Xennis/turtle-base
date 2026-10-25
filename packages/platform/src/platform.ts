@@ -6,8 +6,7 @@ import type { SqlDriver } from './sql-driver.ts';
 
 /**
  * Everything the app needs from the platform it runs on. The app only talks
- * to this interface; Electron and Capacitor each implement it. It grows with
- * the features ported from the Flutter app (files, Google sign-in, ...).
+ * to this interface; Electron and Capacitor each implement it.
  */
 export interface Platform {
   readonly kind: 'desktop' | 'android';

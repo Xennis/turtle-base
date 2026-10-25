@@ -18,7 +18,7 @@ import type { AppDatabase } from './database/app-database.ts';
 import { AppSyncController } from './sync/app-sync-controller.ts';
 import type { ThemeController } from './theme/theme-controller.ts';
 
-/** App-wide services, provided once at the root - like the Flutter app's AppScope. */
+/** App-wide services, provided once at the root. */
 export interface AppServices {
   readonly platform: Platform;
   readonly database: AppDatabase;

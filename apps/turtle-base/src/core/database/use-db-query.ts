@@ -11,7 +11,6 @@ declare module '@tanstack/react-query' {
 /**
  * A query on the database that refreshes whenever one of `tables` changes -
  * through a local write or a merge from sync (see {@link invalidateTables}).
- * Replaces the Flutter app's drift streams.
  */
 export function useDbQuery<T>(options: {
   tables: readonly (keyof Database)[];
