@@ -57,6 +57,7 @@ dependencies {
     implementation project(':capacitor-android')
     implementation "androidx.sqlite:sqlite-bundled:$androidxSqliteVersion"
     implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
+    implementation "com.google.android.gms:play-services-auth:$playServicesAuthVersion"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

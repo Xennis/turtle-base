@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SqlPlugin.class);
         registerPlugin(HttpPlugin.class);
+        registerPlugin(GoogleAuthPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
