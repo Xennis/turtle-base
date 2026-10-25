@@ -19,6 +19,7 @@ import type {
 } from '@turtle-base/platform';
 
 import { filesIn } from './tauri-files.ts';
+import { findFlutterAppData } from './tauri-flutter-app-data.ts';
 import { desktopGoogleAuth } from './tauri-google-auth.ts';
 
 /**
@@ -43,7 +44,8 @@ export async function createTauriPlatform(): Promise<Platform> {
     openExternal: (url) => openUrl(url),
     pickFiles,
     openFile: (name, displayName) => openFile(`${data}/files/${name}`, `${cache}/open`, displayName),
-    findFlutterAppData: () => Promise.resolve(undefined),
+    // The Flutter app's data is imported on the desktop - phones get it through sync.
+    findFlutterAppData: os === 'android' ? () => Promise.resolve(undefined) : findFlutterAppData,
     // The title bar (Linux) and the window's buttons (macOS) follow the window's theme.
     matchWindowChrome: ({ dark }) => getCurrentWindow().setTheme(dark ? 'dark' : 'light'),
     googleAuth: os === 'android' ? undefined : desktopGoogleAuth(secrets),
