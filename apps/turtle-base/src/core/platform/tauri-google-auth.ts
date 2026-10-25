@@ -1,22 +1,22 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { fetch as shellFetch } from '@tauri-apps/plugin-http';
-import { openUrl } from '@tauri-apps/plugin-opener';
 import { type ListenForRedirect, LoopbackGoogleAuthenticator } from '@turtle-base/crdt-file-sync-google-drive';
-import type { GoogleAuthenticator, SecretStorage } from '@turtle-base/platform';
+import type { GoogleAuthenticator } from '@turtle-base/platform';
+
+import type { ShellIo } from './tauri-platform.ts';
 
 /**
  * Google sign-in on the desktop: the loopback flow in the user's browser,
  * with the "Desktop app" OAuth client the build was given (see vite.config.ts).
  * Undefined without one - the app then hides Drive sync.
  */
-export function desktopGoogleAuth(secrets: SecretStorage): GoogleAuthenticator | undefined {
+export function desktopGoogleAuth({ secrets, fetch, openExternal }: ShellIo): GoogleAuthenticator | undefined {
   if (bundledDriveClientId.length === 0 || bundledDriveClientSecret.length === 0) return undefined;
   return new LoopbackGoogleAuthenticator({
     clientId: bundledDriveClientId,
     clientSecret: bundledDriveClientSecret,
     secrets,
-    fetch: shellFetch,
-    openBrowser: (url) => openUrl(url),
+    fetch,
+    openBrowser: openExternal,
     listenForRedirect: listenInShell,
   });
 }

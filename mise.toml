@@ -4,6 +4,8 @@ opentofu = "1.12.0"
 pnpm = "12.15.0"
 # The Tauri shell (apps/shell) - with the targets of its Android build.
 rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android" }
+# Drives the desktop app for its smoke test (WebDriver, Linux).
+"cargo:tauri-driver" = "2.1.0"
 
 [tasks.install]
 description = "Install the dependencies of the workspace"
@@ -49,6 +51,15 @@ run = """
 set -e
 pnpm --dir apps/shell exec tauri build --debug --no-bundle
 apps/shell/src-tauri/target/debug/turtle-base
+"""
+
+[tasks.tauri-smoke]
+description = "Build the app for the smoke test and smoke-test it in the Tauri shell over WebDriver (Linux, needs a display)"
+run = """
+set -e
+TURTLE_E2E=1 DRIVE_DESKTOP_CLIENT_ID=smoke-client DRIVE_DESKTOP_CLIENT_SECRET=smoke-secret \
+  pnpm --dir apps/shell exec tauri build --debug --no-bundle
+pnpm --dir apps/shell exec vpx e2e/desktop-smoke.e2e.ts
 """
 
 [tasks.dev-tauri]

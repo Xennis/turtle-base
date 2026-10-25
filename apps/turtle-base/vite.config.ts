@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react';
 import { contentSecurityPolicy } from '@turtle-base/platform';
 import { defineConfig, type Plugin } from 'vite-plus';
 
+/** The smoke test's build, see src/core/platform/e2e-hooks.ts. */
+const e2eBuild = process.env['TURTLE_E2E'] === '1';
+
 export default defineConfig({
   plugins: [react(), tailwindcss(), contentSecurityPolicyMeta()],
   // A "Desktop app" OAuth client isn't confidential (RFC 8252) - release builds carry it, see
@@ -12,6 +15,7 @@ export default defineConfig({
   define: {
     bundledDriveClientId: JSON.stringify(process.env['DRIVE_DESKTOP_CLIENT_ID'] ?? ''),
     bundledDriveClientSecret: JSON.stringify(process.env['DRIVE_DESKTOP_CLIENT_SECRET'] ?? ''),
+    e2eBuild: JSON.stringify(e2eBuild),
   },
   server: {
     // `tauri android dev` loads the page from this machine's address on the network.
@@ -39,7 +43,13 @@ function contentSecurityPolicyMeta(): Plugin {
     transformIndexHtml: () => [
       {
         tag: 'meta',
-        attrs: { 'http-equiv': 'Content-Security-Policy', content: contentSecurityPolicy },
+        attrs: {
+          'http-equiv': 'Content-Security-Policy',
+          // The smoke test follows the sign-in's redirect to the shell's loopback server from the page.
+          content: e2eBuild
+            ? contentSecurityPolicy.replace("connect-src 'self'", "connect-src 'self' http://127.0.0.1:*")
+            : contentSecurityPolicy,
+        },
         injectTo: 'head-prepend',
       },
     ],

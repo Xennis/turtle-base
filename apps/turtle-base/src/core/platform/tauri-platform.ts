@@ -31,26 +31,34 @@ export async function createTauriPlatform(): Promise<Platform> {
   const data = await appDataDir();
   const cache = await appCacheDir();
   const os = platform();
+  const shellIo: ShellIo = {
+    secrets,
+    // Runs in the shell, so CORS doesn't apply.
+    fetch: shellFetch,
+    openExternal: (url) => openUrl(url),
+    pickFiles,
+  };
+  // Only in the smoke test's build (TURTLE_E2E) - otherwise the bundler drops it.
+  const io = e2eBuild ? (await import('./e2e-hooks.ts')).withE2eHooks(shellIo) : shellIo;
   return {
+    ...io,
     kind: os === 'android' ? 'android' : 'desktop',
     // macOS lays the window's buttons over the page (see tauri.macos.conf.json), Linux draws its own title bar.
     pageTitleBar: os === 'macos',
     sql,
     prefs: await loadPrefs(),
-    secrets,
     files: filesIn(`${data}/files`),
-    // Runs in the shell, so CORS doesn't apply.
-    fetch: shellFetch,
-    openExternal: (url) => openUrl(url),
-    pickFiles,
     openFile: (name, displayName) => openFile(`${data}/files/${name}`, `${cache}/open`, displayName),
     // The Flutter app's data is imported on the desktop - phones get it through sync.
     findFlutterAppData: os === 'android' ? () => Promise.resolve(undefined) : findFlutterAppData,
     // The title bar (Linux) and the window's buttons (macOS) follow the window's theme.
     matchWindowChrome: ({ dark }) => getCurrentWindow().setTheme(dark ? 'dark' : 'light'),
-    googleAuth: os === 'android' ? undefined : desktopGoogleAuth(secrets),
+    googleAuth: os === 'android' ? undefined : desktopGoogleAuth(io),
   };
 }
+
+/** What reaches outside the app - the smoke test answers it itself. */
+export type ShellIo = Pick<Platform, 'secrets' | 'fetch' | 'openExternal' | 'pickFiles'>;
 
 /** A value as it crosses into the shell - JSON, a blob as its bytes. */
 type ShellValue = null | number | string | number[];
