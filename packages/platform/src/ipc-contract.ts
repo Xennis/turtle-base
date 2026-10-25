@@ -1,4 +1,4 @@
-import type { SqlResult, SqlValue } from './sql-driver.ts';
+import type { SqlResult, SqlRow, SqlValue } from './sql-driver.ts';
 
 /** A request as it crosses the IPC boundary - `Request` itself can't be cloned. */
 export interface IpcRequest {
@@ -56,6 +56,12 @@ export interface IpcContract {
   'googleAuth:signOut': () => void;
   'googleAuth:accessToken': () => string;
 
+  /** The Flutter app's data folder, if there is one - see FlutterAppData. */
+  'flutter:find': () => string | null;
+  'flutter:query': (sql: string) => SqlRow[];
+  'flutter:listFiles': () => string[];
+  'flutter:readFile': (name: string) => Uint8Array;
+
   fetch: (request: IpcRequest) => IpcResponse;
   'shell:openExternal': (url: string) => void;
 }
@@ -86,6 +92,10 @@ export const ipcChannels = Object.keys({
   'googleAuth:signIn': true,
   'googleAuth:signOut': true,
   'googleAuth:accessToken': true,
+  'flutter:find': true,
+  'flutter:query': true,
+  'flutter:listFiles': true,
+  'flutter:readFile': true,
   fetch: true,
   'shell:openExternal': true,
 } satisfies Record<IpcChannel, true>);

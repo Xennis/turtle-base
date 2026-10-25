@@ -6,6 +6,7 @@ import { basename, join } from 'node:path';
 import { BrowserWindow, dialog, ipcMain, net, shell, type IpcMainInvokeEvent } from 'electron';
 
 import type { DiskFileDirectory } from './file-directory.ts';
+import { FlutterDataFolder } from './flutter-data-folder.ts';
 import type { PrefsFile } from './prefs-file.ts';
 import type { SecretsFile } from './secrets-file.ts';
 
@@ -89,6 +90,20 @@ export function registerIpcHandlers(options: {
   handle('googleAuth:signIn', () => signedIn().signIn());
   handle('googleAuth:signOut', () => signedIn().signOut());
   handle('googleAuth:accessToken', () => signedIn().accessToken());
+
+  // Looked up on each find, so a folder that appeared meanwhile (or a test's) is seen.
+  let flutterData: FlutterDataFolder | undefined;
+  function flutterFolder(): FlutterDataFolder {
+    if (flutterData === undefined) throw new Error('No Flutter app data found');
+    return flutterData;
+  }
+  handle('flutter:find', () => {
+    flutterData = FlutterDataFolder.find();
+    return flutterData?.location ?? null;
+  });
+  handle('flutter:query', (statement) => flutterFolder().query(statement));
+  handle('flutter:listFiles', () => flutterFolder().listFiles());
+  handle('flutter:readFile', (name) => flutterFolder().readFile(name));
 
   handle('fetch', async (request) => {
     const response = await net.fetch(request.url, {
