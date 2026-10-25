@@ -9,6 +9,7 @@ import {
   type RowData,
   type SortingState,
 } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   ArrowDown,
   ArrowUp,
@@ -59,6 +60,8 @@ export function CollectionView(props: {
   const [lookingUp, setLookingUp] = useState(false);
   const { collectionId } = props;
   const [layout, setLayout] = useState<Layout>('table');
+  // A state, not a ref: the views only measure their rows once it's there.
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const { data: collection } = useDbQuery({
     tables: ['collections'],
     key: [collectionId],
@@ -175,7 +178,7 @@ export function CollectionView(props: {
           />
         )}
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div ref={setScroller} className="min-h-0 flex-1 overflow-auto">
         {entries.length === 0 ? (
           <EmptyState />
         ) : layout === 'table' ? (
@@ -186,6 +189,7 @@ export function CollectionView(props: {
             relatedTitles={relatedTitles}
             attachmentsByField={attachmentsByField}
             onOpenEntry={props.onOpenEntry}
+            scroller={scroller}
           />
         ) : (
           <CollectionTilesView
@@ -198,6 +202,7 @@ export function CollectionView(props: {
                 : (entry) => attachmentsByField.get(coverField.id)?.get(entry.id)?.find(isImage)
             }
             onOpenEntry={props.onOpenEntry}
+            scroller={scroller}
           />
         )}
       </div>
@@ -311,6 +316,9 @@ function ValueCell({ row, column, table }: CellContext<Page, unknown>) {
   );
 }
 
+/** A row's height before it's measured: the cells' h-11 and the border. */
+const rowHeight = 45;
+
 function EntriesTable(props: {
   titleLabel: string;
   fields: readonly ResolvedField[];
@@ -318,6 +326,8 @@ function EntriesTable(props: {
   relatedTitles: ReadonlyMap<string, string>;
   attachmentsByField: AttachmentsByField;
   onOpenEntry: (pageId: string) => void;
+  /** Scrolls the table - only the rows in and near its view are rendered. */
+  scroller: HTMLElement | null;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo(() => columnsFor(props.fields, props.relatedTitles), [props.fields, props.relatedTitles]);
@@ -338,6 +348,19 @@ function EntriesTable(props: {
       onOpenEntry: props.onOpenEntry,
     },
   });
+
+  const rows = table.getRowModel().rows;
+  // oxlint-disable-next-line react/incompatible-library -- like useReactTable above
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => props.scroller,
+    estimateSize: () => rowHeight,
+    overscan: 10,
+  });
+  const visible = virtualizer.getVirtualItems();
+  // Spacer rows stand in for the rows not rendered, so the scroll height stays the table's.
+  const above = visible[0]?.start ?? 0;
+  const below = virtualizer.getTotalSize() - (visible.at(-1)?.end ?? 0);
 
   return (
     <Table className="table-fixed rounded-lg border" style={{ width: table.getTotalSize() }}>
@@ -365,15 +388,22 @@ function EntriesTable(props: {
         ))}
       </TableHeader>
       <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id} className="h-11 overflow-hidden px-3">
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
+        {above > 0 && <tr aria-hidden style={{ height: above }} />}
+        {visible.map((item) => {
+          const row = rows[item.index];
+          return (
+            row !== undefined && (
+              <TableRow key={row.id} data-index={item.index} ref={virtualizer.measureElement}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className="h-11 overflow-hidden px-3">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            )
+          );
+        })}
+        {below > 0 && <tr aria-hidden style={{ height: below }} />}
       </TableBody>
     </Table>
   );
