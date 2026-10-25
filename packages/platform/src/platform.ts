@@ -10,6 +10,12 @@ import type { SqlDriver } from './sql-driver.ts';
  */
 export interface Platform {
   readonly kind: 'desktop' | 'android';
+
+  /**
+   * Whether the page draws the window's title bar, with the system's window
+   * buttons on top of it - else the system draws it, or there is none.
+   */
+  readonly pageTitleBar: boolean;
   readonly sql: SqlDriver;
   readonly prefs: KeyValueStore;
   readonly secrets: SecretStorage;
@@ -47,8 +53,8 @@ export interface Platform {
 
   /**
    * Matches what the system draws around the page to the app's theme: the
-   * desktop window's buttons (the page draws the title bar itself) and
-   * Android's status and navigation bars (the page lies behind them).
+   * desktop window's title bar or buttons and Android's status and
+   * navigation bars (the page lies behind them).
    */
   matchWindowChrome(colors: WindowChromeColors): Promise<void>;
 

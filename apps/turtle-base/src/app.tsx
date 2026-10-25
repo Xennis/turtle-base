@@ -19,7 +19,7 @@ export function App({ services, queryClient }: { services: AppServices; queryCli
       <AppScope services={services}>
         <TooltipProvider>
           <div className="flex h-full flex-col">
-            {services.platform.kind === 'desktop' && <WindowTitleBar />}
+            {services.platform.pageTitleBar && <WindowTitleBar />}
             <div className="min-h-0 flex-1">
               <AppShell />
             </div>
