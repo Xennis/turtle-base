@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  ts-check:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -24,7 +24,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting, lint and types
-        run: mise run ts-check
+        run: mise run check
 
       - name: Test
-        run: mise run ts-test
+        run: mise run test
