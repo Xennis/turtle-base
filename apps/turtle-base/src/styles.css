@@ -247,5 +247,11 @@
 
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+
+  /* Native parts - scrollbars, form controls - in the theme's mode too. */
+  html.dark {
+    color-scheme: dark;
   }
 }
