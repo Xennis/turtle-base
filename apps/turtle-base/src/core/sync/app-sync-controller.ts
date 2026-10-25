@@ -13,6 +13,13 @@ import { ensureSyncFormat } from './sync-format.ts';
 
 const keepAllFilesOfflineKey = 'keep_all_files_offline';
 
+/**
+ * The Drive folder synced into. Not the Flutter app's `turtle-base-sync`:
+ * syncing there would move its format to 3, and the Flutter app would stop
+ * syncing on every device that still runs it.
+ */
+export const syncFolderName = 'turtle-base-sync-v3';
+
 interface Connection {
   readonly folder: GoogleDriveSyncFolder;
   readonly sync: SyncController<Database>;
@@ -62,7 +69,7 @@ export class AppSyncController extends Notifier {
     this.#attachments = options.attachments;
     this.#prefs = options.prefs;
     this.#isMobile = options.isMobile;
-    this.#folderName = options.folderName ?? 'turtle-base-sync';
+    this.#folderName = options.folderName ?? syncFolderName;
   }
 
   /** Whether sign-in is configured on this platform - false hides the Drive sync UI entirely. */
