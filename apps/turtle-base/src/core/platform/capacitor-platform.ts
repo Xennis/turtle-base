@@ -7,6 +7,7 @@ import { Preferences } from '@capacitor/preferences';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 import type {
   FileDirectory,
+  GoogleAuthenticator,
   KeyValueStore,
   PickFilesOptions,
   Platform,
@@ -36,11 +37,23 @@ interface TurtleHttpPlugin {
   }): Promise<{ status: number; statusText: string; headers: [string, string][]; body: string }>;
 }
 
+interface TurtleGoogleAuthPlugin {
+  authorize(options: { interactive: boolean }): Promise<{ accessToken: string; account?: string }>;
+  signOut(options: { account: string }): Promise<void>;
+}
+
 const TurtleSql = registerPlugin<TurtleSqlPlugin>('TurtleSql');
 const TurtleHttp = registerPlugin<TurtleHttpPlugin>('TurtleHttp');
+const TurtleGoogleAuth = registerPlugin<TurtleGoogleAuthPlugin>('TurtleGoogleAuth');
 
 const filesFolder = 'files';
 const tempFolder = `${filesFolder}/tmp`;
+
+/** The Google account Drive sync is connected with - set while connected. */
+const googleAccountKey = 'google_drive_account';
+
+/** How long an access token is reused before Play services is asked again (it hands out tokens valid for an hour). */
+const accessTokenReuseMs = 5 * 60 * 1000;
 
 /** Below this, chunks of a stream being written are collected before they cross the bridge. */
 const writeBatchBytes = 1024 * 1024;
@@ -56,10 +69,11 @@ export async function createCapacitorPlatform(): Promise<Platform> {
   if (!(await fileExists('tmp')))
     await Filesystem.mkdir({ path: tempFolder, directory: Directory.Data, recursive: true });
   const { uri: filesUri } = await Filesystem.getUri({ path: filesFolder, directory: Directory.Data });
+  const prefs = await loadPrefs();
   return {
     kind: 'android',
     sql: sql,
-    prefs: await loadPrefs(),
+    prefs,
     secrets,
     files: filesIn(filesUri),
     fetch: nativeFetch,
@@ -70,7 +84,38 @@ export async function createCapacitorPlatform(): Promise<Platform> {
     openFile,
     // The style names the bars' background: light icons on a dark page.
     setSystemBarsDark: (dark) => SystemBars.setStyle({ style: dark ? SystemBarsStyle.Dark : SystemBarsStyle.Light }),
-    googleAuth: undefined,
+    googleAuth: googleAuthWith(prefs),
+  };
+}
+
+/**
+ * Google sign-in for Drive sync, through the shell's TurtleGoogleAuth (Play
+ * services' AuthorizationClient). Connected is remembered in the prefs, so a
+ * silent sign-in works offline; tokens come from Play services when needed.
+ */
+function googleAuthWith(prefs: KeyValueStore): GoogleAuthenticator {
+  let reusable: { token: string; until: number } | undefined;
+
+  async function authorize(interactive: boolean) {
+    const result = await TurtleGoogleAuth.authorize({ interactive });
+    reusable = { token: result.accessToken, until: Date.now() + accessTokenReuseMs };
+    return result;
+  }
+
+  return {
+    signInSilently: () => Promise.resolve(prefs.get(googleAccountKey) !== undefined),
+    signIn: async () => {
+      const { account } = await authorize(true);
+      await prefs.set(googleAccountKey, account ?? '');
+    },
+    signOut: async () => {
+      const account = prefs.get(googleAccountKey);
+      reusable = undefined;
+      await prefs.remove(googleAccountKey);
+      if (account !== undefined && account.length > 0) await TurtleGoogleAuth.signOut({ account });
+    },
+    accessToken: async () =>
+      reusable !== undefined && reusable.until > Date.now() ? reusable.token : (await authorize(false)).accessToken,
   };
 }
 
