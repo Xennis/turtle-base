@@ -10,16 +10,29 @@ description = "Install the dependencies of the workspace"
 run = "pnpm install"
 
 [tasks.check]
-description = "Format check, lint and type check the workspace (Vite+) - used by CI"
-run = "pnpm exec vp check"
+description = "Format check, lint and type check the workspace (Vite+) and the Tauri shell (cargo) - used by CI"
+run = """
+set -e
+pnpm exec vp check
+cargo fmt --manifest-path apps/shell/src-tauri/Cargo.toml --check
+cargo clippy --manifest-path apps/shell/src-tauri/Cargo.toml --all-targets -- -D warnings
+"""
 
 [tasks.fix]
-description = "Format the workspace and apply lint autofixes (Vite+)"
-run = "pnpm exec vp check --fix"
+description = "Format the workspace and apply lint autofixes (Vite+, cargo fmt)"
+run = """
+set -e
+pnpm exec vp check --fix
+cargo fmt --manifest-path apps/shell/src-tauri/Cargo.toml
+"""
 
 [tasks.test]
-description = "Run the tests of the workspace (Vite+)"
-run = "pnpm exec vp test"
+description = "Run the tests of the workspace (Vite+) and the Tauri shell (cargo)"
+run = """
+set -e
+pnpm exec vp test
+cargo test --manifest-path apps/shell/src-tauri/Cargo.toml
+"""
 
 [tasks.run-desktop]
 description = "Build the app and start it in Electron (Linux, macOS)"
