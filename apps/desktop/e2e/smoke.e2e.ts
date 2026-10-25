@@ -10,12 +10,15 @@ import { _electron as electron, type ElectronApplication, type Page } from 'play
 // through the app shell: a space from the empty state, a collection and a
 // page from the sidebar, the theme from Settings - and all of it again after
 // a restart, so it came from SQLite and the prefs. Needs a display; run after
-// `vp pack` here and `vp build` in apps/turtle-base. An optional argument is a
-// folder to put screenshots in.
+// `vp pack` here and `vp build` in apps/turtle-base - or, with
+// TURTLE_SMOKE_EXECUTABLE, the app electron-builder packaged. An optional
+// argument is a folder to put screenshots in.
 
 const appDir = join(import.meta.dirname, '..');
 const userData = mkdtempSync(join(tmpdir(), 'turtle-base-smoke-'));
 const screenshots = process.argv[2];
+/** A packaged app to test instead, e.g. `release/linux-unpacked/turtle-base` after electron-builder. */
+const packaged = process.env['TURTLE_SMOKE_EXECUTABLE'];
 
 /** A 16×16 red PNG, the file picked whenever the app asks for one (see pickFilesFrom). */
 const picture = join(userData, 'red.png');
@@ -78,7 +81,8 @@ let current: Page | undefined;
 async function launch() {
   const app = await electron.launch({
     // No OS keyring for the secrets - there may be none where this runs (see below).
-    args: [appDir, `--user-data-dir=${userData}`, '--password-store=basic'],
+    args: [...(packaged === undefined ? [appDir] : []), `--user-data-dir=${userData}`, '--password-store=basic'],
+    ...(packaged === undefined ? {} : { executablePath: packaged }),
     // An OAuth client, so Drive sync is offered - Google itself is answered by answerRequests.
     env: {
       ...process.env,
