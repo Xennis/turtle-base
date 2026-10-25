@@ -1,4 +1,4 @@
-import { booksPlugin } from '@turtle-base/books-plugin';
+import { booksPlugin } from '@turtle-base/books';
 import type { Platform } from '@turtle-base/platform';
 import { createContext, use, type ReactNode } from 'react';
 
