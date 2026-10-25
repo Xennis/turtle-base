@@ -36,6 +36,16 @@ export async function createElectronPlatform(bridge: DesktopBridge): Promise<Pla
         bytes: new Blob([new Uint8Array(bytes)]).stream(),
       })),
     openFile: (name, displayName) => bridge.invoke('files:open', name, displayName),
+    findFlutterAppData: async () => {
+      const location = await bridge.invoke('flutter:find');
+      if (location === null) return undefined;
+      return {
+        location,
+        query: (sql) => bridge.invoke('flutter:query', sql),
+        listFiles: () => bridge.invoke('flutter:listFiles'),
+        readFile: async (name) => new Blob([new Uint8Array(await bridge.invoke('flutter:readFile', name))]).stream(),
+      };
+    },
     setSystemBarsDark: () => Promise.resolve(),
     googleAuth: (await bridge.invoke('googleAuth:available')) ? googleAuthOf(bridge) : undefined,
   };

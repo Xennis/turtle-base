@@ -82,6 +82,8 @@ export async function createCapacitorPlatform(): Promise<Platform> {
     },
     pickFiles,
     openFile,
+    // The Flutter app's data is imported on the desktop - phones get it through sync.
+    findFlutterAppData: () => Promise.resolve(undefined),
     // The style names the bars' background: light icons on a dark page.
     setSystemBarsDark: (dark) => SystemBars.setStyle({ style: dark ? SystemBarsStyle.Dark : SystemBarsStyle.Light }),
     googleAuth: googleAuthWith(prefs),
