@@ -2,7 +2,8 @@ import { mkdirSync } from 'node:fs';
 import { join, normalize, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { LoopbackGoogleAuthenticator } from '@turtle-base/crdt-file-sync-google-drive/desktop';
+import { LoopbackGoogleAuthenticator } from '@turtle-base/crdt-file-sync-google-drive';
+import { listenForRedirectOnNode } from '@turtle-base/crdt-file-sync-google-drive/desktop';
 import { contentSecurityPolicy, desktopFileScheme } from '@turtle-base/platform';
 import { createNodeSqlDriver } from '@turtle-base/platform/node';
 import { app, BrowserWindow, net, protocol, shell } from 'electron';
@@ -104,6 +105,7 @@ function createGoogleAuth(secrets: SecretsFile): LoopbackGoogleAuthenticator | u
     // net.fetch looked up per call, so a stub of it (see e2e/smoke.e2e.ts) answers this too.
     fetch: (input, init) => net.fetch(input instanceof URL ? input.href : input, init),
     openBrowser: (url) => shell.openExternal(url),
+    listenForRedirect: listenForRedirectOnNode,
   });
 }
 

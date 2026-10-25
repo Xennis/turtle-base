@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, test } from 'vite-plus/test';
 
 import { GoogleAuthError, LoopbackGoogleAuthenticator } from './loopback-google-authenticator.ts';
+import { listenForRedirectOnNode } from './node-redirect-listener.ts';
 
 /** Google's token endpoint: hands out tokens, and remembers what it was sent. */
 class FakeTokenEndpoint {
@@ -26,6 +27,7 @@ function authenticatorOn(endpoint: FakeTokenEndpoint, secrets = new MemorySecret
     clientSecret: 'client-secret',
     secrets,
     fetch: endpoint.fetch,
+    listenForRedirect: listenForRedirectOnNode,
     // The user agrees right away: the browser follows the redirect back to the app.
     openBrowser: (url) => {
       const page = new URL(url);
@@ -71,6 +73,7 @@ describe('signIn()', () => {
       clientSecret: 'client-secret',
       secrets: new MemorySecretStorage(),
       fetch: endpoint.fetch,
+      listenForRedirect: listenForRedirectOnNode,
       openBrowser: (url) => {
         const page = new URL(url);
         const redirect = new URL(page.searchParams.get('redirect_uri') ?? '');
