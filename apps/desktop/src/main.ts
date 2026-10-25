@@ -11,6 +11,7 @@ import { DiskFileDirectory } from './file-directory.ts';
 import { registerIpcHandlers } from './ipc-handlers.ts';
 import { PrefsFile } from './prefs-file.ts';
 import { SecretsFile } from './secrets-file.ts';
+import { titleBarOptions } from './title-bar.ts';
 
 /** The renderer is served from here, not from file:// - a real origin, and nothing else of the disk reachable. */
 const appOrigin = 'app://turtle';
@@ -69,6 +70,7 @@ function createWindow(): void {
     width: 1200,
     height: 800,
     title: 'turtle-base',
+    ...titleBarOptions,
     webPreferences: {
       preload: join(import.meta.dirname, 'preload.cjs'),
       contextIsolation: true,

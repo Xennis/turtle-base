@@ -47,11 +47,11 @@ export interface Platform {
   findFlutterAppData(): Promise<FlutterAppData | undefined>;
 
   /**
-   * Matches the system's bars around the app (Android's status and navigation
-   * bar, which the page lies behind) to a dark or light page. Nothing on the
-   * desktop, whose window frame follows the system.
+   * Matches what the system draws around the page to the app's theme: the
+   * desktop window's buttons (the page draws the title bar itself) and
+   * Android's status and navigation bars (the page lies behind them).
    */
-  setSystemBarsDark(dark: boolean): Promise<void>;
+  matchWindowChrome(colors: WindowChromeColors): Promise<void>;
 
   /**
    * Undefined when no OAuth client was configured for this platform - the
@@ -59,6 +59,13 @@ export interface Platform {
    * connect.
    */
   readonly googleAuth: GoogleAuthenticator | undefined;
+}
+
+export interface WindowChromeColors {
+  readonly dark: boolean;
+  /** As `#rrggbb`. */
+  readonly background: string;
+  readonly foreground: string;
 }
 
 export interface PickFilesOptions {

@@ -7,6 +7,7 @@ import { BrowserWindow, dialog, ipcMain, net, shell, type IpcMainInvokeEvent } f
 
 import type { DiskFileDirectory } from './file-directory.ts';
 import { FlutterDataFolder } from './flutter-data-folder.ts';
+import { matchTitleBar } from './title-bar.ts';
 import type { PrefsFile } from './prefs-file.ts';
 import type { SecretsFile } from './secrets-file.ts';
 
@@ -104,6 +105,10 @@ export function registerIpcHandlers(options: {
   handle('flutter:query', (statement) => flutterFolder().query(statement));
   handle('flutter:listFiles', () => flutterFolder().listFiles());
   handle('flutter:readFile', (name) => flutterFolder().readFile(name));
+
+  handle('window:matchChrome', ({ background, foreground }) => {
+    for (const window of BrowserWindow.getAllWindows()) matchTitleBar(window, background, foreground);
+  });
 
   handle('fetch', async (request) => {
     const response = await net.fetch(request.url, {
