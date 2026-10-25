@@ -14,7 +14,7 @@ export default defineConfig({
       typeAware: true,
       typeCheck: true,
     },
-    ignorePatterns: ['**/dist/**', 'apps/turtle_base/**', 'packages/*_*/**'],
+    ignorePatterns: ['**/dist/**'],
     rules: {
       'typescript/no-explicit-any': 'error',
       'typescript/no-non-null-assertion': 'error',
@@ -62,7 +62,7 @@ export default defineConfig({
     semi: true,
     sortPackageJson: true,
     // Docs outside the TypeScript members keep their own hand formatting.
-    ignorePatterns: ['**/dist/**', 'apps/turtle_base/**', 'packages/*_*/**', 'ops/**', '*.md', 'pnpm-lock.yaml'],
+    ignorePatterns: ['**/dist/**', 'ops/**', '*.md', 'pnpm-lock.yaml'],
   },
   test: {
     projects: ['packages/*/vite.config.ts', 'apps/*/vite.config.ts'],

@@ -109,7 +109,7 @@ export class OpenLibraryClient {
 
 const answerSchema = v.object({ docs: v.array(v.unknown()) });
 
-/** Like Dart's `whereType<String>()`: other items are dropped, not fatal. */
+/** Only the strings of `items` - other items are dropped, not fatal. */
 const strings = v.fallback(
   v.pipe(
     v.array(v.unknown()),

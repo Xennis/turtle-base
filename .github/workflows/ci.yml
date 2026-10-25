@@ -10,37 +10,12 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: jdx/mise-action@v5
-
-      - name: Install Flutter dependencies
-        run: flutter pub get
-        working-directory: apps/turtle_base
-
-      # Generated files (*.g.dart) are gitignored and not present here, so
-      # only hand-written code is checked.
-      - name: Check Dart formatting
-        run: mise run format-check
-
-      - name: Generate code
-        run: mise run generate
-
-      - name: Analyze
-        run: mise run analyze
-
-      - name: Test
-        run: mise run test
-
   ts-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      # Only the TypeScript tools - Flutter isn't needed for this job.
+      # Only what the checks need - not e.g. OpenTofu.
       - uses: jdx/mise-action@v5
         with:
           install_args: node pnpm
