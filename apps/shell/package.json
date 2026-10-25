@@ -1,0 +1,14 @@
+{
+  "name": "@turtle-base/shell",
+  "private": true,
+  "description": "The Tauri shell of turtle-base (Linux, macOS, Android) - the native side of the app's Platform.",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "catalog:",
+    "@types/node": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

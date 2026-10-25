@@ -1,0 +1,38 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the app's page may use - nothing of the disk but its own files, nothing of the network but https.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-theme",
+    "os:allow-platform",
+    "store:default",
+    "dialog:allow-open",
+    "opener:allow-open-url",
+    "opener:allow-default-urls",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "$APPCACHE/open/**" }]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://*" }]
+    },
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-read-dir",
+    "fs:allow-stat",
+    "fs:allow-exists",
+    "fs:allow-rename",
+    "fs:allow-remove",
+    "fs:allow-mkdir",
+    "fs:allow-copy-file",
+    "fs:allow-open",
+    "fs:allow-read",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA/files" }, { "path": "$APPDATA/files/**" }, { "path": "$APPCACHE/open/**" }]
+    }
+  ]
+}
