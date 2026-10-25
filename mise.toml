@@ -2,6 +2,8 @@
 node = "24.22.1"
 opentofu = "1.12.0"
 pnpm = "12.15.0"
+# The Tauri shell (apps/shell) - with the targets of its Android build.
+rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android" }
 
 [tasks.install]
 description = "Install the dependencies of the workspace"
