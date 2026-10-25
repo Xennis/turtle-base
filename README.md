@@ -1,22 +1,36 @@
 # turtle-base
 
-Monorepo (Dart pub workspace) with the turtle-base Flutter app and the packages it is built from. Tool versions come from [mise](https://mise.jdx.dev/) (see `mise.toml`).
+Monorepo (pnpm workspace, TypeScript) with the turtle-base app, its desktop and Android shells, and the packages it is built from. Tool versions come from [mise](https://mise.jdx.dev/) (see `mise.toml`).
 
-| Path                                                                       | What                                                                                             |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [apps/turtle_base](apps/turtle_base)                                        | The Flutter app (Linux, macOS, Android)                                                          |
-| [packages/crdt_file_sync_transport](packages/crdt_file_sync_transport)      | `SyncTransport` interface that storage adapters implement                                        |
-| [packages/crdt_file_sync_google_drive](packages/crdt_file_sync_google_drive) | Google Drive storage adapter (optional) - incl. its OAuth configuration                          |
-| [ops/infra](ops/infra)                                                      | Google Cloud setup (OpenTofu + manual checklist)                                                 |
+| Path                                                                       | What                                                                                  |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [apps/turtle-base](apps/turtle-base)                                       | The app - React UI and app logic, shown by both shells                                |
+| [apps/desktop](apps/desktop)                                               | The desktop shell (Electron) for Linux and macOS                                      |
+| [apps/mobile](apps/mobile)                                                 | The Android shell (Capacitor)                                                         |
+| [packages/platform](packages/platform)                                     | The `Platform` interface the shells implement                                         |
+| [packages/sql-crdt](packages/sql-crdt)                                     | Last-writer-wins CRDT on SQLite (Kysely), the base of the sync                        |
+| [packages/crdt-file-sync-transport](packages/crdt-file-sync-transport)     | `SyncTransport` interface that storage adapters implement                             |
+| [packages/crdt-file-sync-google-drive](packages/crdt-file-sync-google-drive) | Google Drive storage adapter (optional) - incl. its sign-in and OAuth configuration |
+| [packages/field-types](packages/field-types), [packages/plugin-api](packages/plugin-api) | Field variants and the API plugins are written against                |
+| [packages/books](packages/books)                                           | The Books plugin (reading list, Open Library lookup)                                  |
+| [ops/infra](ops/infra)                                                     | Google Cloud setup (OpenTofu + manual checklist)                                      |
 
-Run `flutter pub get` in the repo root (one shared `pubspec.lock`), then e.g. `mise run run-linux`. Google Drive sync is optional and configured via env vars - see [its README](packages/crdt_file_sync_google_drive/README.md#configuration).
+Run `mise run install` in the repo root, then e.g. `mise run run-desktop` (`mise tasks` lists the others). Google Drive sync is optional and configured via env vars - see [its README](packages/crdt-file-sync-google-drive/README.md#configuration).
 
-New storage backends (e.g. another cloud) go into their own `packages/crdt_file_sync_<storage>` package that depends on `crdt_file_sync_transport`.
+New storage backends (e.g. another cloud) go into their own `packages/crdt-file-sync-<storage>` package that depends on `crdt-file-sync-transport`.
+
+## From the Flutter app
+
+turtle-base was a Flutter app before. Its data is taken over once, on the desktop: Settings → "Flutter app" imports its database and files (read-only - the Flutter app's data stays as it is). Other devices then get it through sync, which uses a Drive folder of its own (`turtle-base-sync-v3`), apart from the Flutter app's.
+
+## Releases
+
+Pushing a tag `vX.Y.Z+N` runs [.github/workflows/release.yml](.github/workflows/release.yml): a Linux AppImage and an unsigned macOS `.dmg` (electron-builder), and an Android APK with `versionName` `X.Y.Z` and `versionCode` `N`. `mise run package-desktop` packages the desktop app locally.
 
 ## Android release signing
 
-Google Sign-In in Android release builds requires the release APK to be signed with a key whose SHA-1 fingerprint is registered on the Android OAuth client - see [ops/infra/README.md](ops/infra/README.md#4-oauth-client---android). Locally this is configured via a gitignored `apps/turtle_base/android/key.properties` (see `apps/turtle_base/android/app/build.gradle.kts`; falls back to debug signing if absent). In CI, [.github/workflows/release.yml](.github/workflows/release.yml) builds that file from the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` repo secrets plus the `ANDROID_KEY_ALIAS` repo variable.
+Google Sign-In in Android release builds requires the release APK to be signed with a key whose SHA-1 fingerprint is registered on the Android OAuth client - see [ops/infra/README.md](ops/infra/README.md#4-oauth-client---android). Locally this is configured via a gitignored `apps/mobile/android/key.properties` (see `apps/mobile/android/app/build.gradle`; falls back to debug signing if absent). In CI, the release workflow builds that file from the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` repo secrets plus the `ANDROID_KEY_ALIAS` repo variable.
 
 ## System dependencies (Linux)
 
-`flutter_secure_storage` stores AI API keys via the freedesktop.org Secret Service (libsecret) on Linux. Install the packages listed under "Linux" on <https://pub.dev/packages/flutter_secure_storage#linux> (dev + runtime libsecret packages) and make sure a keyring service (e.g. GNOME Keyring) is running, or reading/writing a key will fail.
+The desktop app keeps secrets (AI API keys, the Drive sign-in) encrypted with Electron's `safeStorage`, which uses the freedesktop.org Secret Service on Linux: a keyring service (e.g. GNOME Keyring or KWallet) must be running, or saving a key fails.

@@ -9,46 +9,36 @@ Code (identifiers, comments) is always written in English.
 Format: `type(scope): Description`
 
 - Types: `chore`, `feat`, `fix`
-- Scope: default `app`; use the platform folder name (e.g. `linux`, `android`) when a change only touches that platform folder, or the package folder name (e.g. `crdt_file_sync_google_drive`) when a change only touches that package
+- Scope: default `app`; use the app folder name (e.g. `desktop`, `mobile`) when a change only touches that app, or the package folder name (e.g. `crdt-file-sync-google-drive`) when a change only touches that package
 
-Example: `chore(app): Init Flutter project with Linux as platform`
+Example: `feat(desktop): Package the app with electron-builder`
 
 ## Tooling
 
-Tool versions (e.g. Flutter) are managed via [mise](https://mise.jdx.dev/) — see `mise.toml`.
-
-## Claude Code skills
-
-Skill content itself isn't checked in - only `skills-lock.json` is tracked. Run
-`mise run skills-install` to (re)install the skills it references into `.claude/skills/`
-(gitignored).
+Tool versions (Node, pnpm, OpenTofu) are managed via [mise](https://mise.jdx.dev/) - see `mise.toml`. The workspace uses Vite+ (`vp`) for checks, tests and builds, with strict TypeScript.
 
 ## Platforms
 
-Linux, macOS and Android are the supported Flutter platforms. Don't run
-`flutter create --platforms=...` for other platforms (e.g. web, iOS) and don't add platform
-folders like `web/` — verify changes via `mise run run-linux` (runs from `apps/turtle_base`) and, for anything
-responsive/layout-related, also on Android (emulator `vPixel_10`, or `flutter run -d android`)
-and macOS (`flutter run -d macos`, or `mise run run-macos` for Drive sync config); fall back to
-`flutter analyze`/`flutter test` when no display is available.
+Linux, macOS and Android are the supported platforms: one React app, run by an Electron shell on the desktop and a Capacitor shell on Android. Don't add other platforms (e.g. iOS, web) - verify changes via `mise run run-desktop` and `mise run desktop-smoke`, for anything responsive/layout-related also in a narrow window and on Android (`mise run run-android`, or `mise run mobile-smoke` on an emulator); fall back to `mise run check`/`mise run test` when no display is available.
 
 ## Monorepo
 
-The repo is a Dart pub workspace (root `pubspec.yaml`, one shared `pubspec.lock`; run `flutter pub get` in the root):
+The repo is a pnpm workspace (root `package.json`, one shared `pnpm-lock.yaml`; run `mise run install` in the root). Dependency versions are kept once, in the catalog of `pnpm-workspace.yaml` (members refer to them as `catalog:`).
 
-- `apps/turtle_base/`: the Flutter app (platform folders live here, so run `flutter` commands from this folder or use the mise tasks)
-- `packages/<name>/`: local packages, each with `resolution: workspace` and listed under `workspace:` in the root `pubspec.yaml`
-- `dependency_overrides` live only in the root `pubspec.yaml` (members' overrides are ignored)
+- `apps/turtle-base/`: the app - React UI and app logic, the page both shells show
+- `apps/desktop/`: the Electron shell - main process and preload, packaged with electron-builder
+- `apps/mobile/`: the Capacitor shell - the Android project and its own plugins
+- `packages/<name>/`: local packages
 
-Dependencies point only from the app to packages, never back. Storage adapters are `packages/crdt_file_sync_<storage>` packages that implement `SyncTransport` from `crdt_file_sync_transport`; the CRDT/sync logic (`SyncController`, `drift_crdt`) stays in the app. A package has a `README.md` for anything specific to it (e.g. its configuration) and exposes its API via one barrel file `lib/<name>.dart` (internals in `lib/src/`, test helpers in `lib/testing.dart`).
+Dependencies point from apps to packages, never back. The app talks to the platform it runs on only through the `Platform` interface of `packages/platform` (SQLite, files, prefs, secrets, network, sign-in); each shell implements it. Storage adapters are `packages/crdt-file-sync-<storage>` packages that implement `SyncTransport` from `crdt-file-sync-transport`; the CRDT/sync logic (`SyncController`, `sql-crdt`'s use) stays in the app. A package has a `README.md` for anything specific to it (e.g. its configuration) and exposes its API via one barrel file `src/index.ts` (internals in `src/`, test helpers in `src/testing.ts` as the `/testing` export).
 
-`mise run format`, `format-check`, `analyze` and `test` run over all members automatically.
+`mise run check`, `fix` and `test` run over all members automatically.
 
 ## Structure
 
-Each `apps/turtle_base/lib/features/<name>/` folder is split into:
+Each `apps/turtle-base/src/features/<name>/` folder is split into:
 
-- `data/`: repositories and DB-adjacent types (e.g. `*_repository.dart`, enums backing a column)
-- `widgets/`: everything UI-facing — views, dialogs, and UI-state `ChangeNotifier`s
+- `data/`: repositories and DB-adjacent types (e.g. `*-repository.ts`, types backing a column) - plain TypeScript, tested on `node:sqlite`
+- `widgets/`: everything UI-facing - views, dialogs, hooks and UI-state notifiers
 
-Only add the subfolders a feature actually needs (e.g. a feature with no UI state doesn't need `widgets/`). No further nesting (e.g. no separate `screens/` or `dialogs/`) — filenames already carry that distinction via suffixes like `_repository.dart`, `_view.dart`, `_dialog.dart`.
+Only add the subfolders a feature actually needs (e.g. a feature with no UI doesn't need `widgets/`). No further nesting (e.g. no separate `screens/` or `dialogs/`) - file names are kebab-case and carry that distinction via suffixes like `-repository.ts`, `-view.tsx`, `-dialog.tsx`, `-page.tsx`. Tests sit next to the code they test (`*.test.ts`).

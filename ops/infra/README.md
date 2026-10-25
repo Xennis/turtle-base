@@ -62,7 +62,7 @@ Google Auth Platform → **Clients** tab → Create client:
 - Name: anything recognizable, e.g. "turtle-base desktop".
 - Download the resulting **Client ID** and **Client secret**.
 
-Used by `DesktopDriveAuthenticator`'s loopback flow (`127.0.0.1`,
+Used by `LoopbackGoogleAuthenticator`'s loopback flow (`127.0.0.1`,
 arbitrary free port) - Google's Desktop app client type doesn't require
 pre-registering a fixed redirect URI. Google doesn't treat this secret
 as confidential for installed apps (see
@@ -75,8 +75,10 @@ app - but it still doesn't belong hardcoded/committed; see step 5.
 Same **Clients** tab → Create client:
 
 - Application type: **Android**.
-- Package name: matches `applicationId` in
-  `apps/turtle_base/android/app/build.gradle.kts`.
+- Package name: matches `appId` in `apps/mobile/capacitor.config.ts`
+  (`org.xennis.apps.turtlebase`). The preview build, which installs next
+  to an installed release, has its own: `org.xennis.apps.turtlebase.ts`
+  - give it a client of its own, with the debug key's fingerprint.
 - SHA-1 certificate fingerprint: from your signing key. For a local
   debug build:
   ```sh
@@ -104,7 +106,7 @@ Same **Clients** tab → Create client:
   keystore file and passwords, so it doesn't need encryption or log
   masking; add it under Settings → Secrets and variables → Actions →
   Variables). Locally all four are set via a gitignored
-  `apps/turtle_base/android/key.properties` (see `apps/turtle_base/android/app/build.gradle.kts`).
+  `apps/mobile/android/key.properties` (see `apps/mobile/android/app/build.gradle`).
 
   `ANDROID_KEYSTORE_BASE64` is the keystore file base64-encoded as a single
   line (the workflow decodes it back with `base64 -d`):
@@ -115,37 +117,20 @@ Same **Clients** tab → Create client:
   instead.) Copy the output into the `ANDROID_KEYSTORE_BASE64` GitHub
   secret.
 
-Only the **Client ID** is needed (no secret - `google_sign_in` on
-Android verifies via the signing certificate, not a client secret).
-
-## 4a. OAuth client - Web application (also needed for Android!)
-
-Counterintuitive but required: `google_sign_in` v7's Credential
-Manager-based flow on Android needs a **second**, `serverClientId`
-OAuth client in addition to the Android one above - even though this
-app never requests server-side/offline access. Without it, sign-in
-fails with `GoogleSignInException(code: clientConfigurationError,
-"serverClientId must be provided on Android")`.
-
-Same **Clients** tab → Create client:
-
-- Application type: **Web application**.
-- Name: anything recognizable, e.g. "turtle-base android server
-  client".
-- No redirect URI needed - this client is only ever referenced by its
-  ID, never used to complete a redirect flow itself.
-- Only the **Client ID** is needed (goes into
-  `DriveClientConfig.androidServerClientId`, passed as `serverClientId`
-  to `GoogleSignIn.instance.initialize()` - see
-  `AndroidDriveAuthenticator`'s doc comment).
+The app references neither a client ID nor a secret on Android: Play
+services' `AuthorizationClient` (see `GoogleAuthPlugin.java` in
+`apps/mobile`) finds the client by package name and signing certificate.
+The Web application client the Flutter app needed for `google_sign_in`
+(its `serverClientId`) isn't used anymore.
 
 ## 5. Pass the values to the app
 
-The app reads these as `--dart-define` build variables rather than a
-committed/copied config file - see the
-[`crdt_file_sync_google_drive` README's "Configuration"](../../packages/crdt_file_sync_google_drive/README.md#configuration)
-section for the variable names and how to supply them locally and in
-CI.
+Only the desktop app needs values: the Desktop app client's ID and
+secret, as the environment variables `DRIVE_DESKTOP_CLIENT_ID` and
+`DRIVE_DESKTOP_CLIENT_SECRET` - read when the app starts, and bundled in
+when it's built for a release. See the
+[`crdt-file-sync-google-drive` README's "Configuration"](../../packages/crdt-file-sync-google-drive/README.md#configuration)
+section for supplying them locally and in CI.
 
 ## Why only the API is automated
 
