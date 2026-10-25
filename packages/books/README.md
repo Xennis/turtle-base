@@ -1,4 +1,4 @@
-# @turtle-base/books-plugin
+# @turtle-base/books
 
 The Books plugin for turtle-base: a reading list instead of Goodreads. The package exports `booksPlugin` (see `@turtle-base/plugin-api`), which the app registers in its `PluginRegistry` (see the app's entry point). Adding it on the Plugins page creates a space "Books" with:
 
@@ -12,5 +12,3 @@ It also contributes one field type variant:
 - `books.isbn` (`isbnVariant`): a text field holding an ISBN-10 or ISBN-13. Input is normalized (separators removed), validated by its check digit and stored as digits only, e.g. `9783453317178`. It's shown with the prefix split off (`978-3453317178`) and links to Open Library.
 
 A device without this package reads the reading list as an ordinary collection and ISBN fields as plain text - it only lacks the "Add book" button.
-
-The folder is called `books-plugin` while the Dart package `books` still lives next to it, and goes back to `books` once the Flutter app is gone.

@@ -1,4 +1,4 @@
-import { booksPlugin } from '@turtle-base/books-plugin';
+import { booksPlugin } from '@turtle-base/books';
 import { textVariant, type CollectionTemplate, type TurtlePlugin } from '@turtle-base/plugin-api';
 import { describe, expect, test } from 'vite-plus/test';
 
