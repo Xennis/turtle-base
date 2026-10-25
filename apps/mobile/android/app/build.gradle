@@ -40,6 +40,15 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        // A release build that installs next to the Flutter app (own id and name, see src/preview) - to try the
+        // TypeScript app on a phone before it replaces the Flutter one.
+        preview {
+            initWith release
+            applicationIdSuffix '.ts'
+            versionNameSuffix '-ts'
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+        }
     }
 }
 
