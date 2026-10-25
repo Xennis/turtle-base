@@ -3,24 +3,24 @@ node = "24.22.1"
 opentofu = "1.12.0"
 pnpm = "12.15.0"
 
-[tasks.ts-install]
-description = "Install the dependencies of the TypeScript workspace"
+[tasks.install]
+description = "Install the dependencies of the workspace"
 run = "pnpm install"
 
-[tasks.ts-check]
-description = "Format check, lint and type check the TypeScript workspace (Vite+)"
+[tasks.check]
+description = "Format check, lint and type check the workspace (Vite+) - used by CI"
 run = "pnpm exec vp check"
 
-[tasks.ts-fix]
-description = "Format the TypeScript workspace and apply lint autofixes (Vite+)"
+[tasks.fix]
+description = "Format the workspace and apply lint autofixes (Vite+)"
 run = "pnpm exec vp check --fix"
 
-[tasks.ts-test]
-description = "Run the tests of the TypeScript workspace (Vite+)"
+[tasks.test]
+description = "Run the tests of the workspace (Vite+)"
 run = "pnpm exec vp test"
 
 [tasks.run-desktop]
-description = "Build the TypeScript app and start it in Electron"
+description = "Build the app and start it in Electron (Linux, macOS)"
 run = """
 set -e
 pnpm --dir apps/turtle-base exec vp build
@@ -29,7 +29,7 @@ pnpm --dir apps/desktop exec electron .
 """
 
 [tasks.dev-desktop]
-description = "Start the TypeScript app in Electron with the renderer from Vite's dev server (hot reload)"
+description = "Start the app in Electron with the renderer from Vite's dev server (hot reload)"
 run = """
 set -e
 pnpm --dir apps/desktop exec vp pack
@@ -40,7 +40,7 @@ TURTLE_DEV_SERVER_URL=http://localhost:5173/ pnpm --dir apps/desktop exec electr
 """
 
 [tasks.desktop-smoke]
-description = "Build the TypeScript app and smoke-test it in Electron (needs a display)"
+description = "Build the app and smoke-test it in Electron (needs a display)"
 run = """
 set -e
 pnpm --dir apps/turtle-base exec vp build
@@ -48,8 +48,17 @@ pnpm --dir apps/desktop exec vp pack
 pnpm --dir apps/desktop exec vpx e2e/smoke.e2e.ts
 """
 
-[tasks.run-android-ts]
-description = "Build the TypeScript app and run it in the Capacitor Android shell (asks for the device)"
+[tasks.package-desktop]
+description = "Package the desktop app for this OS with electron-builder (apps/desktop/release) - unsigned, version 0.0.0"
+run = """
+set -e
+pnpm --dir apps/turtle-base exec vp build
+pnpm --dir apps/desktop exec vp pack
+pnpm --dir apps/desktop exec electron-builder --publish never
+"""
+
+[tasks.run-android]
+description = "Build the app and run it in the Capacitor Android shell (asks for the device)"
 run = """
 set -e
 export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
@@ -58,7 +67,7 @@ pnpm --dir apps/mobile exec cap run android
 """
 
 [tasks.mobile-smoke]
-description = "Build the TypeScript app, install it on ANDROID_SERIAL (an emulator - its app data is cleared) and smoke-test it"
+description = "Build the app, install it on ANDROID_SERIAL (an emulator - its app data is cleared) and smoke-test it"
 run = """
 set -e
 : "${ANDROID_SERIAL:?set ANDROID_SERIAL to the emulator to test on, e.g. emulator-5554}"
