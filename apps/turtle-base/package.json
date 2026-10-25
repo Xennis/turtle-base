@@ -25,6 +25,7 @@
     "@noble/hashes": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-table": "catalog:",
+    "@tanstack/react-virtual": "catalog:",
     "@turtle-base/books-plugin": "workspace:*",
     "@turtle-base/crdt-file-sync-google-drive": "workspace:*",
     "@turtle-base/crdt-file-sync-transport": "workspace:*",
