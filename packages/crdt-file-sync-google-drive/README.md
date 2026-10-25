@@ -6,11 +6,11 @@ It talks to the Drive REST API through plain `fetch` - the official client libra
 
 ## Sign-in
 
-The sign-in is platform-specific. For Linux and macOS this package has `LoopbackGoogleAuthenticator` under `@turtle-base/crdt-file-sync-google-drive/desktop`: the "installed app" loopback flow (RFC 8252) with PKCE, for Node - Electron's main process runs it and hands the access token to the app over IPC. It keeps only the refresh token, in the platform's `SecretStorage`. Android uses native Google Sign-In in the Capacitor shell.
+The sign-in is platform-specific. For Linux and macOS this package has `LoopbackGoogleAuthenticator` under `@turtle-base/crdt-file-sync-google-drive/desktop`: the "installed app" loopback flow (RFC 8252) with PKCE, for Node - Electron's main process runs it and hands the access token to the app over IPC. It keeps only the refresh token, in the platform's `SecretStorage`. Android uses Play services' authorization in the Capacitor shell (`GoogleAuthPlugin.java` in `apps/mobile`), which needs no configuration in the app.
 
 ## Configuration
 
-Drive sync needs a "Desktop app" OAuth client. The desktop shell reads it from the environment when it starts; without it, Drive sync is disabled and its UI stays hidden in Settings:
+Drive sync needs a "Desktop app" OAuth client. The desktop shell reads it from the environment when it starts, else uses the one bundled when it was built (see `apps/desktop/vite.config.ts` - the release pipeline bundles the repo secrets of the same names); without either, Drive sync is disabled and its UI stays hidden in Settings:
 
 | Variable                      | Needed on    |
 | ----------------------------- | ------------ |
