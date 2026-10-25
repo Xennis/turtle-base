@@ -19,8 +19,11 @@ const appOrigin = 'app://turtle';
 /** Set by `mise run dev-desktop`: load the renderer from Vite's dev server instead, with hot reload. */
 const devServerUrl = process.env['TURTLE_DEV_SERVER_URL'];
 
-/** The built renderer (`apps/turtle-base/dist`), unless packaged elsewhere. */
-const rendererDir = resolve(process.env['TURTLE_RENDERER_DIR'] ?? join(import.meta.dirname, '../../turtle-base/dist'));
+/** The built renderer: in the packaged app among its resources (see electron-builder.yml), else `apps/turtle-base/dist`. */
+const rendererDir = resolve(
+  process.env['TURTLE_RENDERER_DIR'] ??
+    (app.isPackaged ? join(process.resourcesPath, 'renderer') : join(import.meta.dirname, '../../turtle-base/dist')),
+);
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } },
   { scheme: desktopFileScheme, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
@@ -58,6 +61,8 @@ function createWindow(): void {
     width: 1200,
     height: 800,
     title: 'turtle-base',
+    // Linux shows it in the dock and window switcher; macOS takes the bundle's.
+    icon: join(import.meta.dirname, '../resources/icon.png'),
     ...titleBarOptions,
     webPreferences: {
       preload: join(import.meta.dirname, 'preload.cjs'),
@@ -77,10 +82,16 @@ function createWindow(): void {
   void window.loadURL(devServerUrl ?? `${appOrigin}/index.html`);
 }
 
+/** A variable of the environment the app runs in - else the one it was built with (see vite.config.ts). */
+function fromEnvironment(name: string, bundled: string): string {
+  const value = process.env[name];
+  return value !== undefined && value.length > 0 ? value : bundled;
+}
+
 /** The Drive sync's sign-in, when an OAuth client is configured - see packages/crdt-file-sync-google-drive. */
 function createGoogleAuth(secrets: SecretsFile): LoopbackGoogleAuthenticator | undefined {
-  const clientId = process.env['DRIVE_DESKTOP_CLIENT_ID'] ?? '';
-  const clientSecret = process.env['DRIVE_DESKTOP_CLIENT_SECRET'] ?? '';
+  const clientId = fromEnvironment('DRIVE_DESKTOP_CLIENT_ID', bundledDriveClientId);
+  const clientSecret = fromEnvironment('DRIVE_DESKTOP_CLIENT_SECRET', bundledDriveClientSecret);
   if (clientId.length === 0 || clientSecret.length === 0) return undefined;
   return new LoopbackGoogleAuthenticator({
     clientId,
