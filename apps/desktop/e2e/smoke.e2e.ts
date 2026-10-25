@@ -1,6 +1,8 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright';
 
@@ -25,6 +27,37 @@ writeFileSync(
   ),
 );
 
+/**
+ * A Flutter app's data folder for the import: a space with a page holding a heading and the picture. Its
+ * tables as the Flutter app created them (drift's columns plus sql_crdt's), only those the import reads.
+ */
+const flutterData = join(userData, 'flutter');
+{
+  const hash = `sha256-${createHash('sha256').update(readFileSync(picture)).digest('hex')}`;
+  mkdirSync(join(flutterData, 'files'), { recursive: true });
+  writeFileSync(join(flutterData, 'files', hash), readFileSync(picture));
+  const audit = 'created_at INTEGER, updated_at INTEGER, created_by TEXT, updated_by TEXT, deleted_at INTEGER';
+  const crdt = 'is_deleted INTEGER DEFAULT 0, hlc TEXT, node_id TEXT, modified TEXT';
+  const row = "1784321678, 1784321678, 'flutter-user', 'flutter-user', NULL";
+  const stamp = "0, 'hlc', 'flutter-node', 'hlc'";
+  const database = new DatabaseSync(join(flutterData, 'turtle_base.sqlite'));
+  database.exec(`
+    CREATE TABLE users(id TEXT, name TEXT, created_at INTEGER, ${crdt});
+    CREATE TABLE spaces(${audit}, id TEXT, name TEXT, icon TEXT, position INTEGER, ${crdt});
+    CREATE TABLE collections(${audit}, id TEXT, space_id TEXT, name TEXT, icon TEXT, title_field_label TEXT, ${crdt});
+    CREATE TABLE fields(${audit}, id TEXT, collection_id TEXT, name TEXT, type TEXT, position INTEGER, config TEXT, ${crdt});
+    CREATE TABLE pages(${audit}, id TEXT, space_id TEXT, collection_id TEXT, parent_page_id TEXT, title TEXT, icon TEXT, properties TEXT, position INTEGER, ${crdt});
+    CREATE TABLE blocks(${audit}, id TEXT, page_id TEXT, parent_block_id TEXT, type TEXT, position INTEGER, content TEXT, ${crdt});
+    CREATE TABLE attachments(${audit}, id TEXT, page_id TEXT, field_id TEXT, file_hash TEXT, name TEXT, mime_type TEXT, size INTEGER, width INTEGER, height INTEGER, position INTEGER, ${crdt});
+    INSERT INTO spaces VALUES (${row}, 'garden', 'Garden', NULL, 0, ${stamp});
+    INSERT INTO pages VALUES (${row}, 'tomatoes', 'garden', NULL, NULL, 'Tomatoes', NULL, '{}', 0, ${stamp});
+    INSERT INTO blocks VALUES (${row}, 'b1', 'tomatoes', NULL, 'heading', 0, '{"delta":[{"insert":"Planting"}],"level":2}', ${stamp});
+    INSERT INTO blocks VALUES (${row}, 'b2', 'tomatoes', NULL, 'attachment', 1, '{"attachmentId":"a1"}', ${stamp});
+    INSERT INTO attachments VALUES (${row}, 'a1', 'tomatoes', NULL, '${hash}', 'seedling.png', 'image/png', 79, 16, 16, 0, ${stamp});
+  `);
+  database.close();
+}
+
 /** The file dialog is native - Playwright can't click it, so the main process gets one that picks `path`. */
 async function pickFilesFrom(app: ElectronApplication, path: string) {
   await app.evaluate(({ dialog }, filePath) => {
@@ -40,7 +73,12 @@ async function launch() {
     // No OS keyring for the secrets - there may be none where this runs (see below).
     args: [appDir, `--user-data-dir=${userData}`, '--password-store=basic'],
     // An OAuth client, so Drive sync is offered - Google itself is answered by answerRequests.
-    env: { ...process.env, DRIVE_DESKTOP_CLIENT_ID: 'smoke-client', DRIVE_DESKTOP_CLIENT_SECRET: 'smoke-secret' },
+    env: {
+      ...process.env,
+      DRIVE_DESKTOP_CLIENT_ID: 'smoke-client',
+      DRIVE_DESKTOP_CLIENT_SECRET: 'smoke-secret',
+      TURTLE_FLUTTER_DATA_DIR: flutterData,
+    },
   });
   await pickFilesFrom(app, picture);
   await answerRequests(app);
@@ -276,6 +314,9 @@ try {
     .getByRole('status')
     .filter({ hasText: /^Connected$/ })
     .waitFor();
+  await first.page.getByRole('button', { name: 'Import from the Flutter app' }).click();
+  // No file counted: the picture is the one attached earlier - already in the store, stored once.
+  await first.page.getByText('Imported 1 space, 1 page.').waitFor();
   await screenshot(first.page, '3-settings-dark');
   await first.app.close();
 
@@ -293,6 +334,13 @@ try {
   await second.page.getByRole('button', { name: 'Disconnect' }).click();
   await second.page.getByRole('status').filter({ hasText: 'Not connected' }).waitFor();
   await addBook(second.page);
+  // The Flutter app's page, imported before the restart: its text in BlockNote, its picture in the store.
+  await second.page.getByRole('combobox', { name: 'Space' }).click();
+  await second.page.getByRole('option', { name: 'Garden' }).click();
+  await second.page.getByRole('button', { name: 'Tomatoes' }).click();
+  await second.page.locator('.bn-editor').getByRole('heading', { name: 'Planting' }).waitFor();
+  await second.page.locator('.bn-editor').getByRole('button', { name: 'Open seedling.png' }).locator('img').waitFor();
+  await screenshot(second.page, '7-imported');
   await second.page.getByRole('combobox', { name: 'Space' }).click();
   await second.page.getByRole('option', { name: 'Fitness' }).click();
   await second.page.getByRole('button', { name: 'Workouts' }).click();
