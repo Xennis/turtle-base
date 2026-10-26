@@ -7,6 +7,7 @@ import { fetch as shellFetch } from '@tauri-apps/plugin-http';
 import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import { platform } from '@tauri-apps/plugin-os';
 import { load } from '@tauri-apps/plugin-store';
+import mime from 'mime';
 import type {
   KeyValueStore,
   PickedFile,
@@ -18,6 +19,7 @@ import type {
   SqlValue,
 } from '@turtle-base/platform';
 
+import { androidGoogleAuth, androidPlatform } from './tauri-android.ts';
 import { filesIn } from './tauri-files.ts';
 import { findFlutterAppData } from './tauri-flutter-app-data.ts';
 import { desktopGoogleAuth } from './tauri-google-auth.ts';
@@ -25,35 +27,39 @@ import { desktopGoogleAuth } from './tauri-google-auth.ts';
 /**
  * The {@link Platform} of the Tauri shell (apps/shell) on the desktop and on
  * Android: Tauri's plugins, plus the shell's own commands for SQL and
- * secrets.
+ * secrets and, on Android, its AndroidPlatformPlugin.kt.
  */
 export async function createTauriPlatform(): Promise<Platform> {
   const data = await appDataDir();
   const cache = await appCacheDir();
   const os = platform();
+  const android = os === 'android';
+  const prefs = await loadPrefs();
   const shellIo: ShellIo = {
     secrets,
     // Runs in the shell, so CORS doesn't apply.
     fetch: shellFetch,
     openExternal: (url) => openUrl(url),
-    pickFiles,
+    pickFiles: (options) => pickFiles(options, android),
   };
   // Only in the smoke test's build (TURTLE_E2E) - otherwise the bundler drops it.
   const io = e2eBuild ? (await import('./e2e-hooks.ts')).withE2eHooks(shellIo) : shellIo;
   return {
     ...io,
-    kind: os === 'android' ? 'android' : 'desktop',
+    kind: android ? 'android' : 'desktop',
     // macOS lays the window's buttons over the page (see tauri.macos.conf.json), Linux draws its own title bar.
     pageTitleBar: os === 'macos',
     sql,
-    prefs: await loadPrefs(),
+    prefs,
     files: filesIn(`${data}/files`),
-    openFile: (name, displayName) => openFile(`${data}/files/${name}`, `${cache}/open`, displayName),
+    openFile: (name, displayName) => openFile(`${data}/files/${name}`, `${cache}/open`, displayName, android),
     // The Flutter app's data is imported on the desktop - phones get it through sync.
-    findFlutterAppData: os === 'android' ? () => Promise.resolve(undefined) : findFlutterAppData,
-    // The title bar (Linux) and the window's buttons (macOS) follow the window's theme.
-    matchWindowChrome: ({ dark }) => getCurrentWindow().setTheme(dark ? 'dark' : 'light'),
-    googleAuth: os === 'android' ? undefined : desktopGoogleAuth(io),
+    findFlutterAppData: android ? () => Promise.resolve(undefined) : findFlutterAppData,
+    // Android's status and navigation bars (the page lies behind them); the desktop's title bar (Linux) and
+    // window buttons (macOS) follow the window's theme.
+    matchWindowChrome: ({ dark }) =>
+      android ? androidPlatform('setSystemBarsStyle', { dark }) : getCurrentWindow().setTheme(dark ? 'dark' : 'light'),
+    googleAuth: android ? androidGoogleAuth(prefs) : desktopGoogleAuth(io),
   };
 }
 
@@ -120,7 +126,11 @@ const secrets: SecretStorage = {
   remove: (key) => invoke('secrets_remove', { key }),
 };
 
-async function pickFiles({ multiple, extensions, imagesOnly }: PickFilesOptions): Promise<PickedFile[]> {
+/** On Android the picker hands out content:// URIs - their names come from the system. */
+async function pickFiles(
+  { multiple, extensions, imagesOnly }: PickFilesOptions,
+  android: boolean,
+): Promise<PickedFile[]> {
   const picked: string | string[] | null = await open({
     multiple,
     ...(extensions === undefined ? {} : { filters: [{ name: 'Files', extensions: [...extensions] }] }),
@@ -128,12 +138,13 @@ async function pickFiles({ multiple, extensions, imagesOnly }: PickFilesOptions)
   });
   const paths = picked === null ? [] : typeof picked === 'string' ? [picked] : picked;
   return Promise.all(
-    paths.map(async (path) => ({ name: nameOf(path), bytes: new Blob([await readFile(path)]).stream() })),
+    paths.map(async (path) => ({
+      name: android
+        ? (await androidPlatform<{ name: string }>('displayName', { uri: path })).name
+        : path.slice(path.lastIndexOf('/') + 1),
+      bytes: new Blob([await readFile(path)]).stream(),
+    })),
   );
-}
-
-function nameOf(path: string): string {
-  return decodeURIComponent(path.slice(path.lastIndexOf('/') + 1));
 }
 
 /**
@@ -141,11 +152,13 @@ function nameOf(path: string): string {
  * the store names files by hash, without extension, and the system picks the
  * app by the name.
  */
-async function openFile(path: string, folder: string, displayName: string): Promise<void> {
+async function openFile(path: string, folder: string, displayName: string, android: boolean): Promise<void> {
   const copyFolder = `${folder}/${crypto.randomUUID()}`;
   await mkdir(copyFolder, { recursive: true });
   // The name came from another device through sync - no path in it.
   const copy = `${copyFolder}/${displayName.replaceAll('/', '_')}`;
   await copyFile(path, copy);
-  await openPath(copy);
+  // Android lets other apps at a file only through a content:// URI - the plugin shares it through its FileProvider.
+  if (android) await androidPlatform('openFile', { path: copy, mimeType: mime.getType(displayName) });
+  else await openPath(copy);
 }

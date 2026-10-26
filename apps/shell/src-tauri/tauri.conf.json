@@ -2,25 +2,43 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "turtle-base",
   "mainBinaryName": "turtle-base",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "identifier": "org.xennis.apps.turtlebase",
   "build": {
     "frontendDist": "../../turtle-base/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": { "script": "pnpm exec vp dev --port 5173 --strictPort", "cwd": "../../turtle-base" },
-    "beforeBuildCommand": { "script": "pnpm exec vp build", "cwd": "../../turtle-base" }
+    "beforeDevCommand": {
+      "script": "pnpm exec vp dev --port 5173 --strictPort",
+      "cwd": "../../turtle-base"
+    },
+    "beforeBuildCommand": {
+      "script": "pnpm exec vp build",
+      "cwd": "../../turtle-base"
+    }
   },
   "app": {
-    "windows": [{ "title": "turtle-base", "width": 1200, "height": 800 }],
+    "windows": [
+      {
+        "title": "turtle-base",
+        "width": 1200,
+        "height": 800
+      }
+    ],
     "security": {
       "csp": null,
-      "assetProtocol": { "enable": true, "scope": ["$APPDATA/files/*"] }
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/files/*"]
+      }
     }
   },
   "bundle": {
     "active": true,
     "targets": ["appimage", "dmg"],
     "category": "Productivity",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.png"]
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.png"],
+    "android": {
+      "minSdkVersion": 24
+    }
   }
 }
