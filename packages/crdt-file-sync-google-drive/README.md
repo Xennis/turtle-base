@@ -6,18 +6,18 @@ It talks to the Drive REST API through plain `fetch` - the official client libra
 
 ## Sign-in
 
-The sign-in is platform-specific. For Linux and macOS this package has `LoopbackGoogleAuthenticator`: the "installed app" loopback flow (RFC 8252) with PKCE, on WebCrypto and `fetch`. The server that catches the redirect is the platform's (`ListenForRedirect`) - a web view can't listen on a port; `@turtle-base/crdt-file-sync-google-drive/desktop` has one on Node. It keeps only the refresh token, in the platform's `SecretStorage`. Android uses Play services' authorization in the Capacitor shell (`GoogleAuthPlugin.java` in `apps/mobile`), which needs no configuration in the app.
+The sign-in is platform-specific. For Linux and macOS this package has `LoopbackGoogleAuthenticator`: the "installed app" loopback flow (RFC 8252) with PKCE, on WebCrypto and `fetch`. The server that catches the redirect is the platform's (`ListenForRedirect`) - a web view can't listen on a port, so the Tauri shell runs it (`loopback.rs`); `/testing` has one on Node. It keeps only the refresh token, in the platform's `SecretStorage`. Android uses Play services' authorization in the Tauri shell (`AndroidPlatformPlugin.kt`), which needs no configuration in the app.
 
 ## Configuration
 
-Drive sync needs a "Desktop app" OAuth client. The desktop shell reads it from the environment when it starts, else uses the one bundled when it was built (see `apps/desktop/vite.config.ts` - the release pipeline bundles the repo secrets of the same names); without either, Drive sync is disabled and its UI stays hidden in Settings:
+Drive sync needs a "Desktop app" OAuth client. The build bundles it into the app's page from its environment (see `apps/turtle-base/vite.config.ts` - the release pipeline bundles the repo secrets of the same names); without it, Drive sync is disabled on the desktop and its UI stays hidden in Settings:
 
 | Variable                      | Needed on    |
 | ----------------------------- | ------------ |
 | `DRIVE_DESKTOP_CLIENT_ID`     | Linux, macOS |
 | `DRIVE_DESKTOP_CLIENT_SECRET` | Linux, macOS |
 
-For local development, put them into `.mise.local.toml` in the repo root (see [.mise.local.toml.example](../../.mise.local.toml.example)) - `mise run run-desktop` then has them. For how to obtain the values, see [ops/infra/README.md](../../ops/infra/README.md).
+For local development, put them into `.mise.local.toml` in the repo root (see [.mise.local.toml.example](../../.mise.local.toml.example)) - `mise run run-desktop` builds with them. For how to obtain the values, see [ops/infra/README.md](../../ops/infra/README.md).
 
 ## Layout in Drive
 

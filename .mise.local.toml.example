@@ -1,6 +1,6 @@
 # Local, gitignored mise config - copy to `.mise.local.toml` and fill in your
 # own values. mise puts them into the environment of its tasks (see mise.toml),
-# where the desktop shell reads them - see
+# where the build bundles them into the app's page - see
 # packages/crdt-file-sync-google-drive/README.md for where they come from.
 # Without them the app runs with Drive sync disabled.
 [env]
