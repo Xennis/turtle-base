@@ -13,9 +13,8 @@ export interface SqlResult {
 }
 
 /**
- * One SQLite connection, as narrow as possible so every platform can offer
- * it: Electron runs it in the main process behind IPC, Capacitor through its
- * SQLite plugin, tests on `node:sqlite`. Statements run one at a time in the
+ * One SQLite connection, as narrow as possible: the Tauri shell runs it in
+ * Rust (its sql.rs), tests on `node:sqlite`. Statements run one at a time in the
  * order they're called - transactions are plain `BEGIN`/`COMMIT` statements,
  * so callers serialize them (the Kysely dialect in `sql-crdt` does).
  */

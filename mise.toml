@@ -37,23 +37,18 @@ cargo test --manifest-path apps/shell/src-tauri/Cargo.toml
 """
 
 [tasks.run-desktop]
-description = "Build the app and start it in Electron (Linux, macOS)"
-run = """
-set -e
-pnpm --dir apps/turtle-base exec vp build
-pnpm --dir apps/desktop exec vp pack
-pnpm --dir apps/desktop exec electron .
-"""
-
-[tasks.run-tauri]
-description = "Build the app and start it in the Tauri shell (debug build)"
+description = "Build the app and start it in the Tauri shell (Linux, macOS - debug build)"
 run = """
 set -e
 pnpm --dir apps/shell exec tauri build --debug --no-bundle
 apps/shell/src-tauri/target/debug/turtle-base
 """
 
-[tasks.tauri-smoke]
+[tasks.dev-desktop]
+description = "Start the app in the Tauri shell with the page from Vite's dev server (hot reload)"
+run = "pnpm --dir apps/shell exec tauri dev"
+
+[tasks.desktop-smoke]
 description = "Build the app for the smoke test and smoke-test it in the Tauri shell over WebDriver (Linux, needs a display)"
 run = """
 set -e
@@ -62,8 +57,21 @@ TURTLE_E2E=1 DRIVE_DESKTOP_CLIENT_ID=smoke-client DRIVE_DESKTOP_CLIENT_SECRET=sm
 pnpm --dir apps/shell exec vpx e2e/desktop-smoke.e2e.ts
 """
 
-[tasks.tauri-mobile-smoke]
-description = "Build the app for x86_64, install it on ANDROID_SERIAL (an emulator - its app data is cleared) and smoke-test it in the Tauri shell"
+[tasks.package-desktop]
+description = "Package the desktop app for this OS (AppImage on Linux, dmg on macOS) - unsigned, version 0.0.1"
+run = "pnpm --dir apps/shell exec tauri build"
+
+[tasks.run-android]
+description = "Run the app on Android with the page from Vite's dev server (asks for the device)"
+run = """
+set -e
+export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
+export NDK_HOME=${NDK_HOME:-$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)}
+pnpm --dir apps/shell exec tauri android dev
+"""
+
+[tasks.mobile-smoke]
+description = "Build the app for x86_64, install it on ANDROID_SERIAL (an emulator - its app data is cleared) and smoke-test it"
 run = """
 set -e
 : "${ANDROID_SERIAL:?set ANDROID_SERIAL to the emulator to test on, e.g. emulator-5554}"
@@ -72,59 +80,4 @@ export NDK_HOME=${NDK_HOME:-$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)}
 pnpm --dir apps/shell exec tauri android build --debug --apk --target x86_64
 "$ANDROID_HOME/platform-tools/adb" -s "$ANDROID_SERIAL" install -r apps/shell/src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
 pnpm --dir apps/shell exec vpx e2e/android-smoke.e2e.ts
-"""
-
-[tasks.dev-tauri]
-description = "Start the app in the Tauri shell with the page from Vite's dev server (hot reload)"
-run = "pnpm --dir apps/shell exec tauri dev"
-
-[tasks.dev-desktop]
-description = "Start the app in Electron with the renderer from Vite's dev server (hot reload)"
-run = """
-set -e
-pnpm --dir apps/desktop exec vp pack
-pnpm --dir apps/turtle-base exec vp dev --port 5173 --strictPort &
-trap 'kill $!' EXIT
-until curl -sf http://localhost:5173/ >/dev/null; do sleep 0.2; done
-TURTLE_DEV_SERVER_URL=http://localhost:5173/ pnpm --dir apps/desktop exec electron .
-"""
-
-[tasks.desktop-smoke]
-description = "Build the app and smoke-test it in Electron (needs a display)"
-run = """
-set -e
-pnpm --dir apps/turtle-base exec vp build
-pnpm --dir apps/desktop exec vp pack
-pnpm --dir apps/desktop exec vpx e2e/smoke.e2e.ts
-"""
-
-[tasks.package-desktop]
-description = "Package the desktop app for this OS with electron-builder (apps/desktop/release) - unsigned, version 0.0.0"
-run = """
-set -e
-pnpm --dir apps/turtle-base exec vp build
-pnpm --dir apps/desktop exec vp pack
-pnpm --dir apps/desktop exec electron-builder --publish never
-"""
-
-[tasks.run-android]
-description = "Build the app and run it in the Capacitor Android shell (asks for the device)"
-run = """
-set -e
-export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
-pnpm --dir apps/turtle-base exec vp build
-pnpm --dir apps/mobile exec cap run android
-"""
-
-[tasks.mobile-smoke]
-description = "Build the app, install it on ANDROID_SERIAL (an emulator - its app data is cleared) and smoke-test it"
-run = """
-set -e
-: "${ANDROID_SERIAL:?set ANDROID_SERIAL to the emulator to test on, e.g. emulator-5554}"
-export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
-pnpm --dir apps/turtle-base exec vp build
-pnpm --dir apps/mobile exec cap sync android
-(cd apps/mobile/android && ./gradlew assembleDebug -q)
-"$ANDROID_HOME/platform-tools/adb" -s "$ANDROID_SERIAL" install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-pnpm --dir apps/mobile exec vpx e2e/smoke.e2e.ts
 """

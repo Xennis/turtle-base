@@ -6,7 +6,7 @@ import type { SqlDriver } from './sql-driver.ts';
 
 /**
  * Everything the app needs from the platform it runs on. The app only talks
- * to this interface; Electron and Capacitor each implement it.
+ * to this interface; the Tauri shell implements it.
  */
 export interface Platform {
   readonly kind: 'desktop' | 'android';

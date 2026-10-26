@@ -1,4 +1,3 @@
-import { Capacitor } from '@capacitor/core';
 import { QueryClient } from '@tanstack/react-query';
 import { isTauri } from '@tauri-apps/api/core';
 import type { Platform } from '@turtle-base/platform';
@@ -12,15 +11,10 @@ import { invalidateTables } from './core/database/use-db-query.ts';
 import { applyTheme, ThemeController } from './core/theme/theme-controller.ts';
 import './styles.css';
 
-/** The shell's platform - only its module is loaded, the other shell's plugins never are. */
+/** The shell's platform - the page only runs in the Tauri shell (apps/shell). */
 async function createPlatform(): Promise<Platform> {
-  if (isTauri()) return (await import('./core/platform/tauri-platform.ts')).createTauriPlatform();
-  const bridge = window.turtleDesktop;
-  if (bridge !== undefined)
-    return (await import('./core/platform/electron-platform.ts')).createElectronPlatform(bridge);
-  if (Capacitor.isNativePlatform())
-    return (await import('./core/platform/capacitor-platform.ts')).createCapacitorPlatform();
-  throw new Error('Not running in a shell - neither Tauri, Electron nor Capacitor');
+  if (!isTauri()) throw new Error('Not running in the Tauri shell');
+  return (await import('./core/platform/tauri-platform.ts')).createTauriPlatform();
 }
 
 const platform = await createPlatform();

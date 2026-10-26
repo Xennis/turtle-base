@@ -35,7 +35,7 @@ export default defineConfig({
   },
 });
 
-/** The content security policy as a meta tag in built pages - Capacitor sends no headers of its own. */
+/** The content security policy as a meta tag in built pages - Tauri's own (tauri.conf.json) is off, so this is the one. */
 function contentSecurityPolicyMeta(): Plugin {
   return {
     name: 'turtle-base:content-security-policy',
