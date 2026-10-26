@@ -75,10 +75,8 @@ app - but it still doesn't belong hardcoded/committed; see step 5.
 Same **Clients** tab → Create client:
 
 - Application type: **Android**.
-- Package name: matches `appId` in `apps/mobile/capacitor.config.ts`
-  (`org.xennis.apps.turtlebase`). The preview build, which installs next
-  to an installed release, has its own: `org.xennis.apps.turtlebase.ts`
-  - give it a client of its own, with the debug key's fingerprint.
+- Package name: matches `identifier` in `apps/shell/src-tauri/tauri.conf.json`
+  (`org.xennis.apps.turtlebase`).
 - SHA-1 certificate fingerprint: from your signing key. For a local
   debug build:
   ```sh
@@ -106,7 +104,7 @@ Same **Clients** tab → Create client:
   keystore file and passwords, so it doesn't need encryption or log
   masking; add it under Settings → Secrets and variables → Actions →
   Variables). Locally all four are set via a gitignored
-  `apps/mobile/android/key.properties` (see `apps/mobile/android/app/build.gradle`).
+  `apps/shell/src-tauri/gen/android/key.properties` (see `app/build.gradle.kts` there).
 
   `ANDROID_KEYSTORE_BASE64` is the keystore file base64-encoded as a single
   line (the workflow decodes it back with `base64 -d`):
@@ -118,8 +116,9 @@ Same **Clients** tab → Create client:
   secret.
 
 The app references neither a client ID nor a secret on Android: Play
-services' `AuthorizationClient` (see `GoogleAuthPlugin.java` in
-`apps/mobile`) finds the client by package name and signing certificate.
+services' `AuthorizationClient` (see `AndroidPlatformPlugin.kt` in
+`apps/shell/src-tauri/gen/android`) finds the client by package name and
+signing certificate.
 The Web application client the Flutter app needed for `google_sign_in`
 (its `serverClientId`) isn't used anymore.
 
