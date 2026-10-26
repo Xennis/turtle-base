@@ -33,3 +33,7 @@ apple-native-keyring-store = { version = "1.0.2", features = ["keychain"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-native-keyring-store = "1.0.0"
+
+# Dependencies without debug info - it's most of a debug build's size on disk.
+[profile.dev.package."*"]
+debug = false

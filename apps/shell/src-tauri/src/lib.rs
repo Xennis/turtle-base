@@ -1,3 +1,5 @@
+#[cfg(target_os = "android")]
+mod android;
 mod flutter;
 mod loopback;
 mod secrets;
@@ -7,8 +9,12 @@ use std::fs;
 
 use tauri::Manager;
 
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(android::init());
+    builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
@@ -33,6 +39,8 @@ pub fn run() {
             secrets::secrets_get,
             secrets::secrets_set,
             secrets::secrets_remove,
+            #[cfg(target_os = "android")]
+            android::android_platform,
         ])
         .run(tauri::generate_context!())
         .expect("turtle-base failed to start");
