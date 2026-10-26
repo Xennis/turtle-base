@@ -70,6 +70,16 @@ export NDK_HOME=${NDK_HOME:-$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)}
 pnpm --dir apps/shell exec tauri android dev
 """
 
+[tasks.package-android]
+description = "Build a release APK for phones (arm64) - signed with apps/shell/src-tauri/gen/android/key.properties, else the debug key"
+run = """
+set -e
+export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
+export NDK_HOME=${NDK_HOME:-$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)}
+pnpm --dir apps/shell exec tauri android build --apk --target aarch64
+echo "APK: apps/shell/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
+"""
+
 [tasks.mobile-smoke]
 description = "Build the app for x86_64, install it on ANDROID_SERIAL (an emulator - its app data is cleared) and smoke-test it"
 run = """
