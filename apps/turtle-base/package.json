@@ -1,7 +1,7 @@
 {
   "name": "@turtle-base/app",
   "private": true,
-  "description": "The turtle-base app - React UI and app logic, rendered by the Electron and Capacitor shells.",
+  "description": "The turtle-base app - React UI and app logic, rendered by the Tauri shell.",
   "type": "module",
   "scripts": {
     "dev": "vp dev",
@@ -10,16 +10,9 @@
   "dependencies": {
     "@ai-sdk/anthropic": "catalog:",
     "@ai-sdk/google": "catalog:",
-    "@aparajita/capacitor-secure-storage": "catalog:",
     "@blocknote/core": "catalog:",
     "@blocknote/react": "catalog:",
     "@blocknote/shadcn": "catalog:",
-    "@capacitor-community/file-opener": "catalog:",
-    "@capacitor/app-launcher": "catalog:",
-    "@capacitor/core": "catalog:",
-    "@capacitor/filesystem": "catalog:",
-    "@capacitor/preferences": "catalog:",
-    "@capawesome/capacitor-file-picker": "catalog:",
     "@emoji-mart/data": "catalog:",
     "@fontsource-variable/inter": "catalog:",
     "@noble/hashes": "catalog:",

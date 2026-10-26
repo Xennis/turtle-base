@@ -1,11 +1,10 @@
 {
   "name": "@turtle-base/platform",
   "private": true,
-  "description": "What turtle-base needs from the platform it runs on (Electron, Capacitor) - the interface both implement, plus test doubles.",
+  "description": "What turtle-base needs from the platform it runs on (the Tauri shell) - the interface, plus test doubles.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./node": "./src/node-sql-driver.ts",
     "./testing": "./src/testing.ts"
   },
   "devDependencies": {

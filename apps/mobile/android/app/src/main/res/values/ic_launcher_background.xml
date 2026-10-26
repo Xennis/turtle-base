@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- The app's default accent (the green preset's primary). -->
-    <color name="ic_launcher_background">#16A34A</color>
-    <!-- The page's background - the launch screen shows while the app starts. -->
-    <color name="launch_background">#FAF9F7</color>
-</resources>

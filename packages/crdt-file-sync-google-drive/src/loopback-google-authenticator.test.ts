@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, test } from 'vite-plus/test';
 
 import { GoogleAuthError, LoopbackGoogleAuthenticator } from './loopback-google-authenticator.ts';
-import { listenForRedirectOnNode } from './node-redirect-listener.ts';
+import { listenForRedirectOnNode } from './testing.ts';
 
 /** Google's token endpoint: hands out tokens, and remembers what it was sent. */
 class FakeTokenEndpoint {

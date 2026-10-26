@@ -1,15 +1,13 @@
 /**
- * The desktop window's title bar, drawn by the page in the theme's colors -
- * the system's window buttons sit on top of it. Electron's Window Controls
- * Overlay variables keep it clear of them; in Tauri on macOS the title stays
- * centered, clear of the traffic lights. It moves the window in both
- * (`app-region` in Electron, `data-tauri-drag-region` in Tauri).
+ * The window's title bar on macOS, drawn by the page in the theme's colors -
+ * the traffic lights sit on top of it, clear of the centered title. Dragging
+ * it moves the window.
  */
 export function WindowTitleBar() {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-[env(titlebar-area-height,36px)] w-[env(titlebar-area-width,100%)] shrink-0 items-center justify-center pl-[env(titlebar-area-x,0px)] text-xs text-muted-foreground select-none [app-region:drag]"
+      className="flex h-9 shrink-0 items-center justify-center text-xs text-muted-foreground select-none"
     >
       turtle-base
     </div>

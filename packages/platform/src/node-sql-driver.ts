@@ -4,8 +4,7 @@ import type { SqlDriver, SqlResult, SqlRow, SqlValue } from './sql-driver.ts';
 
 /**
  * A {@link SqlDriver} on Node's built-in SQLite - an in-memory database
- * unless `path` is given. No native module - runs in tests and in Electron's
- * main process alike.
+ * unless `path` is given. No native module - for the tests.
  */
 export function createNodeSqlDriver(path = ':memory:'): SqlDriver {
   const db = new DatabaseSync(path);
