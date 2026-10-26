@@ -36,44 +36,50 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            target: --linux
+            bundle: appimage
+            suffix: linux-x86_64.AppImage
           # Unsigned like the Flutter app's builds - optional, see the release job.
           - os: macos-latest
-            target: --mac
+            bundle: dmg
+            suffix: macos-aarch64.dmg
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
 
+      - name: Install Tauri's system packages
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev librsvg2-dev
+
       - uses: jdx/mise-action@v5
         with:
-          install_args: node pnpm
+          install_args: node pnpm rust
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build the app
-        run: pnpm --dir apps/turtle-base exec vp build
-
-      # The Drive sync's "Desktop app" OAuth client is bundled into the main process, see
+      # Builds the app's page too. The Drive sync's "Desktop app" OAuth client is bundled into the page, see
       # packages/crdt-file-sync-google-drive/README.md.
-      - name: Build the shell
+      - name: Build and package
         env:
           DRIVE_DESKTOP_CLIENT_ID: ${{ secrets.DRIVE_DESKTOP_CLIENT_ID }}
           DRIVE_DESKTOP_CLIENT_SECRET: ${{ secrets.DRIVE_DESKTOP_CLIENT_SECRET }}
-        run: pnpm --dir apps/desktop exec vp pack
-
-      - name: Package
-        working-directory: apps/desktop
+          VERSION: ${{ needs.resolve-version.outputs.build_name }}
         run: >
-          pnpm exec electron-builder ${{ matrix.target }} --publish never
-          --config.extraMetadata.version=${{ needs.resolve-version.outputs.build_name }}
+          pnpm --dir apps/shell exec tauri build --bundles ${{ matrix.bundle }}
+          --config "{\"version\": \"$VERSION\"}"
+
+      - name: Name the package
+        env:
+          VERSION: ${{ needs.resolve-version.outputs.build_name }}
+        run: |
+          mkdir dist
+          mv apps/shell/src-tauri/target/release/bundle/${{ matrix.bundle }}/*.${{ matrix.bundle == 'dmg' && 'dmg' || 'AppImage' }} \
+            "dist/turtle-base-$VERSION-${{ matrix.suffix }}"
 
       - uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ runner.os }}
-          path: |
-            apps/desktop/release/*.AppImage
-            apps/desktop/release/*.dmg
+          path: dist/*
           if-no-files-found: error
 
   build-android:
@@ -82,9 +88,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Rust with the Android targets (see mise.toml).
       - uses: jdx/mise-action@v5
         with:
-          install_args: node pnpm
+          install_args: node pnpm rust
 
       - uses: actions/setup-java@v6
         with:
@@ -95,37 +102,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build the app into the Android project
-        run: |
-          pnpm --dir apps/turtle-base exec vp build
-          pnpm --dir apps/mobile exec cap sync android
-
       - name: Configure release signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: apps/shell/src-tauri/gen/android
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > apps/mobile/android/release.keystore
-          cat > apps/mobile/android/key.properties <<EOF
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.keystore
+          cat > key.properties <<EOF
           storeFile=release.keystore
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
           keyPassword=$ANDROID_KEY_PASSWORD
           EOF
 
+      # The version as Gradle properties, see apps/shell/src-tauri/gen/android/app/build.gradle.kts.
       - name: Build release APK
-        working-directory: apps/mobile/android
-        run: >
-          ./gradlew assembleRelease
-          -PversionCode=${{ needs.resolve-version.outputs.build_number }}
-          -PversionName=${{ needs.resolve-version.outputs.build_name }}
+        env:
+          NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+          ORG_GRADLE_PROJECT_versionCode: ${{ needs.resolve-version.outputs.build_number }}
+          ORG_GRADLE_PROJECT_versionName: ${{ needs.resolve-version.outputs.build_name }}
+        run: pnpm --dir apps/shell exec tauri android build --apk
 
       - uses: actions/upload-artifact@v7
         with:
           name: android-apk
-          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          path: apps/shell/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
           if-no-files-found: error
 
   release:
@@ -149,7 +153,7 @@ jobs:
           VERSION: ${{ needs.resolve-version.outputs.full_version }}
         run: |
           ls artifacts/*.AppImage > /dev/null || { echo "::error::No Linux build"; exit 1; }
-          mv artifacts/app-release.apk "artifacts/turtle-base-${VERSION}-android.apk"
+          mv artifacts/app-universal-release.apk "artifacts/turtle-base-${VERSION}-android.apk"
           gh release create "${{ github.ref_name }}" artifacts/* \
             --title "${{ github.ref_name }}" \
             --generate-notes \
