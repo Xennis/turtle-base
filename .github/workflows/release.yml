@@ -121,10 +121,11 @@ jobs:
       # The version as Gradle properties, see apps/shell/src-tauri/gen/android/app/build.gradle.kts.
       - name: Build release APK
         env:
-          NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
           ORG_GRADLE_PROJECT_versionCode: ${{ needs.resolve-version.outputs.build_number }}
           ORG_GRADLE_PROJECT_versionName: ${{ needs.resolve-version.outputs.build_name }}
-        run: pnpm --dir apps/shell exec tauri android build --apk
+        run: |
+          export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          pnpm --dir apps/shell exec tauri android build --apk
 
       - uses: actions/upload-artifact@v7
         with:
