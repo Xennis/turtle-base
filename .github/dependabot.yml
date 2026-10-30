@@ -28,11 +28,6 @@ updates:
     patterns: ['*']
     multi-ecosystem-group: other
 
-  - package-ecosystem: opentofu
-    directory: /ops/infra
-    patterns: ['*']
-    multi-ecosystem-group: other
-
   - package-ecosystem: github-actions
     directory: /
     patterns: ['*']

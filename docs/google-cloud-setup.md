@@ -1,35 +1,25 @@
 # Google Cloud setup for Drive sync
 
 Complete setup checklist for the Google Cloud project behind Drive sync
-(see `packages/crdt_file_sync_google_drive/`). Only the "enable the
-Drive API" part is actually managed by OpenTofu here; everything else
-has no API and stays a manual Google Cloud Console checklist (see
-"Why only the API is automated" below).
+(see `packages/crdt-file-sync-google-drive/`). Enabling the Drive API is
+one command; everything else has no API and stays a manual Google Cloud
+Console checklist (see "Why the rest is manual" below).
 
 ## 0. Prerequisites
 
 - A Google Cloud project you control (create one at
   [console.cloud.google.com](https://console.cloud.google.com/) if you
-  don't have one yet - project creation itself isn't managed here, it
-  involves billing/org decisions out of scope for this config).
-- `gcloud auth application-default login` so the `google` provider has
-  credentials.
+  don't have one yet).
+- The [`gcloud` CLI](https://cloud.google.com/sdk/docs/install), signed in
+  with `gcloud auth login`.
 
-## 1. Enable the Drive API (automated)
+## 1. Enable the Drive API
 
 ```sh
-cd ops/infra
-cp opentofu.tfvars.example terraform.tfvars   # fill in your project id
-tofu init
-tofu plan
-tofu apply
+gcloud services enable drive.googleapis.com --project=<project-id>
 ```
 
-Note the vars file must be named exactly `terraform.tfvars` (or
-`*.auto.tfvars`) to be picked up automatically - OpenTofu kept
-Terraform's auto-load filename convention, there's no `opentofu.tfvars`
-equivalent. `terraform.tfvars` is gitignored; `opentofu.tfvars.example`
-is the committed template to copy it from.
+Or enable it once in the Console under APIs & Services → Library.
 
 ## 2. Google Auth Platform
 
@@ -131,14 +121,14 @@ when it's built for a release. See the
 [`crdt-file-sync-google-drive` README's "Configuration"](../../packages/crdt-file-sync-google-drive/README.md#configuration)
 section for supplying them locally and in CI.
 
-## Why only the API is automated
+## Why the rest is manual
 
 The Terraform/OpenTofu `google` provider has no resource for the
 Google Auth Platform consent screen (branding/audience/scopes) or for
 creating standalone Desktop/Android/Web application OAuth 2.0 Client
 IDs, and there's no `gcloud`/REST API alternative either - it's
-Console-only. This isn't an oversight in this config; it's a real gap
-in Google's own tooling, tracked upstream and still open as of writing:
+Console-only. This is a real gap in Google's own tooling, tracked
+upstream and still open as of writing:
 
 - [Support Oauth consent screen scope configuration (#17649)](https://github.com/hashicorp/terraform-provider-google/issues/17649)
 - [Create OAuth 2.0 Client ID (non-IAP) resource (#16452)](https://github.com/hashicorp/terraform-provider-google/issues/16452)

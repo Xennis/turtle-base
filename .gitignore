@@ -31,14 +31,6 @@ migrate_working_dir/
 # .mise.local.toml.example.
 .mise.local.toml
 
-# OpenTofu (ops/infra) - state and local files, see ops/infra/README.md.
-# .terraform.lock.hcl stays committed (provider dependency lock).
-ops/infra/.terraform/
-ops/infra/*.tfstate
-ops/infra/*.tfstate.*
-ops/infra/terraform.tfvars
-ops/infra/crash.log
-
 # TypeScript workspace (pnpm, Vite+)
 node_modules/
 dist/
