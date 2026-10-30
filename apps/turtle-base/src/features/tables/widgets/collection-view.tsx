@@ -1,12 +1,15 @@
 import {
+  columnSizingFeature,
+  columnVisibilityFeature,
+  createSortedRowModel,
   flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
+  metaHelper,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
   type CellContext,
   type ColumnDef,
   type HeaderContext,
-  type RowData,
   type SortingState,
 } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -220,24 +223,32 @@ function EmptyState() {
   );
 }
 
-declare module '@tanstack/react-table' {
-  // Type parameters must match TanStack's own declarations.
-  // oxlint-disable-next-line typescript/no-unused-vars
-  interface TableMeta<TData extends RowData> {
-    titleLabel: string;
-    relatedTitles: ReadonlyMap<string, string>;
-    attachmentsByField: AttachmentsByField;
-    onOpenEntry: (pageId: string) => void;
-  }
-
-  // oxlint-disable-next-line typescript/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
-    field?: ResolvedField;
-  }
+interface EntriesTableMeta {
+  titleLabel: string;
+  relatedTitles: ReadonlyMap<string, string>;
+  attachmentsByField: AttachmentsByField;
+  onOpenEntry: (pageId: string) => void;
 }
 
+interface EntriesColumnMeta {
+  field?: ResolvedField;
+}
+
+const features = tableFeatures({
+  columnSizingFeature,
+  columnVisibilityFeature,
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  tableMeta: metaHelper<EntriesTableMeta>(),
+  columnMeta: metaHelper<EntriesColumnMeta>(),
+});
+type Features = typeof features;
+
 /** The built-in title column, then one per field - cells are fixed components, their context comes as `meta`. */
-function columnsFor(fields: readonly ResolvedField[], relatedTitles: ReadonlyMap<string, string>): ColumnDef<Page>[] {
+function columnsFor(
+  fields: readonly ResolvedField[],
+  relatedTitles: ReadonlyMap<string, string>,
+): ColumnDef<Features, Page>[] {
   return [
     {
       id: 'title',
@@ -246,7 +257,7 @@ function columnsFor(fields: readonly ResolvedField[], relatedTitles: ReadonlyMap
       size: 240,
       cell: TitleCell,
     },
-    ...fields.map((field): ColumnDef<Page> => ({
+    ...fields.map((field): ColumnDef<Features, Page> => ({
       id: field.id,
       header: FieldHeader,
       // What sorting compares - numbers as numbers, everything else by its display text.
@@ -259,17 +270,17 @@ function columnsFor(fields: readonly ResolvedField[], relatedTitles: ReadonlyMap
   ];
 }
 
-function TitleHeader({ table }: HeaderContext<Page, unknown>) {
+function TitleHeader({ table }: HeaderContext<Features, Page>) {
   return <ColumnTitle icon={<Type />} title={table.options.meta?.titleLabel ?? 'Name'} />;
 }
 
-function FieldHeader({ column }: HeaderContext<Page, unknown>) {
+function FieldHeader({ column }: HeaderContext<Features, Page>) {
   const field = column.columnDef.meta?.field;
   if (field === undefined) return null;
   return <ColumnTitle icon={<FieldTypeIcon base={field.base} variantId={field.variant?.id} />} title={field.name} />;
 }
 
-function TitleCell({ row, table }: CellContext<Page, unknown>) {
+function TitleCell({ row, table }: CellContext<Features, Page>) {
   const { pages } = useAppServices();
   const meta = table.options.meta;
   const entry = row.original;
@@ -301,7 +312,7 @@ function TitleCell({ row, table }: CellContext<Page, unknown>) {
   );
 }
 
-function ValueCell({ row, column, table }: CellContext<Page, unknown>) {
+function ValueCell({ row, column, table }: CellContext<Features, Page>) {
   const field = column.columnDef.meta?.field;
   const meta = table.options.meta;
   if (field === undefined || meta === undefined) return null;
@@ -331,16 +342,13 @@ function EntriesTable(props: {
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo(() => columnsFor(props.fields, props.relatedTitles), [props.fields, props.relatedTitles]);
-  // A note for the React Compiler, which the app doesn't use - TanStack Table 8's API can't be memoized by it.
-  // oxlint-disable-next-line react/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data: props.entries,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
     getRowId: (entry) => entry.id,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     meta: {
       titleLabel: props.titleLabel,
       relatedTitles: props.relatedTitles,
@@ -350,7 +358,7 @@ function EntriesTable(props: {
   });
 
   const rows = table.getRowModel().rows;
-  // oxlint-disable-next-line react/incompatible-library -- like useReactTable above
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual's API can't be memoized by the React Compiler either
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => props.scroller,
