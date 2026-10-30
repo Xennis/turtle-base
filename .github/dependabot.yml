@@ -17,10 +17,6 @@ updates:
       npm-production:
         dependency-type: production
         patterns: ['*']
-    ignore:
-      # v9 is a rewrite of the API; migrating needs its own change
-      - dependency-name: '@tanstack/react-table'
-        update-types: ['version-update:semver-major']
 
   - package-ecosystem: cargo
     directory: /apps/shell/src-tauri
