@@ -43,7 +43,7 @@ export function RelationPickerDialog(props: {
 
   return (
     <Dialog open onOpenChange={props.onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent fullScreenWhenNarrow className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Select related entries</DialogTitle>
         </DialogHeader>
@@ -54,7 +54,7 @@ export function RelationPickerDialog(props: {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <div className="grid max-h-72 gap-1 overflow-auto">
+        <div className="grid max-h-72 content-start gap-1 overflow-auto max-sm:max-h-none max-sm:min-h-0 max-sm:flex-1">
           {matches.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No entries found</p>}
           {matches.map((entry) => (
             <Label key={entry.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 font-normal hover:bg-muted">

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useAppServices } from '../../../core/app-scope.tsx';
 import { Button } from '../../../core/ui/button.tsx';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../../core/ui/dialog.tsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../core/ui/dialog.tsx';
 import { Input } from '../../../core/ui/input.tsx';
 import { EntryDraftWriter } from '../data/entry-draft-writer.ts';
 
@@ -73,7 +73,7 @@ export function EntryLookupDialog(props: {
 
   return (
     <Dialog open onOpenChange={props.onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-lg">
+      <DialogContent fullScreenWhenNarrow className="flex max-h-[85vh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{lookup.actionLabel}</DialogTitle>
         </DialogHeader>
@@ -89,20 +89,24 @@ export function EntryLookupDialog(props: {
           />
         </div>
         <div className="min-h-48 flex-1 overflow-auto">
+          {/* At the list's top, not in a footer - that would lie behind the keyboard while typing. */}
+          {trimmed.length > 0 && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              disabled={adding}
+              onClick={() => void add({ title: trimmed })}
+            >
+              <Pencil />
+              <span className="truncate">Add "{trimmed}" manually</span>
+            </Button>
+          )}
           <Results
             state={trimmed.length === 0 ? { kind: 'idle' } : search}
             disabled={adding}
             onPick={(draft) => void add(draft)}
           />
         </div>
-        {trimmed.length > 0 && (
-          <DialogFooter className="sm:justify-start">
-            <Button variant="ghost" disabled={adding} onClick={() => void add({ title: trimmed })}>
-              <Pencil />
-              <span className="truncate">Add "{trimmed}" manually</span>
-            </Button>
-          </DialogFooter>
-        )}
       </DialogContent>
     </Dialog>
   );
