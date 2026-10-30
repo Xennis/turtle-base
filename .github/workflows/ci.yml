@@ -19,7 +19,7 @@ jobs:
       - name: Install Tauri's system packages
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev librsvg2-dev
 
-      # Only what the checks need - not e.g. OpenTofu.
+      # Only what the checks need.
       - uses: jdx/mise-action@v5
         with:
           install_args: node pnpm rust

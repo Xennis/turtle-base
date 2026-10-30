@@ -17,7 +17,7 @@ Drive sync needs a "Desktop app" OAuth client. The build bundles it into the app
 | `DRIVE_DESKTOP_CLIENT_ID`     | Linux, macOS |
 | `DRIVE_DESKTOP_CLIENT_SECRET` | Linux, macOS |
 
-For local development, put them into `.mise.local.toml` in the repo root (see [.mise.local.toml.example](../../.mise.local.toml.example)) - `mise run run-desktop` builds with them. For how to obtain the values, see [ops/infra/README.md](../../ops/infra/README.md).
+For local development, put them into `.mise.local.toml` in the repo root (see [.mise.local.toml.example](../../.mise.local.toml.example)) - `mise run run-desktop` builds with them. For how to obtain the values, see [ops/infra/README.md](../../docs/google-cloud-setup.md).
 
 ## Layout in Drive
 

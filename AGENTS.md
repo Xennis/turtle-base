@@ -15,7 +15,7 @@ Example: `feat(shell): Keep secrets in the OS keyring`
 
 ## Tooling
 
-Tool versions (Node, pnpm, Rust, OpenTofu) are managed via [mise](https://mise.jdx.dev/) - see `mise.toml`. The workspace uses Vite+ (`vp`) for checks, tests and builds, with strict TypeScript; the shell's Rust code is checked with `cargo fmt`/`clippy` and tested with `cargo test` - `mise run check`/`test` run both.
+Tool versions (Node, pnpm, Rust) are managed via [mise](https://mise.jdx.dev/) - see `mise.toml`. The workspace uses Vite+ (`vp`) for checks, tests and builds, with strict TypeScript; the shell's Rust code is checked with `cargo fmt`/`clippy` and tested with `cargo test` - `mise run check`/`test` run both.
 
 ## Platforms
 

@@ -14,7 +14,7 @@ val tauriProperties = Properties().apply {
     }
 }
 
-// The release keystore, like the Flutter app's - see ops/infra/README.md. Without it, release builds are signed
+// The release keystore, like the Flutter app's - see docs/google-cloud-setup.md. Without it, release builds are signed
 // with the debug key.
 val keystoreProperties = Properties().apply {
     val propFile = rootProject.file("key.properties")
