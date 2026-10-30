@@ -1,0 +1,39 @@
+version: 2
+
+multi-ecosystem-groups:
+  other:
+    schedule:
+      interval: monthly
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      npm-development:
+        dependency-type: development
+        patterns: ['*']
+      npm-production:
+        dependency-type: production
+        patterns: ['*']
+
+  - package-ecosystem: cargo
+    directory: /apps/shell/src-tauri
+    patterns: ['*']
+    multi-ecosystem-group: other
+
+  - package-ecosystem: gradle
+    directory: /apps/shell/src-tauri/gen/android
+    patterns: ['*']
+    multi-ecosystem-group: other
+
+  - package-ecosystem: opentofu
+    directory: /ops/infra
+    patterns: ['*']
+    multi-ecosystem-group: other
+
+  - package-ecosystem: github-actions
+    directory: /
+    patterns: ['*']
+    multi-ecosystem-group: other
