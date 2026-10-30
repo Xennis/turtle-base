@@ -40,9 +40,15 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  fullScreenWhenNarrow = false,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
+  /**
+   * Fills the screen below the `sm` breakpoint (e.g. on a phone) - for dialogs with a search and a list, like
+   * Android's full-screen dialogs. Its children lay out as a column there; a list grows with `max-sm:flex-1`.
+   */
+  fullScreenWhenNarrow?: boolean;
 }) {
   return (
     <DialogPortal>
@@ -51,6 +57,9 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          fullScreenWhenNarrow &&
+            // The page's padding for the system bars doesn't reach a fixed element - it keeps them free itself.
+            'max-sm:inset-0 max-sm:flex max-sm:max-h-none max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:flex-col max-sm:rounded-none max-sm:pt-[calc(env(safe-area-inset-top)+1rem)] max-sm:pr-[calc(env(safe-area-inset-right)+1rem)] max-sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] max-sm:pl-[calc(env(safe-area-inset-left)+1rem)] max-sm:ring-0',
           className,
         )}
         {...props}
@@ -58,7 +67,15 @@ function DialogContent({
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
-            <Button variant="ghost" className="absolute top-2 right-2" size="icon-sm">
+            <Button
+              variant="ghost"
+              className={cn(
+                'absolute top-2 right-2',
+                fullScreenWhenNarrow &&
+                  'max-sm:top-[calc(env(safe-area-inset-top)+0.5rem)] max-sm:right-[calc(env(safe-area-inset-right)+0.5rem)]',
+              )}
+              size="icon-sm"
+            >
               <XIcon />
               <span className="sr-only">Close</span>
             </Button>

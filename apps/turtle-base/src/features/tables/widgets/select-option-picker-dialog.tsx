@@ -23,7 +23,7 @@ export function SelectOptionPickerDialog(props: {
 }) {
   return (
     <Dialog open onOpenChange={props.onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent fullScreenWhenNarrow className="sm:max-w-md">
         <Picker {...props} />
       </DialogContent>
     </Dialog>
@@ -73,7 +73,7 @@ function Picker(props: {
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3 max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">
       <DialogHeader>
         <DialogTitle>{field?.name}</DialogTitle>
       </DialogHeader>
@@ -102,7 +102,7 @@ function Picker(props: {
           else if (first !== undefined && name.length > 0) toggle(first.id);
         }}
       />
-      <div className="grid max-h-72 gap-0.5 overflow-auto">
+      <div className="grid max-h-72 content-start gap-0.5 overflow-auto max-sm:max-h-none max-sm:min-h-0 max-sm:flex-1">
         {options.length === 0 && !canCreate && (
           <p className="py-4 text-center text-sm text-muted-foreground">No options yet - type to create one</p>
         )}
