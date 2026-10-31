@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - plugins/*
 
 # Shared versions - members refer to them as "catalog:".
 catalogMode: prefer

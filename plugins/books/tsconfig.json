@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Only what a plugin gets at runtime - no DOM, see @turtle-base/plugin-api/globals.
+    "lib": ["ES2024"],
+    "types": ["@turtle-base/plugin-api/globals"]
+  },
+  "include": ["src"]
+}

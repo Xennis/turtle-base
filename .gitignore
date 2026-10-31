@@ -26,6 +26,7 @@ migrate_working_dir/
 # Coverage reports
 /apps/*/coverage/
 /packages/*/coverage/
+/plugins/*/coverage/
 
 # Local mise config (Google Drive sync OAuth values) - see
 # .mise.local.toml.example.

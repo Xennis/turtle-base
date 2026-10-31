@@ -28,6 +28,7 @@ The repo is a pnpm workspace (root `package.json`, one shared `pnpm-lock.yaml`; 
 - `apps/turtle-base/`: the app - React UI and app logic, the page both shells show
 - `apps/shell/`: the Tauri shell - Rust commands in `src-tauri/src`, the Android project in `src-tauri/gen/android` (with its Kotlin plugin), packaged with `tauri build`
 - `packages/<name>/`: local packages
+- `plugins/<name>/`: plugins, released on their own and installed from the catalog (`catalog/catalog.json`) - never a dependency of the app. They depend only on `@turtle-base/plugin-api` (and npm packages) and compile without the DOM (`lib: ["ES2024"]` plus `@turtle-base/plugin-api/globals`), so they can move into a sandbox later.
 
 Dependencies point from apps to packages, never back. The app talks to the platform it runs on only through the `Platform` interface of `packages/platform` (SQLite, files, prefs, secrets, network, sign-in); the shell implements it - official Tauri plugins first, the shell's own Rust (or, on Android, Kotlin) only where none fits. Storage adapters are `packages/crdt-file-sync-<storage>` packages that implement `SyncTransport` from `crdt-file-sync-transport`; the CRDT/sync logic (`SyncController`, `sql-crdt`'s use) stays in the app. A package has a `README.md` for anything specific to it (e.g. its configuration) and exposes its API via one barrel file `src/index.ts` (internals in `src/`, test helpers in `src/testing.ts` as the `/testing` export).
 
