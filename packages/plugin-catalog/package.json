@@ -1,0 +1,16 @@
+{
+  "name": "@turtle-base/plugin-catalog",
+  "private": true,
+  "description": "Where plugins come from - the catalog, manifests and bundles of plugins, fetched and checked.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@turtle-base/plugin-api": "workspace:*",
+    "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  }
+}
