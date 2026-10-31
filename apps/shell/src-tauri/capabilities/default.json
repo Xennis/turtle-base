@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the app's page may use - nothing of the disk but its own files, nothing of the network but https.",
+  "description": "What the app's page may use - nothing of the disk but its own files and plugins, nothing of the network but https.",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -33,7 +33,13 @@
     "fs:allow-read",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPDATA/files" }, { "path": "$APPDATA/files/**" }, { "path": "$APPCACHE/open/**" }]
+      "allow": [
+        { "path": "$APPDATA/files" },
+        { "path": "$APPDATA/files/**" },
+        { "path": "$APPDATA/plugins" },
+        { "path": "$APPDATA/plugins/**" },
+        { "path": "$APPCACHE/open/**" }
+      ]
     }
   ]
 }

@@ -52,6 +52,7 @@ export async function createTauriPlatform(): Promise<Platform> {
     sql,
     prefs,
     files: filesIn(`${data}/files`),
+    plugins: filesIn(`${data}/plugins`),
     openFile: (name, displayName) => openFile(`${data}/files/${name}`, `${cache}/open`, displayName, android),
     // The Flutter app's data is imported on the desktop - phones get it through sync.
     findFlutterAppData: android ? () => Promise.resolve(undefined) : findFlutterAppData,

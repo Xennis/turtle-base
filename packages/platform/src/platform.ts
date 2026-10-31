@@ -23,6 +23,9 @@ export interface Platform {
   /** Content-addressed attachment files, see the app's FileStore. */
   readonly files: FileDirectory;
 
+  /** The bundles of installed plugins, see the app's InstalledPlugins. */
+  readonly plugins: FileDirectory;
+
   /**
    * Runs outside the web view, so requests aren't limited by CORS. Packages
    * that reach the network take it as a parameter.

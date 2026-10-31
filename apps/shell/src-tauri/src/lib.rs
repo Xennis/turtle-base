@@ -26,6 +26,7 @@ pub fn run() {
             secrets::use_platform_store();
             let data = app.path().app_data_dir()?;
             fs::create_dir_all(data.join("files").join("tmp"))?;
+            fs::create_dir_all(data.join("plugins").join("tmp"))?;
             app.manage(sql::Database::open(&data.join("turtle-base.sqlite"))?);
             Ok(())
         })
