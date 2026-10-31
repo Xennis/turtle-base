@@ -27,6 +27,10 @@ turtle-base was a Flutter app before. Its data is taken over once, on the deskto
 
 Pushing a tag `vX.Y.Z+N` runs [.github/workflows/release.yml](.github/workflows/release.yml): a Linux AppImage and an unsigned macOS `.dmg`, and an Android APK (all built by Tauri) with `versionName` `X.Y.Z` and `versionCode` `N`. `mise run package-desktop` packages the desktop app locally.
 
+## Plugins
+
+Plugins (`plugins/<name>`) aren't part of the app: users install them from the catalog `catalog/catalog.json`, which pins each plugin to a release by version and the bundle's SHA-256. Pushing a tag `<plugin>-vX.Y.Z` (matching the plugin's `package.json` version) runs [.github/workflows/plugin-release.yml](.github/workflows/plugin-release.yml): it builds the plugin, publishes its bundle and manifest as a GitHub release (not marked latest) and opens a pull request that points the catalog to it. That needs "Allow GitHub Actions to create and approve pull requests" in the repo's Actions settings. [.github/workflows/catalog.yml](.github/workflows/catalog.yml) checks the catalog against its releases (`node packages/plugin-catalog/scripts/check-catalog.ts`).
+
 ## Android release signing
 
 Google Sign-In in Android release builds requires the release APK to be signed with a key whose SHA-1 fingerprint is registered on the Android OAuth client - see [docs/google-cloud-setup.md](docs/google-cloud-setup.md#4-oauth-client---android). Locally this is configured via a gitignored `apps/shell/src-tauri/gen/android/key.properties` (see `app/build.gradle.kts` there; falls back to debug signing if absent). In CI, the release workflow builds that file from the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` repo secrets plus the `ANDROID_KEY_ALIAS` repo variable.

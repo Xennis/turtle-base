@@ -2,6 +2,7 @@ import {
   optionColors,
   type EntryLookup,
   type NumberVariant,
+  type PluginManifest,
   type TextVariant,
   type TurtlePlugin,
 } from '@turtle-base/plugin-api';
@@ -52,6 +53,18 @@ export function validatePlugin(value: unknown): TurtlePlugin {
       }
     }
   }
+  return plugin;
+}
+
+/**
+ * The plugin a bundle's module exports as default, checked by
+ * {@link validatePlugin} and against the id of its manifest.
+ */
+export function pluginOfModule(module: unknown, manifest: PluginManifest): TurtlePlugin {
+  const exported: unknown = typeof module === 'object' && module !== null ? Reflect.get(module, 'default') : undefined;
+  const plugin = validatePlugin(exported);
+  if (plugin.id !== manifest.id)
+    throw new Error(`The bundle holds plugin ${plugin.id}, the manifest names ${manifest.id}`);
   return plugin;
 }
 
