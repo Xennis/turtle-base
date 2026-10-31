@@ -18,13 +18,18 @@ export function pluginIdOf(id: string): string {
   return id.split(idSeparator)[0] ?? id;
 }
 
+/** Whether `collectionId` looks like a collection created from a plugin's template - see pluginCollectionId. */
+export function isPluginCollectionId(collectionId: string): boolean {
+  return collectionId.split(idSeparator).length === 3;
+}
+
 /** Whether `spaceId` is a space created by adding the plugin `pluginId`. */
 export function isPluginSpaceId(spaceId: string, pluginId: string): boolean {
   const parts = spaceId.split(idSeparator);
   return parts.length === 2 && parts[0] === pluginId;
 }
 
-/** The plugins the app ships with - registered at build time, nothing is loaded at runtime yet. */
+/** The plugins installed on this device that loaded - see InstalledPlugins. */
 export class PluginRegistry {
   readonly plugins: readonly TurtlePlugin[];
 

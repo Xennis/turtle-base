@@ -26,7 +26,6 @@
     "@tauri-apps/plugin-opener": "catalog:",
     "@tauri-apps/plugin-os": "catalog:",
     "@tauri-apps/plugin-store": "catalog:",
-    "@turtle-base/books": "workspace:*",
     "@turtle-base/crdt-file-sync-google-drive": "workspace:*",
     "@turtle-base/crdt-file-sync-transport": "workspace:*",
     "@turtle-base/platform": "workspace:*",

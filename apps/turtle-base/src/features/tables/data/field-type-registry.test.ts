@@ -1,4 +1,3 @@
-import { booksPlugin } from '@turtle-base/books';
 import { textVariant, urlVariant } from '@turtle-base/plugin-api';
 import { describe, expect, test } from 'vite-plus/test';
 
@@ -73,11 +72,18 @@ describe('resolve', () => {
     expect(field.display({ x: 1 })).toBe('{"x":1}');
   });
 
-  test("applies the books plugin's ISBN variant", () => {
-    const field = new FieldTypeRegistry(booksPlugin.variants).resolve(fieldRow('text', '{"variant": "books.isbn"}'));
+  test("applies a plugin's variant", () => {
+    const isbn = textVariant({
+      id: 'books.isbn',
+      label: 'ISBN',
+      normalize: (value) => value.replaceAll('-', ''),
+      validate: (value) => (value.length === 13 ? undefined : 'Enter 13 digits'),
+      format: (value) => `${value.slice(0, 3)}-${value.slice(3)}`,
+    });
+    const field = new FieldTypeRegistry([isbn]).resolve(fieldRow('text', '{"variant": "books.isbn"}'));
     expect(storedOf(field.parse('978-3-453-31717-8'))).toBe('9783453317178');
     expect(field.display('9783453317178')).toBe('978-3453317178');
-    expect(field.parse('978-3-453-31717-9').kind).toBe('error');
+    expect(field.parse('978-3-453').kind).toBe('error');
   });
 
   test('registers variants passed in', () => {

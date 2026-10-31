@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -25,6 +25,37 @@ const picture = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR4nGO4o6ZGEmIY1TCqYfhqAAATqigQ9JeO5gAAAABJRU5ErkJggg==',
   'base64',
 );
+
+/**
+ * The Books plugin as the catalog offers it - its build (plugins/books, see the desktop-smoke task) behind
+ * the catalog's and a release's URLs, answered by the hooks.
+ */
+const booksDist = join(import.meta.dirname, '../../../plugins/books/dist');
+if (!existsSync(join(booksDist, 'books-manifest.json'))) throw new Error('Build plugins/books first');
+const booksManifest = readFileSync(join(booksDist, 'books-manifest.json'));
+const booksRelease = 'https://github.com/Xennis/turtle-base/releases/download/books-smoke';
+const { version: booksVersion, sha256: booksSha256 } = manifestOf(JSON.parse(booksManifest.toString()));
+const pluginFiles: Record<string, string> = {
+  'https://raw.githubusercontent.com/Xennis/turtle-base/main/catalog/catalog.json': Buffer.from(
+    JSON.stringify({
+      schemaVersion: 1,
+      plugins: [
+        {
+          id: 'books',
+          name: 'Books',
+          author: 'Xennis',
+          description: 'Track the books you want to read, are reading and have read.',
+          icon: '📚',
+          manifest: `${booksRelease}/books-manifest.json`,
+          version: booksVersion,
+          sha256: booksSha256,
+        },
+      ],
+    }),
+  ).toString('base64'),
+  [`${booksRelease}/books-manifest.json`]: booksManifest.toString('base64'),
+  [`${booksRelease}/books.js`]: readFileSync(join(booksDist, 'books.js')).toString('base64'),
+};
 
 /**
  * A Flutter app's data folder for the import: a space with a page holding a heading and the picture. Its
@@ -89,6 +120,13 @@ interface Query {
   readonly has?: string;
   /** Which of the matches - the first by default, -1 for the last. */
   readonly nth?: number;
+}
+
+function manifestOf(value: unknown): { version: string; sha256: string } {
+  const version: unknown = Reflect.get(Object(value), 'version');
+  const sha256: unknown = Reflect.get(Object(value), 'sha256');
+  if (typeof version !== 'string' || typeof sha256 !== 'string') throw new Error('Not a manifest');
+  return { version, sha256 };
 }
 
 /** The window last launched - screenshotted when a step fails. */
@@ -189,7 +227,7 @@ function findByText(pattern: Pattern, within: string | null): Element | null {
   return null;
 }
 
-function installHooks(png: string) {
+function installHooks(png: string, plugin: Record<string, string>) {
   const json = (value: unknown) => ({
     headers: { 'Content-Type': 'application/json' },
     base64: btoa(JSON.stringify(value)),
@@ -197,6 +235,8 @@ function installHooks(png: string) {
   Reflect.set(window, 'turtleE2e', {
     pickFiles: [{ name: 'red.png', base64: png }],
     answer: ({ url, headers }: { url: string; headers: Record<string, string> }) => {
+      const pluginFile = plugin[url];
+      if (pluginFile !== undefined) return { base64: pluginFile };
       const { hostname } = new URL(url);
       if (hostname === 'covers.openlibrary.org') return { headers: { 'Content-Type': 'image/png' }, base64: png };
       if (hostname === 'openlibrary.org') {
@@ -348,12 +388,13 @@ async function launch(): Promise<Browser> {
 
 /**
  * The app asks these hooks (see e2e-hooks.ts in apps/turtle-base) before it reaches outside: the file dialog
- * picks the test PNG, Open Library's search finds "Dune" and every cover is the test PNG, Anthropic answers
+ * picks the test PNG, the plugin catalog offers the Books plugin built here, Open Library's search finds
+ * "Dune" and every cover is the test PNG, Anthropic answers
  * the test prompt, and Google's token endpoint hands out tokens. The browser for Google's consent page agrees
  * right away, following the redirect back to the shell's loopback server.
  */
 async function answerRequests(browser: Browser) {
-  await browser.execute(installHooks, picture.toString('base64'));
+  await browser.execute(installHooks, picture.toString('base64'), pluginFiles);
 }
 
 async function createNamed(browser: Browser, button: string, name: string) {
@@ -492,9 +533,21 @@ async function scrollThroughSeeds(browser: Browser) {
   await click(await role(browser, 'radio', 'Table'));
 }
 
-/** The Books plugin: added as a space, a book looked up, added - and opened, not added again, the second time. */
+/**
+ * The Books plugin: installed from the catalog, added as a space, a book looked up, added - and opened, not
+ * added again, the second time.
+ */
 async function addBook(browser: Browser) {
   await click(await role(browser, 'button', 'Plugins'));
+  await click(await role(browser, 'button', 'Install', { exact: true }));
+  await text(browser, 'From the plugin catalog.');
+  await click(await role(browser, 'button', 'Install', { exact: true, within: '[role="dialog"]' }));
+  // Installing reloads the page - which drops the hooks.
+  await browser.waitUntil(() => browser.execute(() => !('turtleE2e' in window)), { timeout: 15_000 });
+  await browser.$('#root > :first-child').waitForExist({ timeout: 15_000 });
+  await answerRequests(browser);
+  await click(await role(browser, 'button', 'Plugins'));
+  await text(browser, 'Reaches openlibrary.org, covers.openlibrary.org');
   await click(await role(browser, 'button', 'Add', { exact: true }));
   await click(await role(browser, 'button', 'Reading list'));
   for (const time of ['first', 'second']) {

@@ -54,12 +54,8 @@ export class InstalledPlugins {
     return [...this.loaded, ...this.broken].find(({ installed }) => installed.manifest.id === id)?.installed;
   }
 
-  /**
-   * The hosts plugin `id` may reach - see PluginPermissions. Undefined for a
-   * plugin built into the app.
-   */
-  hostsOf(id: string): readonly string[] | undefined {
-    const installed = this.byId(id);
-    return installed === undefined ? undefined : (installed.manifest.permissions.network ?? []);
+  /** The hosts plugin `id` may reach - see PluginPermissions. None for one not installed. */
+  hostsOf(id: string): readonly string[] {
+    return this.byId(id)?.manifest.permissions.network ?? [];
   }
 }
