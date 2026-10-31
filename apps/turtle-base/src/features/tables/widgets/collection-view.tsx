@@ -36,6 +36,7 @@ import { ToggleGroup, ToggleGroupItem } from '../../../core/ui/toggle-group.tsx'
 import { isImage } from '../../files/data/attachments-repository.ts';
 import { decodePageProperties } from '../../pages/data/pages-repository.ts';
 import { EntryLookupDialog } from '../../plugins/widgets/entry-lookup-dialog.tsx';
+import { PluginInstallHint } from '../../plugins/widgets/plugin-install-hint.tsx';
 import type { ResolvedField } from '../data/resolved-field.ts';
 import { CollectionTilesView } from './collection-tiles-view.tsx';
 import { FieldTypeIcon } from './field-type-icon.tsx';
@@ -57,6 +58,7 @@ export function CollectionView(props: {
   collectionId: string;
   onEdit: () => void;
   onOpenEntry: (pageId: string) => void;
+  onShowPlugins: () => void;
 }) {
   const { collections, fields, fieldTypes, pages, attachments, plugins } = useAppServices();
   const lookup = plugins.templateOf(props.collectionId)?.lookup;
@@ -125,6 +127,7 @@ export function CollectionView(props: {
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
+      <PluginInstallHint collectionId={collectionId} onShowPlugins={props.onShowPlugins} />
       {collection !== undefined && (
         <header className="flex items-center gap-3">
           {collection.icon !== null && <span className="text-3xl">{collection.icon}</span>}

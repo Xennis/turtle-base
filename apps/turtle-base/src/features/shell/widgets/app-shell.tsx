@@ -107,6 +107,7 @@ function MainContent({ navigation }: { navigation: AppNavigationController }) {
         collectionId={state.selectedCollectionId}
         onEdit={() => navigation.startEditingCollection()}
         onOpenEntry={(pageId) => navigation.selectPage(pageId)}
+        onShowPlugins={() => navigation.showPlugins()}
       />
     );
   }
