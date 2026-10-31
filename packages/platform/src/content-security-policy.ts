@@ -8,7 +8,8 @@ const tauriAssets = 'asset: http://asset.localhost';
  */
 export const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self'",
+  // blob: for the bundles of installed plugins, imported from their source - see the app's PluginLoader.
+  "script-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
   // https: for remote pictures like a lookup's covers - only shown, never sent anything.
   `img-src 'self' data: blob: https: ${tauriAssets}`,

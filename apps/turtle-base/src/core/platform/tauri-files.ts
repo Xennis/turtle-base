@@ -5,9 +5,10 @@ import type { FileDirectory } from '@turtle-base/platform';
 const validName = /^[\w.-]+$/;
 
 /**
- * The attachment files in `folder` - the only folder the shell's
- * capabilities let the page at - with temporary files in its `tmp/` (the
- * shell creates both). The page loads them through Tauri's asset protocol.
+ * The files in `folder` - attachments or plugin bundles, the folders the
+ * shell's capabilities let the page at - with temporary files in its `tmp/`
+ * (the shell creates both). The page loads attachments through Tauri's
+ * asset protocol.
  */
 export function filesIn(folder: string): FileDirectory {
   function pathOf(name: string): string {
