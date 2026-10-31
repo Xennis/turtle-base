@@ -1,0 +1,32 @@
+name: Catalog
+
+# Checks the plugin catalog against the releases it points to - network access, so apart from CI.
+on:
+  pull_request:
+    paths:
+      - catalog/**
+      - packages/plugin-catalog/**
+  push:
+    branches:
+      - main
+    paths:
+      - catalog/**
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: node pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the catalog
+        run: node packages/plugin-catalog/scripts/check-catalog.ts catalog/catalog.json

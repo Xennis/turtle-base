@@ -1,0 +1,83 @@
+name: Plugin release
+
+# Pushing a tag `<plugin>-vX.Y.Z` (e.g. `books-v1.2.0`) releases plugins/<plugin>: its bundle and manifest as a
+# GitHub release, and a pull request that points the catalog (catalog/catalog.json) to it.
+on:
+  push:
+    tags:
+      - '*-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Parse plugin and version from tag
+        id: tag
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^([a-z0-9-]+)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match <plugin>-vX.Y.Z"
+            exit 1
+          fi
+          plugin="${BASH_REMATCH[1]}"
+          version="${BASH_REMATCH[2]}"
+          if [[ ! -f "plugins/$plugin/package.json" ]]; then
+            echo "::error::No plugin plugins/$plugin"
+            exit 1
+          fi
+          if [[ "$(jq -r .version "plugins/$plugin/package.json")" != "$version" ]]; then
+            echo "::error::plugins/$plugin/package.json has another version than $version"
+            exit 1
+          fi
+          echo "plugin=$plugin" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: node pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --dir "plugins/${{ steps.tag.outputs.plugin }}" build
+
+      # Not "latest" - that stays the app's newest release.
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLUGIN: ${{ steps.tag.outputs.plugin }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "plugins/$PLUGIN/dist/"* \
+            --title "Plugin $PLUGIN $VERSION" \
+            --notes "The $PLUGIN plugin, version $VERSION - installed from the app's plugin catalog." \
+            --latest=false
+
+      # PRs opened with GITHUB_TOKEN don't start other workflows, so the catalog is checked here.
+      - name: Open pull request for the catalog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLUGIN: ${{ steps.tag.outputs.plugin }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          manifest_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$PLUGIN-manifest.json"
+          node packages/plugin-catalog/scripts/update-catalog.ts \
+            catalog/catalog.json "plugins/$PLUGIN/dist/$PLUGIN-manifest.json" "$manifest_url"
+          node packages/plugin-catalog/scripts/check-catalog.ts catalog/catalog.json
+          branch="catalog/$GITHUB_REF_NAME"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git commit -am "feat($PLUGIN): Release version $VERSION into the catalog"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "feat($PLUGIN): Release version $VERSION into the catalog" \
+            --body "Points the catalog to the release [$GITHUB_REF_NAME](https://github.com/$GITHUB_REPOSITORY/releases/tag/$GITHUB_REF_NAME), checked by \`check-catalog.ts\`."

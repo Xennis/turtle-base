@@ -1,7 +1,7 @@
-import { textVariant, type TurtlePlugin } from '@turtle-base/plugin-api';
+import { pluginApiVersion, textVariant, type PluginManifest, type TurtlePlugin } from '@turtle-base/plugin-api';
 import { describe, expect, test } from 'vite-plus/test';
 
-import { validatePlugin } from './plugin-rules.ts';
+import { pluginOfModule, validatePlugin } from './plugin-rules.ts';
 
 const code = textVariant({ id: 'demo.code', label: 'Code' });
 
@@ -22,6 +22,18 @@ const demo: TurtlePlugin = {
       lookup: { actionLabel: 'Add', searchHint: '', search: () => Promise.resolve([]) },
     },
   ],
+};
+
+const someManifest: PluginManifest = {
+  id: 'demo',
+  name: 'Demo',
+  version: '1.0.0',
+  apiVersion: pluginApiVersion,
+  author: '',
+  description: '',
+  main: 'demo.js',
+  sha256: '0'.repeat(64),
+  permissions: {},
 };
 
 test('returns a valid plugin itself', () => {
@@ -69,4 +81,10 @@ describe('rejects', () => {
     };
     expect(() => validatePlugin({ ...demo, collections: [collection] })).toThrow(/Duplicate field key/);
   });
+});
+
+test('takes the plugin of a module matching its manifest', () => {
+  expect(pluginOfModule({ default: demo }, someManifest)).toBe(demo);
+  expect(() => pluginOfModule({ default: demo }, { ...someManifest, id: 'other' })).toThrow(/manifest names other/);
+  expect(() => pluginOfModule({}, someManifest)).toThrow(/Not a plugin/);
 });
