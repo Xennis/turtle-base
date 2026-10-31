@@ -1,4 +1,15 @@
 {
   "schemaVersion": 1,
-  "plugins": []
+  "plugins": [
+    {
+      "id": "books",
+      "name": "Books",
+      "author": "Xennis",
+      "description": "Track the books you want to read, are reading and have read.",
+      "icon": "📚",
+      "manifest": "https://github.com/Xennis/turtle-base/releases/download/books-v0.0.1/books-manifest.json",
+      "version": "0.0.1",
+      "sha256": "4950b14a3e432fd5786da67166e311e357dfefdfdf2ffad7ca5e4c6790b75bb4"
+    }
+  ]
 }
