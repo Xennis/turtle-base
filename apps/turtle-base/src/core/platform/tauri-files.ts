@@ -51,6 +51,10 @@ export function filesIn(folder: string): FileDirectory {
       const path = tempOf(handle);
       if (await exists(path)) await remove(path);
     },
+    remove: async (name) => {
+      const path = pathOf(name);
+      if (await exists(path)) await remove(path);
+    },
     urlOf: (name) => convertFileSrc(pathOf(name)),
   };
 }

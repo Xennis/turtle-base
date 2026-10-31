@@ -7,7 +7,8 @@ import { Button } from '../../../core/ui/button.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../core/ui/dialog.tsx';
 import { Input } from '../../../core/ui/input.tsx';
 import { EntryDraftWriter } from '../data/entry-draft-writer.ts';
-import { pluginFetchOf } from '../data/plugin-fetch.ts';
+import { hostFetchOf, pluginFetchOf } from '../data/plugin-fetch.ts';
+import { pluginIdOf } from '../data/plugin-registry.ts';
 
 /** How long typing pauses before a search goes out - the source is a remote service. */
 const debounceMs = 400;
@@ -29,17 +30,18 @@ export function EntryLookupDialog(props: {
   onOpenChange: (open: boolean) => void;
   onOpenEntry: (pageId: string) => void;
 }) {
-  const { platform, database, fieldTypes, files } = useAppServices();
+  const { platform, database, fieldTypes, files, installedPlugins } = useAppServices();
+  const hosts = installedPlugins.hostsOf(pluginIdOf(props.collectionId));
   const writer = useMemo(
-    () => new EntryDraftWriter(database, { fieldTypes, files, fetch: platform.fetch }),
-    [database, fieldTypes, files, platform],
+    () => new EntryDraftWriter(database, { fieldTypes, files, fetch: hostFetchOf(platform.fetch, hosts) }),
+    [database, fieldTypes, files, platform, hosts],
   );
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState<SearchState>({ kind: 'idle' });
   const [adding, setAdding] = useState(false);
   const trimmed = query.trim();
   const { lookup } = props;
-  const pluginFetch = useMemo(() => pluginFetchOf(platform.fetch, undefined), [platform]);
+  const pluginFetch = useMemo(() => pluginFetchOf(platform.fetch, hosts), [platform, hosts]);
 
   useEffect(() => {
     if (trimmed.length === 0) return;

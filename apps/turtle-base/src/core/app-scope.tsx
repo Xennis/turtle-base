@@ -6,6 +6,7 @@ import { AiKeyStorage } from '../features/ai/data/ai-key-storage.ts';
 import { AiSettingsController } from '../features/ai/data/ai-settings-controller.ts';
 import { AttachmentsRepository } from '../features/files/data/attachments-repository.ts';
 import { PagesRepository } from '../features/pages/data/pages-repository.ts';
+import type { InstalledPlugins } from '../features/plugins/data/installed-plugins.ts';
 import { PluginInstancesRepository } from '../features/plugins/data/plugin-instances-repository.ts';
 import { PluginRegistry } from '../features/plugins/data/plugin-registry.ts';
 import { SpacesRepository } from '../features/spaces/data/spaces-repository.ts';
@@ -24,6 +25,7 @@ export interface AppServices {
   readonly database: AppDatabase;
   readonly theme: ThemeController;
   readonly plugins: PluginRegistry;
+  readonly installedPlugins: InstalledPlugins;
   readonly fieldTypes: FieldTypeRegistry;
   readonly files: FileStore;
   readonly spaces: SpacesRepository;
@@ -38,17 +40,28 @@ export interface AppServices {
 }
 
 /** The plugins the app ships with - registered at build time. */
-const shippedPlugins = new PluginRegistry([booksPlugin]);
+const shippedPlugins = [booksPlugin];
 
-export function createAppServices(platform: Platform, database: AppDatabase, theme: ThemeController): AppServices {
-  const fieldTypes = new FieldTypeRegistry(shippedPlugins.variants);
+export function createAppServices(
+  platform: Platform,
+  database: AppDatabase,
+  theme: ThemeController,
+  installedPlugins: InstalledPlugins,
+): AppServices {
+  const shippedIds = new Set(shippedPlugins.map((plugin) => plugin.id));
+  const plugins = new PluginRegistry([
+    ...shippedPlugins,
+    ...installedPlugins.plugins.filter((plugin) => !shippedIds.has(plugin.id)),
+  ]);
+  const fieldTypes = new FieldTypeRegistry(plugins.variants);
   const files = new FileStore(platform.files, browserThumbnailMaker);
   const attachments = new AttachmentsRepository(database);
   return {
     platform,
     database,
     theme,
-    plugins: shippedPlugins,
+    plugins,
+    installedPlugins,
     fieldTypes,
     files,
     spaces: new SpacesRepository(database),

@@ -25,27 +25,38 @@ export const manifestSchema = v.object({
   permissions: v.object({ network: v.optional(v.array(hostName)) }),
 });
 
-/**
- * Parses and checks a manifest: its shape, and that it's built against a
- * major of the plugin API this app supports.
- */
-export function parseManifest(value: unknown): PluginManifest {
+/** Parses a manifest by its shape only - see {@link parseManifest}. */
+export function readManifest(value: unknown): PluginManifest {
   const result = v.safeParse(manifestSchema, value);
   if (!result.success) {
     const issue = result.issues[0];
     throw new PluginSourceError(`Invalid manifest: ${v.getDotPath(issue) ?? 'value'}: ${issue.message}`);
   }
   const { icon, permissions, ...rest } = result.output;
-  if (rest.apiVersion !== pluginApiVersion) {
-    throw new PluginSourceError(
-      `${rest.name} needs version ${rest.apiVersion} of the plugin API, this app has version ${pluginApiVersion}`,
-    );
-  }
   return {
     ...rest,
     ...(icon === undefined ? {} : { icon }),
     permissions: permissions.network === undefined ? {} : { network: permissions.network },
   };
+}
+
+/** Throws unless `manifest` is built against the major of the plugin API this app supports. */
+export function checkApiVersion(manifest: PluginManifest): void {
+  if (manifest.apiVersion !== pluginApiVersion) {
+    throw new PluginSourceError(
+      `${manifest.name} needs version ${manifest.apiVersion} of the plugin API, this app has version ${pluginApiVersion}`,
+    );
+  }
+}
+
+/**
+ * Parses and checks a manifest: its shape, and that it's built against a
+ * major of the plugin API this app supports.
+ */
+export function parseManifest(value: unknown): PluginManifest {
+  const manifest = readManifest(value);
+  checkApiVersion(manifest);
+  return manifest;
 }
 
 /** Fetches and checks the manifest at `url` - see {@link parseManifest}. */

@@ -84,6 +84,11 @@ export class MemoryFileDirectory implements FileDirectory {
     return Promise.resolve();
   }
 
+  remove(name: string): Promise<void> {
+    this.#files.delete(name);
+    return Promise.resolve();
+  }
+
   urlOf(name: string): string {
     return `memory://${name}`;
   }

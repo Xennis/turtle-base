@@ -13,6 +13,11 @@ export function pluginFieldId(collectionId: string, fieldKey: string): string {
   return `${collectionId}${idSeparator}${fieldKey}`;
 }
 
+/** The plugin a space, collection or field of a plugin was created by - for any other id, its first part. */
+export function pluginIdOf(id: string): string {
+  return id.split(idSeparator)[0] ?? id;
+}
+
 /** Whether `spaceId` is a space created by adding the plugin `pluginId`. */
 export function isPluginSpaceId(spaceId: string, pluginId: string): boolean {
   const parts = spaceId.split(idSeparator);
