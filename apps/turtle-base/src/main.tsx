@@ -9,6 +9,9 @@ import { createAppServices } from './core/app-scope.tsx';
 import { AppDatabase } from './core/database/app-database.ts';
 import { invalidateTables } from './core/database/use-db-query.ts';
 import { applyTheme, ThemeController } from './core/theme/theme-controller.ts';
+import { InstalledPluginsRepository } from './features/plugins/data/installed-plugins-repository.ts';
+import { InstalledPlugins } from './features/plugins/data/installed-plugins.ts';
+import { pagePluginLoader } from './features/plugins/data/plugin-loader.ts';
 import './styles.css';
 
 /** The shell's platform - the page only runs in the Tauri shell (apps/shell). */
@@ -23,13 +26,16 @@ const theme = new ThemeController(platform.prefs);
 applyTheme(document.documentElement, theme, matchMedia('(prefers-color-scheme: dark)').matches);
 
 const queryClient = new QueryClient();
-const database = await AppDatabase.open({
-  sql: platform.sql,
-  prefs: platform.prefs,
-  onTablesChanged: (tables) => invalidateTables(queryClient, tables),
-});
+const [database, installedPlugins] = await Promise.all([
+  AppDatabase.open({
+    sql: platform.sql,
+    prefs: platform.prefs,
+    onTablesChanged: (tables) => invalidateTables(queryClient, tables),
+  }),
+  InstalledPlugins.load(new InstalledPluginsRepository(platform.prefs, platform.plugins), pagePluginLoader),
+]);
 
-const services = createAppServices(platform, database, theme);
+const services = createAppServices(platform, database, theme, installedPlugins);
 // Not awaited - the first render doesn't wait on the sign-in.
 void services.sync.restoreConnection();
 

@@ -23,6 +23,9 @@ export interface FileDirectory {
   commitTemp(handle: string, name: string): Promise<void>;
   discardTemp(handle: string): Promise<void>;
 
+  /** Deletes a file - nothing happens if it's not there. */
+  remove(name: string): Promise<void>;
+
   /** A URL the web view can load the file from, e.g. for an `<img>`. */
   urlOf(name: string): string;
 }

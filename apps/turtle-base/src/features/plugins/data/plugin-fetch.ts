@@ -21,6 +21,20 @@ export function isAllowedUrl(url: string, hosts: readonly string[]): boolean {
 }
 
 /**
+ * `fetchFn` limited to `hosts` like {@link pluginFetchOf} - for what the app
+ * downloads on a plugin's behalf, e.g. an EntryDraft's files.
+ */
+export function hostFetchOf(fetchFn: typeof fetch, hosts: readonly string[] | undefined): typeof fetch {
+  return (input, init) => {
+    const url = input instanceof Request ? input.url : String(input);
+    if (hosts !== undefined && !isAllowedUrl(url, hosts)) {
+      return Promise.reject(new TypeError(`Not allowed to reach ${url}`));
+    }
+    return fetchFn(input, init);
+  };
+}
+
+/**
  * The plugins' view of `fetchFn`, limited to `hosts` (see
  * {@link isAllowedUrl}) - undefined for a plugin built into the app.
  */
