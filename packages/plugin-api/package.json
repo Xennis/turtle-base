@@ -4,7 +4,8 @@
   "description": "API for turtle-base plugins - collection templates and lookups of entries from external sources.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
   },
   "dependencies": {
     "@turtle-base/field-types": "workspace:*"

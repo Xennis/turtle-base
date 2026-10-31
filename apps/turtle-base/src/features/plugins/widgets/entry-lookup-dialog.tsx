@@ -1,4 +1,4 @@
-import { LookupError, type EntryDraft, type EntryLookup } from '@turtle-base/plugin-api';
+import { isLookupError, type EntryDraft, type EntryLookup } from '@turtle-base/plugin-api';
 import { BookOpen, Pencil, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -7,6 +7,7 @@ import { Button } from '../../../core/ui/button.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../core/ui/dialog.tsx';
 import { Input } from '../../../core/ui/input.tsx';
 import { EntryDraftWriter } from '../data/entry-draft-writer.ts';
+import { pluginFetchOf } from '../data/plugin-fetch.ts';
 
 /** How long typing pauses before a search goes out - the source is a remote service. */
 const debounceMs = 400;
@@ -38,17 +39,17 @@ export function EntryLookupDialog(props: {
   const [adding, setAdding] = useState(false);
   const trimmed = query.trim();
   const { lookup } = props;
+  const pluginFetch = useMemo(() => pluginFetchOf(platform.fetch, undefined), [platform]);
 
   useEffect(() => {
     if (trimmed.length === 0) return;
     let current = true;
     const timer = setTimeout(() => {
       setSearch({ kind: 'searching' });
-      lookup.search(trimmed, { fetch: platform.fetch }).then(
+      lookup.search(trimmed, { fetch: pluginFetch }).then(
         (results) => current && setSearch({ kind: 'found', results }),
         (error: unknown) =>
-          current &&
-          setSearch({ kind: 'failed', message: error instanceof LookupError ? error.message : String(error) }),
+          current && setSearch({ kind: 'failed', message: isLookupError(error) ? error.message : String(error) }),
       );
     }, debounceMs);
     return () => {
@@ -56,7 +57,7 @@ export function EntryLookupDialog(props: {
       current = false;
       clearTimeout(timer);
     };
-  }, [trimmed, lookup, platform]);
+  }, [trimmed, lookup, pluginFetch]);
 
   async function add(draft: EntryDraft) {
     setAdding(true);
