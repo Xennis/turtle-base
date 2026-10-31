@@ -65,6 +65,6 @@ export default defineConfig({
     ignorePatterns: ['**/dist/**', 'ops/**', '*.md', 'pnpm-lock.yaml'],
   },
   test: {
-    projects: ['packages/*/vite.config.ts', 'apps/*/vite.config.ts'],
+    projects: ['packages/*/vite.config.ts', 'plugins/*/vite.config.ts', 'apps/*/vite.config.ts'],
   },
 });
