@@ -11,6 +11,7 @@ Monorepo (pnpm workspace, TypeScript) with the turtle-base app, its Tauri shell 
 | [packages/crdt-file-sync-transport](packages/crdt-file-sync-transport)     | `SyncTransport` interface that storage adapters implement                             |
 | [packages/crdt-file-sync-google-drive](packages/crdt-file-sync-google-drive) | Google Drive storage adapter (optional) - incl. its sign-in and OAuth configuration |
 | [packages/field-types](packages/field-types), [packages/plugin-api](packages/plugin-api) | Field variants and the API plugins are written against                |
+| [packages/plugin-catalog](packages/plugin-catalog)                         | Fetches and checks the plugin catalog, manifests and bundles                          |
 | [plugins/books](plugins/books)                                             | The Books plugin (reading list, Open Library lookup) - installed from the catalog     |
 | [docs](docs)                                                                 | Google Cloud setup (manual checklist)                                                 |
 

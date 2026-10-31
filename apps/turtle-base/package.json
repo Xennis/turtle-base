@@ -31,6 +31,7 @@
     "@turtle-base/crdt-file-sync-transport": "workspace:*",
     "@turtle-base/platform": "workspace:*",
     "@turtle-base/plugin-api": "workspace:*",
+    "@turtle-base/plugin-catalog": "workspace:*",
     "@turtle-base/sql-crdt": "workspace:*",
     "ai": "catalog:",
     "class-variance-authority": "catalog:",
