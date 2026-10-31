@@ -1,3 +1,5 @@
+import type { PluginFetch } from './plugin-fetch.ts';
+
 /**
  * Finds entries in an external source, e.g. books on Open Library. The app
  * shows the search dialog and turns the picked {@link EntryDraft} into an
@@ -26,11 +28,10 @@ export interface EntryLookup {
 /** What the app hands a lookup for one search. */
 export interface LookupContext {
   /**
-   * The only way a lookup reaches the network. The app's runs outside the
-   * web view (no CORS limits) and lets it decide later what a plugin may
-   * reach.
+   * The only way a lookup reaches the network - only to the hosts of the
+   * plugin's manifest. Runs outside the web view, so CORS doesn't apply.
    */
-  readonly fetch: typeof fetch;
+  readonly fetch: PluginFetch;
 }
 
 /**
@@ -66,4 +67,12 @@ export interface EntryDraft {
 /** Its `message` is shown to the user, e.g. `Open Library didn't respond`. */
 export class LookupError extends Error {
   override readonly name = 'LookupError';
+}
+
+/**
+ * Whether `error` is a {@link LookupError} - by its name, since a plugin
+ * brings its own copy of the class.
+ */
+export function isLookupError(error: unknown): error is Error {
+  return error instanceof Error && error.name === 'LookupError';
 }

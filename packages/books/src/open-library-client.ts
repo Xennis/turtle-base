@@ -1,4 +1,4 @@
-import { LookupError } from '@turtle-base/plugin-api';
+import { LookupError, type PluginFetch, type PluginResponse } from '@turtle-base/plugin-api';
 import * as v from 'valibot';
 
 import { isValidIsbn, normalizeIsbn } from './isbn.ts';
@@ -62,9 +62,9 @@ const fields = [
  * all of them: https://openlibrary.org/dev/docs/api/search
  */
 export class OpenLibraryClient {
-  readonly #fetch: typeof fetch;
+  readonly #fetch: PluginFetch;
 
-  constructor(fetchFn: typeof fetch) {
+  constructor(fetchFn: PluginFetch) {
     this.#fetch = fetchFn;
   }
 
@@ -82,14 +82,14 @@ export class OpenLibraryClient {
       limit: String(limit),
     }).toString();
 
-    let response: Response;
+    let response: PluginResponse;
     try {
-      response = await this.#fetch(url, {
+      response = await this.#fetch(url.href, {
         headers: { 'User-Agent': openLibraryUserAgent },
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'TimeoutError') {
+      if (error instanceof Error && error.name === 'TimeoutError') {
         throw new LookupError("Open Library didn't respond", { cause: error });
       }
       throw new LookupError("Couldn't reach Open Library", { cause: error });

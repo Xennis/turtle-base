@@ -1,4 +1,5 @@
-import { LookupError } from '@turtle-base/plugin-api';
+import { LookupError, type PluginFetch } from '@turtle-base/plugin-api';
+import { responseOf } from '@turtle-base/plugin-api/testing';
 import { expect, test } from 'vite-plus/test';
 
 import { coverUrlOf, OpenLibraryClient, openLibraryUserAgent, workUrlOf } from './open-library-client.ts';
@@ -19,10 +20,10 @@ const duneWork = {
 
 function clientAnswering(body: unknown, status = 200): { client: OpenLibraryClient; requested: () => URL } {
   let requested: URL | undefined;
-  const fetchFn = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    requested = new URL(input instanceof Request ? input.url : input);
-    expect(new Headers(init?.headers).get('User-Agent')).toBe(openLibraryUserAgent);
-    return Promise.resolve(new Response(JSON.stringify(body), { status }));
+  const fetchFn: PluginFetch = (url, init) => {
+    requested = new URL(url);
+    expect(init?.headers?.['User-Agent']).toBe(openLibraryUserAgent);
+    return Promise.resolve(responseOf(url, body, status));
   };
   return {
     client: new OpenLibraryClient(fetchFn),
