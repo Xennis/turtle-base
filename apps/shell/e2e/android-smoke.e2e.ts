@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { _android as android, type AndroidDevice } from 'playwright';
 
 // Walks through the installed debug build on the device ANDROID_SERIAL names - an emulator, since it clears
-// the app's data first: a book looked up on Open Library (the real one - the shell's HTTP client is native,
-// out of the test's reach) with its cover, a file from the system's picker, opening it with another app, and
+// the app's data first: the Books plugin installed from the real catalog and a book looked up on Open Library
+// (the real ones - the shell's HTTP client is native, out of the test's reach) with its cover, a file from the system's picker, opening it with another app, and
 // a secret and a pref kept over a restart. Run after installing the debug build (see the mobile-smoke task);
 // an optional argument is a folder to put screenshots in.
 
@@ -73,6 +73,11 @@ page.on('pageerror', (error) => console.log(`[renderer error] ${error.message}`)
 
 try {
   await page.getByText('No spaces yet').waitFor();
+  await page.getByRole('button', { name: 'Open sidebar' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Plugins' }).click();
+  // From the real catalog - installing reloads the page.
+  await page.getByRole('button', { name: 'Install', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Install', exact: true }).click();
   await page.getByRole('button', { name: 'Open sidebar' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Plugins' }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();

@@ -389,9 +389,6 @@ importers:
       '@tauri-apps/plugin-store':
         specifier: 'catalog:'
         version: 2.5.0
-      '@turtle-base/books':
-        specifier: workspace:*
-        version: link:../../plugins/books
       '@turtle-base/crdt-file-sync-google-drive':
         specifier: workspace:*
         version: link:../../packages/crdt-file-sync-google-drive
@@ -564,6 +561,9 @@ importers:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
+      '@turtle-base/plugin-catalog':
+        specifier: workspace:*
+        version: link:../../packages/plugin-catalog
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5

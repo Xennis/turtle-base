@@ -1,18 +1,20 @@
-import { booksPlugin } from '@turtle-base/books';
 import { textVariant, type CollectionTemplate, type TurtlePlugin } from '@turtle-base/plugin-api';
 import { describe, expect, test } from 'vite-plus/test';
 
-import { isPluginSpaceId, pluginCollectionId, PluginRegistry, pluginSpaceId } from './plugin-registry.ts';
+import {
+  isPluginCollectionId,
+  isPluginSpaceId,
+  pluginCollectionId,
+  pluginIdOf,
+  PluginRegistry,
+  pluginSpaceId,
+} from './plugin-registry.ts';
 
 const list: CollectionTemplate = { key: 'list', name: 'List', fields: [] };
 
 function plugin(id: string, rest: Partial<TurtlePlugin> = {}): TurtlePlugin {
   return { id, name: id.toUpperCase(), description: '', ...rest };
 }
-
-test('accepts the plugins the app ships with', () => {
-  expect(() => new PluginRegistry([booksPlugin])).not.toThrow();
-});
 
 test('collects the variants of all plugins', () => {
   const variant = textVariant({ id: 'a.code', label: 'Code' });
@@ -30,6 +32,14 @@ test('finds the template a collection was created from', () => {
   expect(registry.templateOf(pluginCollectionId(spaceId, 'other'))).toBeUndefined();
   expect(registry.templateOf(pluginCollectionId(pluginSpaceId('c', '6f1c-uuid'), 'list'))).toBeUndefined();
   expect(registry.templateOf('6f1c-uuid')).toBeUndefined();
+});
+
+test('recognizes a plugin collection and its plugin', () => {
+  const collectionId = pluginCollectionId(pluginSpaceId('b', '6f1c-uuid'), 'list');
+
+  expect(isPluginCollectionId(collectionId)).toBe(true);
+  expect(isPluginCollectionId('6f1c-uuid')).toBe(false);
+  expect(pluginIdOf(collectionId)).toBe('b');
 });
 
 test('recognizes a plugin space', () => {

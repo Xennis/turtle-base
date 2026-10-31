@@ -48,9 +48,10 @@ description = "Start the app in the Tauri shell with the page from Vite's dev se
 run = "pnpm --dir apps/shell exec tauri dev"
 
 [tasks.desktop-smoke]
-description = "Build the app for the smoke test and smoke-test it in the Tauri shell over WebDriver (Linux, needs a display)"
+description = "Build the app and the Books plugin for the smoke test and smoke-test it in the Tauri shell over WebDriver (Linux, needs a display)"
 run = """
 set -e
+pnpm --dir plugins/books build
 TURTLE_E2E=1 DRIVE_DESKTOP_CLIENT_ID=smoke-client DRIVE_DESKTOP_CLIENT_SECRET=smoke-secret \
   pnpm --dir apps/shell exec tauri build --debug --no-bundle
 pnpm --dir apps/shell exec vpx e2e/desktop-smoke.e2e.ts

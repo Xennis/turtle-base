@@ -1,4 +1,3 @@
-import { booksPlugin } from '@turtle-base/books';
 import type { Platform } from '@turtle-base/platform';
 import { createContext, use, type ReactNode } from 'react';
 
@@ -6,8 +5,11 @@ import { AiKeyStorage } from '../features/ai/data/ai-key-storage.ts';
 import { AiSettingsController } from '../features/ai/data/ai-settings-controller.ts';
 import { AttachmentsRepository } from '../features/files/data/attachments-repository.ts';
 import { PagesRepository } from '../features/pages/data/pages-repository.ts';
+import { InstalledPluginsRepository } from '../features/plugins/data/installed-plugins-repository.ts';
 import type { InstalledPlugins } from '../features/plugins/data/installed-plugins.ts';
+import { PluginInstaller } from '../features/plugins/data/plugin-installer.ts';
 import { PluginInstancesRepository } from '../features/plugins/data/plugin-instances-repository.ts';
+import { pagePluginLoader } from '../features/plugins/data/plugin-loader.ts';
 import { PluginRegistry } from '../features/plugins/data/plugin-registry.ts';
 import { SpacesRepository } from '../features/spaces/data/spaces-repository.ts';
 import { CollectionsRepository } from '../features/tables/data/collections-repository.ts';
@@ -26,6 +28,7 @@ export interface AppServices {
   readonly theme: ThemeController;
   readonly plugins: PluginRegistry;
   readonly installedPlugins: InstalledPlugins;
+  readonly pluginInstaller: PluginInstaller;
   readonly fieldTypes: FieldTypeRegistry;
   readonly files: FileStore;
   readonly spaces: SpacesRepository;
@@ -39,20 +42,13 @@ export interface AppServices {
   readonly aiKeys: AiKeyStorage;
 }
 
-/** The plugins the app ships with - registered at build time. */
-const shippedPlugins = [booksPlugin];
-
 export function createAppServices(
   platform: Platform,
   database: AppDatabase,
   theme: ThemeController,
   installedPlugins: InstalledPlugins,
 ): AppServices {
-  const shippedIds = new Set(shippedPlugins.map((plugin) => plugin.id));
-  const plugins = new PluginRegistry([
-    ...shippedPlugins,
-    ...installedPlugins.plugins.filter((plugin) => !shippedIds.has(plugin.id)),
-  ]);
+  const plugins = new PluginRegistry(installedPlugins.plugins);
   const fieldTypes = new FieldTypeRegistry(plugins.variants);
   const files = new FileStore(platform.files, browserThumbnailMaker);
   const attachments = new AttachmentsRepository(database);
@@ -62,6 +58,12 @@ export function createAppServices(
     theme,
     plugins,
     installedPlugins,
+    pluginInstaller: new PluginInstaller({
+      fetch: platform.fetch,
+      prefs: platform.prefs,
+      repository: new InstalledPluginsRepository(platform.prefs, platform.plugins),
+      loader: pagePluginLoader,
+    }),
     fieldTypes,
     files,
     spaces: new SpacesRepository(database),

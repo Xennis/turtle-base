@@ -21,7 +21,7 @@ test('loads an installed plugin from its stored bundle', async () => {
   expect(plugins.plugins.map((plugin) => plugin.id)).toStrictEqual(['demo']);
   expect(plugins.broken).toStrictEqual([]);
   expect(plugins.hostsOf('demo')).toStrictEqual(['demo.example.org']);
-  expect(plugins.hostsOf('books')).toBeUndefined();
+  expect(plugins.hostsOf('books')).toStrictEqual([]);
 });
 
 test('replaces the bundle of an updated plugin', async () => {
