@@ -7,8 +7,8 @@ packages:
 catalogMode: prefer
 
 catalog:
-  '@ai-sdk/anthropic': 4.0.90
-  '@ai-sdk/google': 4.0.107
+  '@ai-sdk/anthropic': 4.0.92
+  '@ai-sdk/google': 4.0.108
   '@blocknote/core': 0.56.0
   '@blocknote/react': 0.56.0
   '@blocknote/shadcn': 0.56.0
@@ -18,25 +18,25 @@ catalog:
   '@tailwindcss/vite': ^4.3.3
   '@tanstack/react-query': ^5.105.0
   '@tanstack/react-table': ^9.3.1
-  '@tanstack/react-virtual': 3.14.23
+  '@tanstack/react-virtual': 3.14.24
   '@tauri-apps/api': 2.12.4
   '@tauri-apps/cli': 2.12.4
-  '@tauri-apps/plugin-dialog': 2.8.3
+  '@tauri-apps/plugin-dialog': 2.8.4
   '@tauri-apps/plugin-fs': 2.7.1
   '@tauri-apps/plugin-http': 2.8.3
   '@tauri-apps/plugin-opener': 2.7.2
   '@tauri-apps/plugin-os': 2.4.0
   '@tauri-apps/plugin-store': 2.5.0
-  '@types/node': ^26.6.5
+  '@types/node': ^26.6.6
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
   '@vitejs/plugin-react': ^6.1.2
-  ai: 7.0.155
+  ai: 7.0.157
   class-variance-authority: ^0.7.1
   cn: ^0.5.0
   fast-check: ^4.10.2
   kysely: ^0.29.7
-  lucide-react: ^1.62.0
+  lucide-react: ^1.64.0
   mime: ^4.1.2
   playwright: ^1.64.1
   radix-ui: ^1.8.1
