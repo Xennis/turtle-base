@@ -3,8 +3,8 @@ import type { CreateTableBuilder, Kysely } from 'kysely';
 import type { Migration } from 'kysely/migration';
 
 /**
- * The schema of the Flutter app's last version (drift schema 3), with times
- * in milliseconds and the CRDT columns written out.
+ * The first schema: users, spaces, collections, fields, pages, blocks and
+ * attachments, with times in milliseconds and the CRDT columns written out.
  *
  * No foreign key constraints: sync merges rows in any order, so a page can
  * arrive before its space.

@@ -7,7 +7,6 @@ Most of it comes from Tauri's official plugins - store (prefs), fs (attachment f
 - **`src-tauri/src/sql.rs`**: the app's one SQLite connection (`rusqlite`, SQLite bundled). One connection, not a pool, since transactions are plain `BEGIN`/`COMMIT` statements.
 - **`secrets.rs`**: secrets in the OS keyring (keyring-core) - the Secret Service on Linux, the Keychain on macOS, the Keystore on Android.
 - **`loopback.rs`**: the server on 127.0.0.1 that catches the redirect of the desktop's Google sign-in.
-- **`flutter.rs`**: the Flutter app's data, read-only, for the one-time import on the desktop.
 - **`android.rs`** with **`AndroidPlatformPlugin.kt`** (in `src-tauri/gen/android`): what Tauri doesn't cover on Android - Google sign-in through Play services, the system bars' style, opening a file with another app, the name of a picked file.
 
 `capabilities/default.json` lists what the page may use: of the disk only its `files/` folder (and copies for opening in `open/` of the cache), of the network only https. Data lives in Tauri's app data folder (`~/.local/share/org.xennis.apps.turtlebase` on Linux). On Linux the system draws the title bar; on macOS the traffic lights lie over the page (`tauri.macos.conf.json`).
