@@ -19,10 +19,6 @@ Run `mise run install` in the repo root, then e.g. `mise run run-desktop` (`mise
 
 New storage backends (e.g. another cloud) go into their own `packages/crdt-file-sync-<storage>` package that depends on `crdt-file-sync-transport`.
 
-## From the Flutter app
-
-turtle-base was a Flutter app before. Its data is taken over once, on the desktop: Settings → "Flutter app" imports its database and files (read-only - the Flutter app's data stays as it is). Other devices then get it through sync, which uses a Drive folder of its own (`turtle-base-sync-v3`), apart from the Flutter app's.
-
 ## Releases
 
 Pushing a tag `vX.Y.Z+N` runs [.github/workflows/release.yml](.github/workflows/release.yml): a Linux AppImage and an unsigned macOS `.dmg`, and an Android APK (all built by Tauri) with `versionName` `X.Y.Z` and `versionCode` `N`. `mise run package-desktop` packages the desktop app locally.

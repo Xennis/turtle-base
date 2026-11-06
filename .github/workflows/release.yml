@@ -38,7 +38,7 @@ jobs:
           - os: ubuntu-latest
             bundle: appimage
             suffix: linux-x86_64.AppImage
-          # Unsigned like the Flutter app's builds - optional, see the release job.
+          # Unsigned for now - optional, see the release job.
           - os: macos-latest
             bundle: dmg
             suffix: macos-aarch64.dmg

@@ -1,6 +1,5 @@
 /**
- * Like Flutter's `ChangeNotifier`: state that tells listeners when it
- * changed. `subscribe` fits React's `useSyncExternalStore`, which reads the
+ * State that tells listeners when it changed. `subscribe` fits React's `useSyncExternalStore`, which reads the
  * state again after each notification.
  */
 export class Notifier {

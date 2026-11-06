@@ -80,7 +80,7 @@ export function plainOfRaw(raw: unknown): string {
   return '';
 }
 
-/** 3.0 as "3" - which JavaScript does anyway, unlike Dart. */
+/** 3.0 as "3". */
 export function formatPlainNumber(value: number): string {
   return String(value);
 }

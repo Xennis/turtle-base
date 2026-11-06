@@ -5,8 +5,8 @@
  * hint to update instead of failing on unknown data.
  *
  * 1 was the flat layout without a format file, 2 added the changesets/ and
- * files/ folders and the attachments table (both Flutter), 3 is the
- * TypeScript app's: no `is_deleted` column, millisecond timestamps.
+ * files/ folders and the attachments table, 3 dropped the `is_deleted`
+ * column and has millisecond timestamps.
  */
 export const syncFormatVersion = 3;
 

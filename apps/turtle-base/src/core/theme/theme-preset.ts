@@ -19,7 +19,7 @@ export const themePresets = [
 
 export type ThemePreset = (typeof themePresets)[number];
 
-/** The Flutter app's original color, kept as the default. */
+/** The original color, kept as the default. */
 export const defaultThemePreset: ThemePreset = 'green';
 
 export function themePresetLabel(preset: ThemePreset): string {

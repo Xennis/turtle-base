@@ -14,9 +14,8 @@ import { ensureSyncFormat } from './sync-format.ts';
 const keepAllFilesOfflineKey = 'keep_all_files_offline';
 
 /**
- * The Drive folder synced into. Not the Flutter app's `turtle-base-sync`:
- * syncing there would move its format to 3, and the Flutter app would stop
- * syncing on every device that still runs it.
+ * The Drive folder synced into. Not `turtle-base-sync`, where earlier app
+ * versions synced in a format this one doesn't merge.
  */
 export const syncFolderName = 'turtle-base-sync-v3';
 

@@ -109,8 +109,6 @@ The app references neither a client ID nor a secret on Android: Play
 services' `AuthorizationClient` (see `AndroidPlatformPlugin.kt` in
 `apps/shell/src-tauri/gen/android`) finds the client by package name and
 signing certificate.
-The Web application client the Flutter app needed for `google_sign_in`
-(its `serverClientId`) isn't used anymore.
 
 ## 5. Pass the values to the app
 

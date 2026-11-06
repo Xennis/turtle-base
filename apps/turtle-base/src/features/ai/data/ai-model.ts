@@ -9,7 +9,7 @@ export const aiProviderLabels: Readonly<Record<AiProvider, string>> = {
 };
 
 export interface AiModel {
-  /** What the prefs store - the same names as the Flutter app's `AiModel` enum. */
+  /** What the prefs store. */
   readonly key: string;
   readonly provider: AiProvider;
   /** The provider's model id. */

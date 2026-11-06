@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 
 import type { SelectOption } from '../data/select-field.ts';
 
-/** Background and text per option color, light and dark - the Flutter app's palette, muted like Notion's. */
+/** Background and text per option color, light and dark - muted like Notion's. */
 const colorClasses: Readonly<Record<OptionColor, string>> = {
   gray: 'bg-[#e9e8e4] text-[#55534e] dark:bg-[#3f3e3b] dark:text-[#cfccc6]',
   brown: 'bg-[#f0e4dc] text-[#6b4a36] dark:bg-[#4a3a30] dark:text-[#e0c2ae]',
