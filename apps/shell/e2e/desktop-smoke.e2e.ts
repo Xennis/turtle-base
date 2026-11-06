@@ -324,6 +324,18 @@ async function waitForCss(browser: Browser, selector: string) {
   await browser.$(selector).waitForExist({ timeout: 15_000 });
 }
 
+/** Asks again until the page has the width - the window drops a resize that comes while the page is still busy. */
+async function resizeWindow(browser: Browser, width: number, height: number) {
+  await browser.waitUntil(
+    async () => {
+      await browser.setWindowSize(width, height);
+      await sleep(250);
+      return (await browser.execute(() => window.innerWidth)) === width;
+    },
+    { timeout: 15_000, interval: 250, timeoutMsg: `Window not resized to ${width}x${height}` },
+  );
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -602,8 +614,9 @@ try {
   await click(await role(second, 'option', 'Fitness'));
   await scrollThroughSeeds(second);
   await click(await role(second, 'button', 'Workouts'));
+  await text(second, '1 entry');
 
-  await second.setWindowSize(400, 760);
+  await resizeWindow(second, 400, 760);
   await click(await role(second, 'button', 'Back'));
   await click(await role(second, 'button', 'Open sidebar'));
   await role(second, 'button', 'Workouts', { within: '[role="dialog"]' });
