@@ -1,10 +1,5 @@
 version: 2
 
-multi-ecosystem-groups:
-  other:
-    schedule:
-      interval: monthly
-
 updates:
   - package-ecosystem: npm
     directory: /
@@ -20,15 +15,24 @@ updates:
 
   - package-ecosystem: cargo
     directory: /apps/shell/src-tauri
-    patterns: ['*']
-    multi-ecosystem-group: other
+    schedule:
+      interval: monthly
+    groups:
+      cargo:
+        patterns: ['*']
 
   - package-ecosystem: gradle
     directory: /apps/shell/src-tauri/gen/android
-    patterns: ['*']
-    multi-ecosystem-group: other
+    schedule:
+      interval: monthly
+    groups:
+      gradle:
+        patterns: ['*']
 
   - package-ecosystem: github-actions
     directory: /
-    patterns: ['*']
-    multi-ecosystem-group: other
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ['*']
