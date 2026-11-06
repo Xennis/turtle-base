@@ -13,12 +13,6 @@ import { ensureSyncFormat } from './sync-format.ts';
 
 const keepAllFilesOfflineKey = 'keep_all_files_offline';
 
-/**
- * The Drive folder synced into. Not `turtle-base-sync`, where earlier app
- * versions synced in a format this one doesn't merge.
- */
-export const syncFolderName = 'turtle-base-sync-v3';
-
 interface Connection {
   readonly folder: GoogleDriveSyncFolder;
   readonly sync: SyncController<Database>;
@@ -40,7 +34,6 @@ export class AppSyncController extends Notifier {
   readonly #attachments: AttachmentsRepository;
   readonly #prefs: KeyValueStore;
   readonly #isMobile: boolean;
-  readonly #folderName: string;
   #connection: Connection | undefined;
 
   /** Set when the last sync failed outside SyncController - e.g. a too new format, or listing the files folder. */
@@ -58,7 +51,6 @@ export class AppSyncController extends Notifier {
     attachments: AttachmentsRepository;
     prefs: KeyValueStore;
     isMobile: boolean;
-    folderName?: string;
   }) {
     super();
     this.#crdt = options.crdt;
@@ -68,7 +60,6 @@ export class AppSyncController extends Notifier {
     this.#attachments = options.attachments;
     this.#prefs = options.prefs;
     this.#isMobile = options.isMobile;
-    this.#folderName = options.folderName ?? syncFolderName;
   }
 
   /** Whether sign-in is configured on this platform - false hides the Drive sync UI entirely. */
@@ -180,7 +171,6 @@ export class AppSyncController extends Notifier {
     const folder = new GoogleDriveSyncFolder({
       fetch: this.#fetch,
       accessToken: () => auth.accessToken(),
-      name: this.#folderName,
     });
     const sync = new SyncController(this.#crdt, folder.changesets, new KeyValueSyncStateStore(this.#prefs));
     this.#connection = {
