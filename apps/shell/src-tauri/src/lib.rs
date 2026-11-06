@@ -1,6 +1,5 @@
 #[cfg(target_os = "android")]
 mod android;
-mod flutter;
 mod loopback;
 mod secrets;
 mod sql;
@@ -21,7 +20,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_store::Builder::new().build())
-        .manage(flutter::FlutterData::default())
         .setup(|app| {
             secrets::use_platform_store();
             let data = app.path().app_data_dir()?;
@@ -33,10 +31,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             sql::sql_execute,
             loopback::loopback_listen,
-            flutter::flutter_find,
-            flutter::flutter_query,
-            flutter::flutter_list_files,
-            flutter::flutter_read_file,
             secrets::secrets_get,
             secrets::secrets_set,
             secrets::secrets_remove,
