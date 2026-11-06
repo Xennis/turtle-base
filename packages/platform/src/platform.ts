@@ -1,5 +1,4 @@
 import type { FileDirectory } from './file-directory.ts';
-import type { FlutterAppData } from './flutter-app-data.ts';
 import type { GoogleAuthenticator } from './google-authenticator.ts';
 import type { KeyValueStore, SecretStorage } from './key-value-store.ts';
 import type { SqlDriver } from './sql-driver.ts';
@@ -46,13 +45,6 @@ export interface Platform {
    * app for it.
    */
   openFile(name: string, displayName: string): Promise<void>;
-
-  /**
-   * The Flutter app's data on this device, for the one-time import - only
-   * on the desktop, and only where the Flutter app was used. Undefined
-   * otherwise.
-   */
-  findFlutterAppData(): Promise<FlutterAppData | undefined>;
 
   /**
    * Matches what the system draws around the page to the app's theme: the

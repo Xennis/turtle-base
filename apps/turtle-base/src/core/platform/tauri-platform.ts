@@ -21,7 +21,6 @@ import type {
 
 import { androidGoogleAuth, androidPlatform } from './tauri-android.ts';
 import { filesIn } from './tauri-files.ts';
-import { findFlutterAppData } from './tauri-flutter-app-data.ts';
 import { desktopGoogleAuth } from './tauri-google-auth.ts';
 
 /**
@@ -54,8 +53,6 @@ export async function createTauriPlatform(): Promise<Platform> {
     files: filesIn(`${data}/files`),
     plugins: filesIn(`${data}/plugins`),
     openFile: (name, displayName) => openFile(`${data}/files/${name}`, `${cache}/open`, displayName, android),
-    // The Flutter app's data is imported on the desktop - phones get it through sync.
-    findFlutterAppData: android ? () => Promise.resolve(undefined) : findFlutterAppData,
     // Android's status and navigation bars (the page lies behind them); the desktop's title bar (Linux) and
     // window buttons (macOS) follow the window's theme.
     matchWindowChrome: ({ dark }) =>

@@ -1,6 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -57,41 +56,28 @@ const pluginFiles: Record<string, string> = {
   [`${booksRelease}/books.js`]: readFileSync(join(booksDist, 'books.js')).toString('base64'),
 };
 
-/**
- * A Flutter app's data folder for the import: a space with a page holding a heading and the picture. Its
- * tables as the Flutter app created them (drift's columns plus sql_crdt's), only those the import reads.
- */
-const flutterData = join(home, 'flutter');
+/** Entries enough that only a part of them can be rendered at once - see seedCollection. */
 const seedCount = 1500;
-{
-  const hash = `sha256-${createHash('sha256').update(picture).digest('hex')}`;
-  mkdirSync(join(flutterData, 'files'), { recursive: true });
-  writeFileSync(join(flutterData, 'files', hash), picture);
-  const audit = 'created_at INTEGER, updated_at INTEGER, created_by TEXT, updated_by TEXT, deleted_at INTEGER';
-  const crdt = 'is_deleted INTEGER DEFAULT 0, hlc TEXT, node_id TEXT, modified TEXT';
-  const row = "1784321678, 1784321678, 'flutter-user', 'flutter-user', NULL";
-  const stamp = "0, 'hlc', 'flutter-node', 'hlc'";
-  const database = new DatabaseSync(join(flutterData, 'turtle_base.sqlite'));
-  database.exec(`
-    CREATE TABLE users(id TEXT, name TEXT, created_at INTEGER, ${crdt});
-    CREATE TABLE spaces(${audit}, id TEXT, name TEXT, icon TEXT, position INTEGER, ${crdt});
-    CREATE TABLE collections(${audit}, id TEXT, space_id TEXT, name TEXT, icon TEXT, title_field_label TEXT, ${crdt});
-    CREATE TABLE fields(${audit}, id TEXT, collection_id TEXT, name TEXT, type TEXT, position INTEGER, config TEXT, ${crdt});
-    CREATE TABLE pages(${audit}, id TEXT, space_id TEXT, collection_id TEXT, parent_page_id TEXT, title TEXT, icon TEXT, properties TEXT, position INTEGER, ${crdt});
-    CREATE TABLE blocks(${audit}, id TEXT, page_id TEXT, parent_block_id TEXT, type TEXT, position INTEGER, content TEXT, ${crdt});
-    CREATE TABLE attachments(${audit}, id TEXT, page_id TEXT, field_id TEXT, file_hash TEXT, name TEXT, mime_type TEXT, size INTEGER, width INTEGER, height INTEGER, position INTEGER, ${crdt});
-    INSERT INTO spaces VALUES (${row}, 'garden', 'Garden', NULL, 0, ${stamp});
-    INSERT INTO pages VALUES (${row}, 'tomatoes', 'garden', NULL, NULL, 'Tomatoes', NULL, '{}', 0, ${stamp});
-    INSERT INTO blocks VALUES (${row}, 'b1', 'tomatoes', NULL, 'heading', 0, '{"delta":[{"insert":"Planting"}],"level":2}', ${stamp});
-    INSERT INTO blocks VALUES (${row}, 'b2', 'tomatoes', NULL, 'attachment', 1, '{"attachmentId":"a1"}', ${stamp});
-    INSERT INTO attachments VALUES (${row}, 'a1', 'tomatoes', NULL, '${hash}', 'seedling.png', 'image/png', 79, 16, 16, 0, ${stamp});
-    INSERT INTO collections VALUES (${row}, 'seeds', 'garden', 'Seeds', NULL, NULL, ${stamp});
-  `);
-  // Enough entries that only a part of them can be rendered at once.
+
+/**
+ * A collection "Seeds" in the space "Fitness", written straight into the app's database while it's closed -
+ * through the UI, 1500 entries would take minutes. Stamped like a sync from another device a minute ago.
+ */
+function seedCollection() {
+  const database = new DatabaseSync(join(home, 'data', 'org.xennis.apps.turtlebase', 'turtle-base.sqlite'));
+  const space = database.prepare("SELECT id FROM spaces WHERE name = 'Fitness'").get();
+  if (typeof space?.['id'] !== 'string') throw new Error('No space Fitness to seed');
+  const hlc = `${new Date(Date.now() - 60_000).toISOString()}-0000-smoke-node`;
+  const stamped = 'created_at, updated_at, created_by, updated_by, deleted_at, hlc, node_id, modified';
+  const stamp = `${Date.now()}, ${Date.now()}, 'smoke-user', 'smoke-user', NULL, '${hlc}', 'smoke-node', '${hlc}'`;
+  database
+    .prepare(`INSERT INTO collections (id, space_id, name, ${stamped}) VALUES ('seeds', ?, 'Seeds', ${stamp})`)
+    .run(space['id']);
   const entry = database.prepare(
-    `INSERT INTO pages VALUES (${row}, ?, 'garden', 'seeds', NULL, ?, NULL, '{}', ?, ${stamp})`,
+    `INSERT INTO pages (id, space_id, collection_id, title, properties, position, ${stamped})
+     VALUES (?, ?, 'seeds', ?, '{}', ?, ${stamp})`,
   );
-  for (let i = 1; i <= seedCount; i++) entry.run(`seed-${i}`, `Seed ${String(i).padStart(4, '0')}`, i);
+  for (let i = 1; i <= seedCount; i++) entry.run(`seed-${i}`, space['id'], `Seed ${String(i).padStart(4, '0')}`, i);
   database.close();
 }
 
@@ -348,7 +334,7 @@ async function screenshot(browser: Browser, name: string) {
 
 let driver: ChildProcess | undefined;
 
-/** tauri-driver, once for both launches - the app gets its environment: a fresh profile and the Flutter data. */
+/** tauri-driver, once for both launches - the app gets its environment: a fresh profile. */
 async function startDriver() {
   driver = spawn('tauri-driver', [], {
     stdio: ['ignore', 'inherit', 'inherit'],
@@ -357,7 +343,6 @@ async function startDriver() {
       XDG_DATA_HOME: join(home, 'data'),
       XDG_CONFIG_HOME: join(home, 'config'),
       XDG_CACHE_HOME: join(home, 'cache'),
-      TURTLE_FLUTTER_DATA_DIR: flutterData,
     },
   });
   for (let i = 0; i < 50; i++) {
@@ -598,11 +583,9 @@ try {
   await role(first, 'status', undefined, { hasText: 'Not connected' });
   await click(await role(first, 'button', 'Connect'));
   await role(first, 'status', undefined, { hasText: /^Connected$/ });
-  await click(await role(first, 'button', 'Import from the Flutter app'));
-  // No file counted: the picture is the one attached earlier - already in the store, stored once.
-  await text(first, `Imported 1 space, 1 collection, ${seedCount + 1} pages.`);
   await screenshot(first, '3-settings-dark');
   await first.deleteSession();
+  seedCollection();
 
   const second = await launch();
   await role(second, 'combobox', 'Space', { hasText: 'Fitness' });
@@ -615,16 +598,9 @@ try {
   await click(await role(second, 'button', 'Disconnect'));
   await role(second, 'status', undefined, { hasText: 'Not connected' });
   await addBook(second);
-  // The Flutter app's page, imported before the restart: its text in BlockNote, its picture in the store.
-  await click(await role(second, 'combobox', 'Space'));
-  await click(await role(second, 'option', 'Garden'));
-  await click(await role(second, 'button', 'Tomatoes'));
-  await role(second, 'heading', 'Planting', { within: '.bn-editor' });
-  await imageLoaded(second, await role(second, 'button', 'Open seedling.png', { within: '.bn-editor', has: 'img' }));
-  await screenshot(second, '7-imported');
-  await scrollThroughSeeds(second);
   await click(await role(second, 'combobox', 'Space'));
   await click(await role(second, 'option', 'Fitness'));
+  await scrollThroughSeeds(second);
   await click(await role(second, 'button', 'Workouts'));
 
   await second.setWindowSize(400, 760);
